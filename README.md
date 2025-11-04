@@ -1,7 +1,7 @@
 # mobile-wallet-verifier-ca-back
 
 ## Overview
-This Repository contains two stacks, `pkcs-certificate-issuer`and `verifier-certificate-issuer` to operate a private certificate authority (CA)
+This Repository contains `verifier-certificate-issuer` stack to operate a private certificate authority (CA).
 
 ## Pre-requisites
 
