@@ -4,13 +4,13 @@
 
 The template.yaml in this project deploys the following AWS resources:
 
-- a Lambda function to issue an X.509 Issuer Certificate using an AWS Private CA instance deployed by the `mobile-platform-infra/platform-ca` CloudFormation stack in the account.
+- a Lambda function to issue an X.509 Issuer Certificate using an AWS Private CA instance deployed by the `mobile-wallet-verifier-ca-infra/platform-ca` CloudFormation stack in the account.
 - an asymmetric ECC_NIST_P256 KMS key to act as the Issuer Key and securely manage the key material and signing function
 - an S3 bucket to store the root certificate and the issued document signing certificates in PEM format so they can be accessed by the Example Credential Verifier as required
 
 ## Pre-requisites
 
-This stack can only be deployed into an account which already has the `mobile-platform-infra/platform-ca` CloudFormation stack deployed.
+This stack can only be deployed into an account which already has the `mobile-wallet-verifier-ca-infra/platform-ca` CloudFormation stack deployed.
 The dependency provides the AWS Private CA resource, root certificate and references to it as SSM parameters.
 
 ## Deploy
