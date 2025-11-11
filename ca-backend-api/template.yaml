@@ -45,12 +45,16 @@ Conditions:
       - none
 
 Mappings:
-  dev:
-    LambdaLogLevel: DEBUG
-    DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-  build:
-    LambdaLogLevel: INFO
-    DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+  EnvironmentVariables:
+    dev:
+      # SelfUrl: verifier-ca.dev.account.gov.uk # would change later
+      LambdaLogLevel: DEBUG
+      DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+
+    build:
+      # SelfUrl: verifier-ca.build.account.gov.uk # would change later
+      LambdaLogLevel: INFO
+      DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
 
 Globals:
   Function:
