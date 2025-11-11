@@ -1,0 +1,116 @@
+name: Run Test Suite
+
+on:
+  workflow_call:
+    inputs:
+      RUN_INFRA_TESTS:
+        description: Whether to run infra tests using `test:infra` npm script
+        type: string
+        default: true
+      RUN_SONARQUBE:
+        description: Whether to run SonarQube checks. Needs RUN_UNIT_TESTS to be true.
+        type: string
+        default: true
+      RUN_UNIT_TESTS:
+        description: Whether to run unit tests using `test:unit` npm script
+        type: string
+        default: true
+      SONARQUBE_CONTINUE_ON_ERROR:
+        description: Whether to continue running the workflow if SonarQube quality gate fails
+        type: string
+        default: false
+      WORKING_DIRECTORY:
+        description: Path to working directory in repo
+        required: true
+        type: string
+      PRIVATE_PACKAGES_REQUIRED:
+        description: Whether private packages must be installed
+        type: string
+        default: false
+      RUN_PACT_TESTS:
+        description: Whether to run pact tests using `test:pact:ci` npm script
+        type: string
+        default: false
+      PUBLISH_PACT_VERIFICATION_RESULTS:
+        description: Whether to publish pact verification results to the broker
+        type: string
+        default: false
+    secrets:
+      SONAR_TOKEN:
+        description: The token used for secure access to the SonarQube platform
+        required: false
+
+jobs:
+  run-test-suite:
+    name: Run test suite and SonarQube
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
+    env:
+      CONTINUE_ON_ERROR: ${{ inputs.SONARQUBE_CONTINUE_ON_ERROR }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v6
+        with:
+          cache: npm
+          cache-dependency-path: ${{ inputs.WORKING_DIRECTORY }}/package-lock.json
+          node-version-file: ${{ inputs.WORKING_DIRECTORY }}/.nvmrc
+
+      - name: Configure Authentication for Private Packages in .npmrc
+        if: inputs.GENERATE_OPEN_PROXY_API_SPEC == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "engine-strict=true" > .npmrc
+          echo "@govuk-one-login:registry=https://npm.pkg.github.com/" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
+
+      - name: Install Dependencies
+        run: npm clean-install
+
+      - name: Run Unit Tests
+        if: inputs.RUN_UNIT_TESTS == 'true'
+        run: npm run test:unit
+
+      - name: Run SonarQube Scan
+        if: inputs.RUN_SONARQUBE == 'true'
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.WORKING_DIRECTORY }}
+
+      - name: Run SonarQube Quality Gate Check
+        if: inputs.RUN_SONARQUBE == 'true'
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        continue-on-error: ${{ fromJSON(env.CONTINUE_ON_ERROR) }}
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          scanMetadataReportFile: ${{ inputs.WORKING_DIRECTORY }}/.scannerwork/report-task.txt
+
+      - name: Run Infra Tests
+        if: inputs.RUN_INFRA_TESTS == 'true'
+        run: npm run test:infra
+
+  ## Do we need to run Pact Tests?
+
+      - name: Run Pact Tests
+        if: inputs.RUN_PACT_TESTS == 'true'
+        env:
+          PACT_BROKER_URL: "https://pactbroker-onelogin.account.gov.uk"
+          PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
+          PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
+          PACT_BROKER_SOURCE_SECRET: ${{ secrets.PACT_BROKER_SOURCE_SECRET }}
+          PUBLISH_PACT_VERIFICATION_RESULTS: ${{ inputs.PUBLISH_PACT_VERIFICATION_RESULTS }}
+        run: npm run test:pact:ci

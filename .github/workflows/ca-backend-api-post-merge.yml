@@ -1,0 +1,70 @@
+name: CA BACKEND API Post Merge
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "ca-backend-api/**"
+      - ".github/workflows/ca-backend-api-post-merge.yml"
+      - ".github/workflows/job_ci-checks.yml"
+      - ".github/workflows/job_test-suite.yml"
+      - ".github/workflows/job_upload-sam-artifact.yml"
+      - "!ca-backend-api/**/*.md"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ca-backend-api
+
+jobs:
+  ci-checks:
+    name: Pre-deployment
+    uses:
+      ./.github/workflows/job_ci-checks.yml
+    with:
+      PRIVATE_PACKAGES_REQUIRED: true
+      WORKING_DIRECTORY: ca-backend-api
+
+  run-test-suite:
+    name: Pre-deployment
+    uses:
+      ./.github/workflows/job_test-suite.yml
+    with:
+      PRIVATE_PACKAGES_REQUIRED: true
+      RUN_PACT_TESTS: true
+      PUBLISH_PACT_VERIFICATION_RESULTS: true
+      SONARQUBE_CONTINUE_ON_ERROR: true
+      WORKING_DIRECTORY: ca-backend-api
+    secrets: inherit
+
+  upload-sam-artifact-dev:
+    name: Dev
+    uses:
+      ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      GENERATE_OPEN_PROXY_API_SPEC: true
+      WORKING_DIRECTORY: ca-backend-api
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.DEV_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
+
+
+  upload-sam-artifact-build:
+    name: Build
+    uses:
+      ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      GENERATE_OPEN_PROXY_API_SPEC: true
+      WORKING_DIRECTORY: ca-backend-api
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BUILD_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BUILD_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}

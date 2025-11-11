@@ -1,0 +1,42 @@
+name: CA BACKEND API Pull Request
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+    paths:
+      - "ca-backend-api/**"
+      - ".github/workflows/ca-backend-api-pull-request.yml"
+      - ".github/workflows/job_ci-checks.yml"
+      - ".github/workflows/job_test-suite.yml"
+      - "!ca-backend-api/**/*.md"
+
+  workflow_dispatch:
+
+permissions:
+  packages: read
+
+jobs:
+  ci-checks:
+    name: CI checks
+    if: github.event.pull_request.draft == false
+    uses:
+      ./.github/workflows/job_ci-checks.yml
+    with:
+      PRIVATE_PACKAGES_REQUIRED: true
+      WORKING_DIRECTORY: ca-backend-api
+
+  run-test-suite:
+    name: Run test suite
+    needs: ci-checks
+    uses:
+      ./.github/workflows/job_test-suite.yml
+    with:
+      PRIVATE_PACKAGES_REQUIRED: true
+      RUN_PACT_TESTS: true
+      WORKING_DIRECTORY: ca-backend-api
+    secrets: inherit
