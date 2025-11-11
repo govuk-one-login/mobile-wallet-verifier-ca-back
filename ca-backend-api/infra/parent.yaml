@@ -1,0 +1,9 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: backend SAM template for the verifier certificate authority service
+Resources:
+  # CloudFormation requires at least one resource definition per template, so this resource is here to satisfy various
+  # linting . It has no required properties, will never be deployed, and would have no effect if it were deployed.
+  NullResource:
+    Type: AWS::CloudFormation::WaitConditionHandle
+    Condition: NeverDeploy
