@@ -1,14 +1,14 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Resources:
-  Api:
+  CaBackendApi:
     Type: AWS::Serverless::Api
     Properties:
-      Name: !Sub ${AWS::StackName}-public-api
-      Description: Regional API gateway for the verifier certificate authority
+      Name: !Sub ${AWS::StackName}-ca-backend-api
+      Description: Regional API gateway for the verifier certificate authority service
       StageName: !Ref Environment
       OpenApiVersion: 3.0.0
       AccessLogSetting:
-        DestinationArn: !GetAtt ApiAccessLogs.Arn
+        DestinationArn: !GetAtt CaBackendApiAccessLogs.Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
       EndpointConfiguration:
         Type: REGIONAL
@@ -24,22 +24,22 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: ./openapi/api-spec.yaml
+            Location: ./openApiSpecs/ca-public-spec.yaml
 
-  ApiAccessLogs:
+  CaBackendApiAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-api-access-logs
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-ca-backend-api-access-logs
       RetentionInDays: 30
 
-  ApiBasePathMapping:
+  CaBackendApiBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
-      DomainName: !Ref ApiDomainName
-      RestApiId: !Ref Api
-      Stage: !Ref Api.Stage
+      DomainName: !Ref CaBackendApiDomainName
+      RestApiId: !Ref CaBackendApi
+      Stage: !Ref CaBackendApi.Stage
 
-  ApiDomainName:
+  CaBackendApiDomainName:
     Type: AWS::ApiGateway::DomainName
     Properties:
       DomainName: "" #!FindInMap
@@ -52,12 +52,21 @@ Resources:
       RegionalCertificateArn: !Sub '{{resolve:ssm:/${Environment}/Platform/ACM/PrimaryZoneWildcardCertificateARN}}'
       SecurityPolicy: TLS_1_2
 
-  ApiRecordSet:
+  CaBackendApiRecordSet:
     Type: AWS::Route53::RecordSet
     Properties:
       AliasTarget:
-        DNSName: !GetAtt ApiDomainName.RegionalDomainName
-        HostedZoneId: !GetAtt ApiDomainName.RegionalHostedZoneId
+        DNSName: !GetAtt CaBackendApiDomainName.RegionalDomainName
+        HostedZoneId: !GetAtt CaBackendApiDomainName.RegionalHostedZoneId
       HostedZoneId: !Sub '{{resolve:ssm:/${Environment}/Platform/Route53/PrimaryZoneID}}'
-      Name: !Ref ApiDomainName
+      Name: !Ref CaBackendApiDomainName
       Type: A
+
+  CaBackendApiWebAclAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub
+        - "arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}"
+        - ApiStage: !Ref CaBackendApi.Stage
+      WebACLArn:
+        Fn::ImportValue: !Sub "${AWS::StackName}-cf-dist-CloakingOriginWebACLArn"
