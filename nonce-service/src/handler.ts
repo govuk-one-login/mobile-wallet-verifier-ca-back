@@ -30,8 +30,7 @@ export const handler = async (
       TableName: tableName,
       Item: {
         nonceValue: { S: nonceValue },
-        timeToLive: { N: timeToLive.toString() },
-        createdAt: { N: currentTime.toString() }
+        timeToLive: { N: timeToLive.toString() }
       }
     });
 

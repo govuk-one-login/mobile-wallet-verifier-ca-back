@@ -20,8 +20,8 @@ Resources:
   NonceFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ../dist/nonce-service/
-      Handler: handler.handler
+      CodeUri: ../dist/
+      Handler: nonce-service/src/handler.handler
       Runtime: nodejs22.x
       Environment:
         Variables:
