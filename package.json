@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "test": "node_modules/.bin/jest",
+    "test": "node_modules/.bin/jest --silent",
     "test:cov": "jest --coverage",
     "lint": "node_modules/.bin/eslint .",
     "format": "node_modules/.bin/prettier --write .",
