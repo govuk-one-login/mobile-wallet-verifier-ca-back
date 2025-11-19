@@ -101,7 +101,7 @@ jobs:
           done
 
       - name: Build SAM template
-        run: sam build --parallel
+        run: sam build -t application.yaml
 
       - name: Run Checkov
         if: inputs.RUN_CHECKOV == 'true'
