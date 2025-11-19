@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SAM application template Verifier Certificate Authority backend
+Description: SAM application template for Verifier Certificate Authority backend
 
 Parameters:
   Environment:
@@ -32,6 +32,12 @@ Parameters:
     Type: String
     Default: platform-vpc
 
+  CaBackendApiParam:
+    Description: |
+      The backend Api prefix url
+    Type: String
+    Default: ca-backend-api
+
 
 Conditions:
   UsePermissionsBoundary: !Not
@@ -47,12 +53,10 @@ Conditions:
 Mappings:
   EnvironmentVariables:
     dev:
-      # SelfUrl: verifier-ca.dev.account.gov.uk # would change later
       LambdaLogLevel: DEBUG
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
 
     build:
-      # SelfUrl: verifier-ca.build.account.gov.uk # would change later
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
 
@@ -121,7 +125,7 @@ Resources:
   CaBackendApi:
     Type: AWS::Serverless::Api
     Properties:
-      Name: !Sub ${AWS::StackName}-ca-backend-api
+      Name: !Sub ${AWS::StackName}-${CaBackendApiParam}
       Description: Regional API gateway for the verifier certificate authority service
       StageName: !Ref Environment
       OpenApiVersion: 3.0.0
@@ -147,38 +151,8 @@ Resources:
   CaBackendApiAccessLogs:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-ca-backend-api-access-logs
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${CaBackendApiParam}-access-logs
       RetentionInDays: 30
-
-  CaBackendApiBasePathMapping:
-    Type: AWS::ApiGateway::BasePathMapping
-    Properties:
-      DomainName: !Ref CaBackendApiDomainName
-      RestApiId: !Ref CaBackendApi
-      Stage: !Ref CaBackendApi.Stage
-
-  CaBackendApiDomainName:
-    Type: AWS::ApiGateway::DomainName
-    Properties:
-      DomainName: "" #!FindInMap
-      #        - EnvironmentVariables
-      #        - !Ref Environment
-      #        - SelfUrl
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-      RegionalCertificateArn: !Sub '{{resolve:ssm:/${Environment}/Platform/ACM/PrimaryZoneWildcardCertificateARN}}'
-      SecurityPolicy: TLS_1_2
-
-  CaBackendApiRecordSet:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      AliasTarget:
-        DNSName: !GetAtt CaBackendApiDomainName.RegionalDomainName
-        HostedZoneId: !GetAtt CaBackendApiDomainName.RegionalHostedZoneId
-      HostedZoneId: !Sub '{{resolve:ssm:/${Environment}/Platform/Route53/PrimaryZoneID}}'
-      Name: !Ref CaBackendApiDomainName
-      Type: A
 
   CaBackendApiWebAclAssociation:
     Type: AWS::WAFv2::WebACLAssociation
@@ -188,4 +162,23 @@ Resources:
         - ApiStage: !Ref CaBackendApi.Stage
       WebACLArn:
         Fn::ImportValue: !Sub "${AWS::StackName}-cf-dist-CloakingOriginWebACLArn"
+
+Outputs:
+  ApiGatewayDomainName:
+    Description: API Gateway regional domain name for CloudFront origin
+    Value: !Sub '${CaBackendApiParam}.execute-api.${AWS::Region}.amazonaws.com'
+    Export:
+      Name: !Sub '${AWS::StackName}-api-url'
+
+  ApiGatewayId:
+    Description: API Gateway ID
+    Value: !Ref CaBackendApi
+    Export:
+      Name: !Sub '${AWS::StackName}-api-id'
+
+  ApiStage:
+    Description: API Gateway deployment stage
+    Value: !Ref Environment
+    Export:
+      Name: !Sub '${AWS::StackName}-api-stage'
 
