@@ -28,7 +28,7 @@ on:
 
 jobs:
   upload-artifact:
-    name: "Validate and Upload Artifact"
+    name: 'Validate and Upload Artifact'
     runs-on: ubuntu-24.04
     defaults:
       run:

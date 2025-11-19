@@ -4,13 +4,13 @@
  */
 
 export default {
-    transform: {
-        '^.+\\.ts?$': 'ts-jest',
-    },
-    clearMocks: true,
-    collectCoverage: true,
-    coverageDirectory: 'coverage',
-    coverageProvider: 'v8',
-    testMatch: ['**/*.test.ts'],
-    collectCoverageFrom: ['**/*.ts', '!**/node_modules/**', '!**/*.test.ts', '!jest.config.ts', '!**/tests/**'],
+  transform: {
+    '^.+\\.ts?$': 'ts-jest',
+  },
+  clearMocks: true,
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageProvider: 'v8',
+  testMatch: ['**/*.test.ts'],
+  collectCoverageFrom: ['**/*.ts', '!**/node_modules/**', '!**/*.test.ts', '!jest.config.ts', '!**/tests/**'],
 };

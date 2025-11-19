@@ -70,7 +70,7 @@ jobs:
         if: inputs.RUN_LINTER == 'true'
         run: npm run lint
 
-   ## Do we want to set up home brew?
+      ## Do we want to set up home brew?
 
       - name: Set up Homebrew
         if: inputs.RUN_RAIN_FORMAT_VERIFY == 'true'

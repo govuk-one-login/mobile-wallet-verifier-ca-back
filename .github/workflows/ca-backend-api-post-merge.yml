@@ -18,16 +18,13 @@ defaults:
 jobs:
   ci-checks:
     name: Pre-deployment
-    uses:
-      ./.github/workflows/job_ci-checks.yml
+    uses: ./.github/workflows/job_ci-checks.yml
     with:
       PRIVATE_PACKAGES_REQUIRED: true
 
-
   run-test-suite:
     name: Pre-deployment
-    uses:
-      ./.github/workflows/job_test-suite.yml
+    uses: ./.github/workflows/job_test-suite.yml
     with:
       PRIVATE_PACKAGES_REQUIRED: true
       RUN_PACT_TESTS: true
@@ -37,8 +34,7 @@ jobs:
 
   upload-sam-artifact-dev:
     name: Dev
-    uses:
-      ./.github/workflows/job_upload-sam-artifact.yml
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       GENERATE_OPEN_PROXY_API_SPEC: true
     secrets:
@@ -46,11 +42,9 @@ jobs:
       GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
       SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
 
-
   upload-sam-artifact-build:
     name: Build
-    uses:
-      ./.github/workflows/job_upload-sam-artifact.yml
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       GENERATE_OPEN_PROXY_API_SPEC: true
       WORKING_DIRECTORY: backend-api
