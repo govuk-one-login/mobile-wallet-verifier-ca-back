@@ -1,7 +1,10 @@
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { randomUUID } from 'crypto';
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { createErrorResponse, createSuccessResponse } from '../../common/responseUtils';
+import { createErrorResponse, createSuccessResponse } from '../../../common/responseUtils';
+
+const NONCE_TTL_SECONDS = 300; // 5 minutes
+const MILLISECONDS_PER_SECOND = 1000;
 
 const dynamoClient = new DynamoDBClient({});
 
@@ -22,9 +25,9 @@ export const handler = async (
   try {
     // Generate UUIDv4 as nonce value (36-character string with lowercase hex)
     const nonceValue = randomUUID().toLowerCase();
-    const currentTime = Math.floor(Date.now() / 1000);
-    const timeToLive = currentTime + 300; // 5 minutes TTL
-    const expiresAt = new Date((currentTime + 300) * 1000).toISOString();
+    const currentTime = Math.floor(Date.now() / MILLISECONDS_PER_SECOND);
+    const timeToLive = currentTime + NONCE_TTL_SECONDS;
+    const expiresAt = new Date((currentTime + NONCE_TTL_SECONDS) * MILLISECONDS_PER_SECOND).toISOString();
 
     const putCommand = new PutItemCommand({
       TableName: tableName,

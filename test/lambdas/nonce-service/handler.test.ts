@@ -1,16 +1,21 @@
-import { handler } from '../src/handler';
-import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
+import { PutItemCommand } from '@aws-sdk/client-dynamodb';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
-jest.mock('@aws-sdk/client-dynamodb');
+const mockSend = jest.fn();
+
+jest.mock('@aws-sdk/client-dynamodb', () => ({
+  DynamoDBClient: jest.fn(() => ({
+    send: mockSend
+  })),
+  PutItemCommand: jest.fn()
+}));
+
 jest.mock('crypto', () => ({
   randomUUID: jest.fn(() => 'test-uuid-1234-5678-9abc-def012345678')
 }));
 
-const mockSend = jest.fn();
-(DynamoDBClient as jest.Mock).mockImplementation(() => ({
-  send: mockSend
-}));
+// Import handler after mocks are set up
+import { handler } from '../../../src/lambdas/nonce-service/handler';
 
 const mockEvent: APIGatewayProxyEvent = {
   httpMethod: 'POST',
@@ -55,7 +60,9 @@ describe('Nonce Handler', () => {
     const result = await handler(event, mockContext);
     
     expect(result.statusCode).toBe(404);
-    expect(JSON.parse(result.body)).toEqual({ error: 'Not Found' });
+    const body = JSON.parse(result.body);
+    expect(body.status).toBe(404);
+    expect(body.detail).toBe('Not Found');
   });
 
   it('should return 404 for wrong path', async () => {
@@ -63,6 +70,9 @@ describe('Nonce Handler', () => {
     const result = await handler(event, mockContext);
     
     expect(result.statusCode).toBe(404);
+    const body = JSON.parse(result.body);
+    expect(body.status).toBe(404);
+    expect(body.detail).toBe('Not Found');
   });
 
   it('should return 500 when NONCE_TABLE_NAME is not set', async () => {
@@ -90,6 +100,10 @@ describe('Nonce Handler', () => {
     mockSend.mockRejectedValueOnce(new Error('DynamoDB error'));
     
     const result = await handler(mockEvent, mockContext);
+    
+    console.log('Mock calls:', mockSend.mock.calls.length);
+    console.log('Result status:', result.statusCode);
+    console.log('Result body:', result.body);
     
     expect(result.statusCode).toBe(500);
     expect(result.headers!['Content-Type']).toBe('application/problem+json');
