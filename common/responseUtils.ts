@@ -18,18 +18,16 @@ export const createErrorHeaders = () => ({
   'Content-Type': 'application/problem+json'
 });
 
-export const createProblemResponse = (status: number, detail: string, instance?: string) => ({
-  type: 'https://api.example.com/problems/internal-error',
-  title: 'Internal Server Error',
-  status,
-  detail,
-  ...(instance && { instance })
-});
-
 export const createErrorResponse = (status: number, detail: string, instance?: string) => ({
   statusCode: status,
   headers: createErrorHeaders(),
-  body: JSON.stringify(createProblemResponse(status, detail, instance))
+  body: JSON.stringify({
+    type: 'https://api.example.com/problems/internal-error',
+    title: 'Internal Server Error',
+    status,
+    detail,
+    ...(instance && { instance })
+  })
 });
 
 export const createSuccessResponse = (context: Context, nonceValue: string, expiresAt: string) => {
