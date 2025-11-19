@@ -21,3 +21,5 @@ results/
 # AWS SAM
 .aws-sam
 samconfig.toml
+
+*.pem

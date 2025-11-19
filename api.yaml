@@ -24,7 +24,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: ./openApiSpecs/ca-public-spec.yaml
+            Location: ./openApiSpecs/openApi-spec.yaml
 
   CaBackendApiAccessLogs:
     Type: AWS::Logs::LogGroup

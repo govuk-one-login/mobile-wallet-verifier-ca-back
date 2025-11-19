@@ -14,11 +14,7 @@ on:
       TEMPLATE_NAME:
         description: The name of the SAM template to upload
         type: string
-        default: template.yaml
-      WORKING_DIRECTORY:
-        description: Path to working directory in repo
-        required: true
-        type: string
+        default: application.yaml
     secrets:
       ARTIFACT_BUCKET:
         description: Artifact source bucket for Read ID Mock SAM artifact
@@ -33,26 +29,25 @@ on:
 jobs:
   upload-artifact:
     name: "Validate and Upload Artifact"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
-        working-directory: ${{ inputs.WORKING_DIRECTORY }}
     env:
       SAM_CLI_TELEMETRY: 0
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: true
           fetch-depth: 0
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           cache: npm
-          cache-dependency-path: ${{ inputs.WORKING_DIRECTORY }}/package-lock.json
-          node-version-file: ${{ inputs.WORKING_DIRECTORY }}/.nvmrc
+          cache-dependency-path: package-lock.json
+          node-version-file: .nvmrc
 
       - name: Configure Authentication for Private Packages in .npmrc
         if: inputs.GENERATE_OPEN_PROXY_API_SPEC == 'true'
@@ -89,5 +84,4 @@ jobs:
         with:
           artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET }}
           signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
-          template-file: .aws-sam/build/template.yaml
-          working-directory: ${{ inputs.WORKING_DIRECTORY }}
+          template-file: application.yaml

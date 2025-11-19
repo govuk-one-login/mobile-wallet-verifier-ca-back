@@ -7,10 +7,7 @@
 
 set -e
 
-cd ca-backend-api || exit 1
-
-# run combine_template
-npm run build:infra
+cd src || exit 1
 
 # Run prettier formatting checks
 npm run lint

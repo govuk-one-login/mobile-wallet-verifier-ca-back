@@ -3,13 +3,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "backend-api/**"
-      - ".github/workflows/backend-api-post-merge.yml"
-      - ".github/workflows/job_ci-checks.yml"
-      - ".github/workflows/job_test-suite.yml"
-      - ".github/workflows/job_upload-sam-artifact.yml"
-      - "!backend-api/**/*.md"
 
   workflow_dispatch:
 
@@ -21,7 +14,6 @@ permissions:
 defaults:
   run:
     shell: bash
-    working-directory: backend-api
 
 jobs:
   ci-checks:
@@ -30,7 +22,7 @@ jobs:
       ./.github/workflows/job_ci-checks.yml
     with:
       PRIVATE_PACKAGES_REQUIRED: true
-      WORKING_DIRECTORY: backend-api
+
 
   run-test-suite:
     name: Pre-deployment
@@ -41,7 +33,6 @@ jobs:
       RUN_PACT_TESTS: true
       PUBLISH_PACT_VERIFICATION_RESULTS: true
       SONARQUBE_CONTINUE_ON_ERROR: true
-      WORKING_DIRECTORY: backend-api
     secrets: inherit
 
   upload-sam-artifact-dev:
@@ -50,7 +41,6 @@ jobs:
       ./.github/workflows/job_upload-sam-artifact.yml
     with:
       GENERATE_OPEN_PROXY_API_SPEC: true
-      WORKING_DIRECTORY: backend-api
     secrets:
       ARTIFACT_BUCKET: ${{ secrets.DEV_ARTIFACT_BUCKET }}
       GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}

@@ -19,10 +19,6 @@ on:
         description: Whether to continue running the workflow if SonarQube quality gate fails
         type: string
         default: false
-      WORKING_DIRECTORY:
-        description: Path to working directory in repo
-        required: true
-        type: string
       PRIVATE_PACKAGES_REQUIRED:
         description: Whether private packages must be installed
         type: string
@@ -47,7 +43,6 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: ${{ inputs.WORKING_DIRECTORY }}
     env:
       CONTINUE_ON_ERROR: ${{ inputs.SONARQUBE_CONTINUE_ON_ERROR }}
     steps:
@@ -61,8 +56,8 @@ jobs:
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           cache: npm
-          cache-dependency-path: ${{ inputs.WORKING_DIRECTORY }}/package-lock.json
-          node-version-file: ${{ inputs.WORKING_DIRECTORY }}/.nvmrc
+          cache-dependency-path: package-lock.json
+          node-version-file: .nvmrc
 
       - name: Configure Authentication for Private Packages in .npmrc
         if: inputs.GENERATE_OPEN_PROXY_API_SPEC == 'true'
@@ -86,18 +81,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: ${{ inputs.WORKING_DIRECTORY }}
 
       - name: Run SonarQube Quality Gate Check
         if: inputs.RUN_SONARQUBE == 'true'
-        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
         continue-on-error: ${{ fromJSON(env.CONTINUE_ON_ERROR) }}
         timeout-minutes: 5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          scanMetadataReportFile: ${{ inputs.WORKING_DIRECTORY }}/.scannerwork/report-task.txt
+          scanMetadataReportFile: .scannerwork/report-task.txt
 
       - name: Run Infra Tests
         if: inputs.RUN_INFRA_TESTS == 'true'
