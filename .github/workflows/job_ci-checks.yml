@@ -95,7 +95,7 @@ jobs:
       - name: Validate SAM template
         if: inputs.RUN_SAM_VALIDATE == 'true'
         run: |
-          TEMPLATES="$(find . -name "template*.yaml")"
+          TEMPLATES="$(find . -name "application*.yaml")"
           for template in $TEMPLATES ; do
             sam validate --lint --template-file $template
           done
