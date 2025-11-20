@@ -71,9 +71,9 @@ jobs:
       - name: Install Dependencies
         run: npm clean-install
 
-#      - name: Run Unit Tests
-#        if: inputs.RUN_UNIT_TESTS == 'true'
-#        run: npm run test
+      #      - name: Run Unit Tests
+      #        if: inputs.RUN_UNIT_TESTS == 'true'
+      #        run: npm run test
 
       - name: Run SonarQube Scan
         if: inputs.RUN_SONARQUBE == 'true'

@@ -1,4 +1,4 @@
-name: CA BACKEND API Post Merge
+name: CA Backend application Post Merge
 on:
   push:
     branches:

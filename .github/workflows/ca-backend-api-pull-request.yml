@@ -1,4 +1,4 @@
-name: CA BACKEND API Pull Request
+name: CA Backend application Pull Request
 on:
   pull_request:
     branches:
