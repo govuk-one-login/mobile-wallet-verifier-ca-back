@@ -31,6 +31,10 @@ on:
         description: Whether to publish pact verification results to the broker
         type: string
         default: false
+      WORKING_DIRECTORY:
+        description: Path to working directory in repo
+        required: true
+        type: string
     secrets:
       SONAR_TOKEN:
         description: The token used for secure access to the SonarQube platform
