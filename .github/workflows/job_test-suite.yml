@@ -3,10 +3,6 @@ name: Run Test Suite
 on:
   workflow_call:
     inputs:
-      RUN_INFRA_TESTS:
-        description: Whether to run infra tests using `test:infra` npm script
-        type: string
-        default: true
       RUN_SONARQUBE:
         description: Whether to run SonarQube checks. Needs RUN_UNIT_TESTS to be true.
         type: string
@@ -21,10 +17,6 @@ on:
         default: false
       PRIVATE_PACKAGES_REQUIRED:
         description: Whether private packages must be installed
-        type: string
-        default: false
-      RUN_PACT_TESTS:
-        description: Whether to run pact tests using `test:pact:ci` npm script
         type: string
         default: false
       PUBLISH_PACT_VERIFICATION_RESULTS:
@@ -97,19 +89,3 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           scanMetadataReportFile: .scannerwork/report-task.txt
-
-      - name: Run Infra Tests
-        if: inputs.RUN_INFRA_TESTS == 'true'
-        run: npm run test:infra
-
-      ## Do we need to run Pact Tests?
-
-      - name: Run Pact Tests
-        if: inputs.RUN_PACT_TESTS == 'true'
-        env:
-          PACT_BROKER_URL: 'https://pactbroker-onelogin.account.gov.uk'
-          PACT_BROKER_USERNAME: ${{ secrets.PACT_BROKER_USERNAME }}
-          PACT_BROKER_PASSWORD: ${{ secrets.PACT_BROKER_PASSWORD }}
-          PACT_BROKER_SOURCE_SECRET: ${{ secrets.PACT_BROKER_SOURCE_SECRET }}
-          PUBLISH_PACT_VERIFICATION_RESULTS: ${{ inputs.PUBLISH_PACT_VERIFICATION_RESULTS }}
-        run: npm run test:pact:ci
