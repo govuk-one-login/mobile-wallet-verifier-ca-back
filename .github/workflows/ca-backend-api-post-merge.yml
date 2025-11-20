@@ -30,7 +30,9 @@ jobs:
       RUN_PACT_TESTS: true
       PUBLISH_PACT_VERIFICATION_RESULTS: true
       SONARQUBE_CONTINUE_ON_ERROR: true
-    secrets: inherit
+      WORKING_DIRECTORY: ./
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   upload-sam-artifact-dev:
     name: Dev
