@@ -127,6 +127,7 @@ Resources:
       Description: Regional API gateway for the verifier certificate authority service
       StageName: !Ref Environment
       OpenApiVersion: 3.0.0
+      TracingEnabled: true
       AccessLogSetting:
         DestinationArn: !GetAtt CaBackendApiAccessLogs.Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
@@ -140,11 +141,14 @@ Resources:
           MetricsEnabled: true
           ThrottlingBurstLimit: 10
           ThrottlingRateLimit: 10
+          CachingEnabled: true
+          CacheTtlInSeconds: 300
+          CacheDataEncrypted: true
       DefinitionBody:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: ./openApi-spec.yaml
+            Location: ./open-api-spec.yaml
 
   CaBackendApiAccessLogs:
     Type: AWS::Logs::LogGroup

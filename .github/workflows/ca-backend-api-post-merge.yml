@@ -38,7 +38,7 @@ jobs:
     name: Dev
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
-      GENERATE_OPEN_PROXY_API_SPEC: true
+      WORKING_DIRECTORY: ./
     secrets:
       ARTIFACT_BUCKET: ${{ secrets.DEV_ARTIFACT_BUCKET }}
       GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
@@ -48,8 +48,7 @@ jobs:
     name: Build
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
-      GENERATE_OPEN_PROXY_API_SPEC: true
-      WORKING_DIRECTORY: backend-api
+      WORKING_DIRECTORY: ./
     secrets:
       ARTIFACT_BUCKET: ${{ secrets.BUILD_ARTIFACT_BUCKET }}
       GH_ACTIONS_ROLE_ARN: ${{ secrets.BUILD_GH_ACTIONS_ROLE_ARN }}

@@ -7,17 +7,17 @@ on:
         description: The AWS region
         type: string
         default: eu-west-2
-      GENERATE_OPEN_API_SPEC:
-        description: Whether open proxy API spec needs to be generated
-        type: string
-        default: false
       TEMPLATE_NAME:
         description: The name of the SAM template to upload
         type: string
         default: application.yaml
+      WORKING_DIRECTORY:
+        description: Path to working directory in repo
+        required: true
+        type: string
     secrets:
       ARTIFACT_BUCKET:
-        description: Artifact source bucket for Read ID Mock SAM artifact
+        description: Artifact source bucket for SAM artifact
         required: true
       GH_ACTIONS_ROLE_ARN:
         description: AWS role for pushing the test image and AWS artifact to AWS
@@ -51,7 +51,6 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Configure Authentication for Private Packages in .npmrc
-        if: inputs.GENERATE_OPEN_API_SPEC == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -60,7 +59,6 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
 
       - name: Install Dependencies
-        if: inputs.GENERATE_OPEN_API_SPEC == 'true'
         run: npm clean-install
 
       - name: Authenticate with AWS
@@ -68,11 +66,6 @@ jobs:
         with:
           aws-region: ${{ inputs.AWS_REGION }}
           role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
-
-      - name: Generate OpenAPI Spec
-        if: inputs.GENERATE_OPEN_API_SPEC == 'true'
-        run: |
-          npm run generate-proxy-open-api
 
       - name: SAM Validate
         run: sam validate --lint --template "$TEMPLATE_NAME"
