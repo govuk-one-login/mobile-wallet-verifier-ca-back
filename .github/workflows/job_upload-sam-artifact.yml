@@ -7,7 +7,7 @@ on:
         description: The AWS region
         type: string
         default: eu-west-2
-      GENERATE_OPEN_PROXY_API_SPEC:
+      GENERATE_OPEN_API_SPEC:
         description: Whether open proxy API spec needs to be generated
         type: string
         default: false
@@ -35,6 +35,7 @@ jobs:
         shell: bash
     env:
       SAM_CLI_TELEMETRY: 0
+      TEMPLATE_NAME: ${{ inputs.TEMPLATE_NAME }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -50,7 +51,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Configure Authentication for Private Packages in .npmrc
-        if: inputs.GENERATE_OPEN_PROXY_API_SPEC == 'true'
+        if: inputs.GENERATE_OPEN_API_SPEC == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -59,7 +60,7 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
 
       - name: Install Dependencies
-        if: inputs.GENERATE_OPEN_PROXY_API_SPEC == 'true'
+        if: inputs.GENERATE_OPEN_API_SPEC == 'true'
         run: npm clean-install
 
       - name: Authenticate with AWS
@@ -68,16 +69,16 @@ jobs:
           aws-region: ${{ inputs.AWS_REGION }}
           role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
 
-      - name: Generate Proxy OpenAPI Spec
-        if: inputs.GENERATE_OPEN_PROXY_API_SPEC == 'true'
+      - name: Generate OpenAPI Spec
+        if: inputs.GENERATE_OPEN_API_SPEC == 'true'
         run: |
           npm run generate-proxy-open-api
 
       - name: SAM Validate
-        run: sam validate --lint --template ${{ inputs.TEMPLATE_NAME }}
+        run: sam validate --lint --template "$TEMPLATE_NAME"
 
       - name: SAM Build
-        run: sam build --cached --template ${{ inputs.TEMPLATE_NAME }}
+        run: sam build --cached --template "$TEMPLATE_NAME"
 
       - name: Upload SAM Artifact into the Artifact Bucket
         uses: govuk-one-login/devplatform-upload-action@v3.11.0
