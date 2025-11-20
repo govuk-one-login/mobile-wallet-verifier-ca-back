@@ -27,7 +27,6 @@ jobs:
     uses: ./.github/workflows/job_test-suite.yml
     with:
       PRIVATE_PACKAGES_REQUIRED: true
-      RUN_PACT_TESTS: true
       PUBLISH_PACT_VERIFICATION_RESULTS: true
       SONARQUBE_CONTINUE_ON_ERROR: true
       WORKING_DIRECTORY: ./

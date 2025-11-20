@@ -28,7 +28,6 @@ jobs:
     uses: ./.github/workflows/job_test-suite.yml
     with:
       PRIVATE_PACKAGES_REQUIRED: true
-      RUN_PACT_TESTS: true
       WORKING_DIRECTORY: ./
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
