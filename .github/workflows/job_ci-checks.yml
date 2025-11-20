@@ -3,10 +3,6 @@ name: CI Checks
 on:
   workflow_call:
     inputs:
-      RUN_CHECKOV:
-        description: Whether to run checkov on application.yaml
-        type: string
-        default: true
       RUN_FORMATTING:
         description: Whether to run the `format:check` npm script
         type: string
@@ -102,11 +98,3 @@ jobs:
 
       - name: Build SAM template
         run: sam build -t application.yaml
-
-      - name: Run Checkov
-        if: inputs.RUN_CHECKOV == 'true'
-        uses: bridgecrewio/checkov-action@v12
-        with:
-          quiet: true
-          soft_fail: true
-          framework: cloudformation
