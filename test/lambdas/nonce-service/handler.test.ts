@@ -1,15 +1,14 @@
-import { PutItemCommand } from '@aws-sdk/client-dynamodb';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
 const mockSend = jest.fn();
 
 jest.mock('@aws-sdk/client-dynamodb', () => ({
   DynamoDBClient: jest.fn(() => ({ send: mockSend })),
-  PutItemCommand: jest.fn()
+  PutItemCommand: jest.fn(),
 }));
 
 jest.mock('crypto', () => ({
-  randomUUID: jest.fn(() => 'test-uuid')
+  randomUUID: jest.fn(() => 'test-uuid'),
 }));
 
 import { handler } from '../../../src/lambdas/nonce-service/handler';
@@ -17,11 +16,11 @@ import { handler } from '../../../src/lambdas/nonce-service/handler';
 const mockEvent: APIGatewayProxyEvent = {
   httpMethod: 'POST',
   path: '/nonce',
-  requestContext: {} as any
+  requestContext: {},
 } as APIGatewayProxyEvent;
 
 const mockContext: Context = {
-  awsRequestId: 'test-request-id'
+  awsRequestId: 'test-request-id',
 } as Context;
 
 describe('Nonce Handler', () => {
@@ -44,7 +43,7 @@ describe('Nonce Handler', () => {
   it('should create nonce successfully', async () => {
     mockSend.mockResolvedValueOnce({});
     const result = await handler(mockEvent, mockContext);
-    
+
     expect(result.statusCode).toBe(201);
     expect(mockSend).toHaveBeenCalled();
     const body = JSON.parse(result.body);

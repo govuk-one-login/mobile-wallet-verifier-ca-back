@@ -123,7 +123,7 @@ Resources:
   NonceTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub "${AWS::StackName}-${Environment}-nonce-table"
+      TableName: !Sub '${AWS::StackName}-${Environment}-nonce-table'
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: nonceValue
@@ -139,13 +139,13 @@ Resources:
 
 Outputs:
   BaseStackName:
-    Description: "Base stack name for resource naming"
+    Description: 'Base stack name for resource naming'
     Value: !Ref BaseStackName
     Export:
-      Name: !Sub "${Environment}-BaseStackName"
+      Name: !Sub '${Environment}-BaseStackName'
 
   NonceTableName:
-    Description: "Name of the DynamoDB nonce table"
+    Description: 'Name of the DynamoDB nonce table'
     Value: !Ref NonceTable
     Export:
-      Name: !Sub "${Environment}-NonceTableName"
+      Name: !Sub '${Environment}-NonceTableName'

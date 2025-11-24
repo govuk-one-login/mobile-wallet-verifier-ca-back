@@ -10,7 +10,6 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "deps:check": "depcheck",
     "infra:format:check": "rain fmt --verify application.yaml",
     "infra:format": "rain fmt --write application.yaml"
   },

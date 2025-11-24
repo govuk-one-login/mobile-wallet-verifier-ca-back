@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Nonce Service API
-  version: "1.0.0"
+  version: '1.0.0'
   description: |
     Public endpoint that issues cryptographically secure, single-use nonces for replay protection or
     challenge-response workflows
@@ -18,7 +18,7 @@ paths:
         Each nonce is stored server-side with a 5-minute TTL and may be consumed exactly once by downstream
         endpoints that require it.
       operationId: createNonce
-      security: [] 
+      security: []
       requestBody:
         required: false
         description: Optional, reserved for future fields (e.g., audience/purpose).
@@ -31,22 +31,22 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NonceServiceFunction.Arn}:live/invocations"
+          Fn::Sub: 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NonceServiceFunction.Arn}:live/invocations'
         passthroughBehavior: when_no_match
       responses:
-        "201":
+        '201':
           description: Nonce created.
           headers:
             Location:
               description: Opaque URI for the created nonce resource (not necessarily retrievable).
               schema:
                 type: string
-                example: "/nonce/_opaque_id_"
+                example: '/nonce/_opaque_id_'
             Cache-Control:
-              description: "Response must not be cached by clients or intermediaries."
+              description: 'Response must not be cached by clients or intermediaries.'
               schema:
                 type: string
-                example: "no-store"
+                example: 'no-store'
             Date:
               description: RFC 7231 date of the response.
               schema:
@@ -55,12 +55,12 @@ paths:
               description: Correlation ID for tracing and debugging.
               schema:
                 type: string
-                example: "req_01J9ZQ2M7F5N4WPM1V7F3G1H7N"
+                example: 'req_01J9ZQ2M7F5N4WPM1V7F3G1H7N'
             Access-Control-Allow-Origin:
               description: CORS origin permitted (set by gateway or edge).
               schema:
                 type: string
-                example: "*"
+                example: '*'
           content:
             application/json:
               schema:
@@ -68,9 +68,9 @@ paths:
               examples:
                 example:
                   value:
-                    nonce: "q3i2aI4A2d2qU2C9m1vF1b3JYyG3n0o7cJc9Kc4E8fQ"
-                    expiresAt: "2025-10-23T12:34:56Z"
-        "500":
+                    nonce: 'q3i2aI4A2d2qU2C9m1vF1b3JYyG3n0o7cJc9Kc4E8fQ'
+                    expiresAt: '2025-10-23T12:34:56Z'
+        '500':
           description: Internal server error
           content:
             application/problem+json:
@@ -100,7 +100,7 @@ components:
           type: string
           format: date-time
           description: RFC 3339 UTC timestamp indicating when the nonce will expire (5 minutes after generation).
-          example: "2025-10-23T12:34:56Z"
+          example: '2025-10-23T12:34:56Z'
 
     Problem:
       type: object
@@ -113,20 +113,20 @@ components:
         type:
           type: string
           format: uri
-          example: "https://api.example.com/problems/internal-error"
+          example: 'https://api.example.com/problems/internal-error'
         title:
           type: string
-          example: "Internal Server Error"
+          example: 'Internal Server Error'
         status:
           type: integer
           example: 500
         detail:
           type: string
-          example: "An unexpected error occurred while generating the nonce."
+          example: 'An unexpected error occurred while generating the nonce.'
         instance:
           type: string
           format: uri
-          example: "https://api.example.com/trace/req_01J9ZQ2M7F5N4WPM1V7F3G1H7N"
+          example: 'https://api.example.com/trace/req_01J9ZQ2M7F5N4WPM1V7F3G1H7N'
         code:
           type: string
           description: Machine-readable error code.

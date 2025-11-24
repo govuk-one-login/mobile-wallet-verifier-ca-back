@@ -45,6 +45,17 @@ Parameters:
     Default: cloudfront-distribution
 
 Conditions:
+  EgressLogsToSplunkUsingCsls: !Or
+    - !Equals
+      - !Ref Environment
+      - staging
+    - !Equals
+      - !Ref Environment
+      - integration
+    - !Equals
+      - !Ref Environment
+      - production
+
   UsePermissionsBoundary: !Not
     - !Equals
       - !Ref PermissionsBoundary
@@ -64,6 +75,12 @@ Mappings:
     build:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+
+    CslsEgress:
+      build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      integration: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      production: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      staging: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
 Globals:
   Function:
@@ -135,13 +152,13 @@ Resources:
         Sourcemap: false
         Target: es2022
     Properties:
-      FunctionName: !Sub "${AWS::StackName}-${Environment}-nonce-service"
+      FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
       CodeUri: ./
       Handler: src/lambdas/nonce-service/handler.handler
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub "${Environment}-NonceTableName"
+            Fn::ImportValue: !Sub '${Environment}-NonceTableName'
       Policies:
         - Statement:
             - Effect: Allow
@@ -151,9 +168,26 @@ Resources:
                 - dynamodb:UpdateItem
                 - dynamodb:DeleteItem
               Resource: !Sub
-                - "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}"
+                - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                 - TableName:
-                    Fn::ImportValue: !Sub "${Environment}-NonceTableName"
+                    Fn::ImportValue: !Sub '${Environment}-NonceTableName'
+
+  NonceServiceFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-nonce-service
+      RetentionInDays: 30
+
+  NonceServiceFunctionSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      DestinationArn: !FindInMap
+        - EnvironmentVariables
+        - CslsEgress
+        - !Ref Environment
+      FilterPattern: ''
+      LogGroupName: !Ref NonceServiceFunctionLogGroup
+    Condition: EgressLogsToSplunkUsingCsls
 
   CaBackendApi:
     Type: AWS::Serverless::Api
@@ -198,7 +232,7 @@ Resources:
       FunctionName: !Ref NonceServiceFunction.Alias
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/*/*"
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/*/*'
 
   ApiGatewayCloudWatchLogsRole:
     Type: AWS::IAM::Role
