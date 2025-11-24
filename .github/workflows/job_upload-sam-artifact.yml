@@ -1,0 +1,81 @@
+name: Validate, Build, and Upload Artifact to S3
+
+on:
+  workflow_call:
+    inputs:
+      AWS_REGION:
+        description: The AWS region
+        type: string
+        default: eu-west-2
+      TEMPLATE_NAME:
+        description: The name of the SAM template to upload
+        type: string
+        default: application.yaml
+      WORKING_DIRECTORY:
+        description: Path to working directory in repo
+        required: true
+        type: string
+    secrets:
+      ARTIFACT_BUCKET:
+        description: Artifact source bucket for SAM artifact
+        required: true
+      GH_ACTIONS_ROLE_ARN:
+        description: AWS role for pushing the test image and AWS artifact to AWS
+        required: true
+      SIGNING_PROFILE_NAME:
+        description: Profile used to sign SAM artifact
+        required: true
+
+jobs:
+  upload-artifact:
+    name: 'Validate and Upload Artifact'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      SAM_CLI_TELEMETRY: 0
+      TEMPLATE_NAME: ${{ inputs.TEMPLATE_NAME }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          cache: npm
+          cache-dependency-path: package-lock.json
+          node-version-file: .nvmrc
+
+      - name: Configure Authentication for Private Packages in .npmrc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "engine-strict=true" > .npmrc
+          echo "@govuk-one-login:registry=https://npm.pkg.github.com/" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
+
+      - name: Install Dependencies
+        run: npm clean-install
+
+      - name: Authenticate with AWS
+        uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 #v5.1.0
+        with:
+          aws-region: ${{ inputs.AWS_REGION }}
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+
+      - name: SAM Validate
+        run: sam validate --lint --template "$TEMPLATE_NAME"
+
+      - name: SAM Build
+        run: sam build --cached --template "$TEMPLATE_NAME"
+
+      - name: Upload SAM Artifact into the Artifact Bucket
+        uses: govuk-one-login/devplatform-upload-action@fda75612a1b0e5a8c84ae7c44a23340e50e5bbde # v3.11.0
+        with:
+          artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET }}
+          signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
+          template-file: application.yaml

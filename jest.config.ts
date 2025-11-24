@@ -1,14 +1,16 @@
-import type { Config } from 'jest';
+/*
+ * For a detailed explanation regarding each configuration property and type check, visit:
+ * https://jestjs.io/docs/configuration
+ */
 
-const config: Config = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/test', '<rootDir>/common'],
+export default {
+  transform: {
+    '^.+\\.ts?$': 'ts-jest',
+  },
+  clearMocks: true,
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageProvider: 'v8',
   testMatch: ['**/*.test.ts'],
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    'common/**/*.ts'
-  ]
+  collectCoverageFrom: ['**/*.ts', '!**/node_modules/**', '!**/*.test.ts', '!jest.config.ts', '!**/tests/**'],
 };
-
-export default config;

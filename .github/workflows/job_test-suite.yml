@@ -1,0 +1,91 @@
+name: Run Test Suite
+
+on:
+  workflow_call:
+    inputs:
+      RUN_SONARQUBE:
+        description: Whether to run SonarQube checks. Needs RUN_UNIT_TESTS to be true.
+        type: string
+        default: true
+      RUN_UNIT_TESTS:
+        description: Whether to run unit tests using `test:unit` npm script
+        type: string
+        default: true
+      SONARQUBE_CONTINUE_ON_ERROR:
+        description: Whether to continue running the workflow if SonarQube quality gate fails
+        type: string
+        default: false
+      PRIVATE_PACKAGES_REQUIRED:
+        description: Whether private packages must be installed
+        type: string
+        default: false
+      PUBLISH_PACT_VERIFICATION_RESULTS:
+        description: Whether to publish pact verification results to the broker
+        type: string
+        default: false
+      WORKING_DIRECTORY:
+        description: Path to working directory in repo
+        required: true
+        type: string
+    secrets:
+      SONAR_TOKEN:
+        description: The token used for secure access to the SonarQube platform
+        required: false
+
+jobs:
+  run-test-suite:
+    name: Run test suite and SonarQube
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      CONTINUE_ON_ERROR: ${{ inputs.SONARQUBE_CONTINUE_ON_ERROR }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          cache: npm
+          cache-dependency-path: package-lock.json
+          node-version-file: .nvmrc
+
+      - name: Configure Authentication for Private Packages in .npmrc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "engine-strict=true" > .npmrc
+          echo "@govuk-one-login:registry=https://npm.pkg.github.com/" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
+
+      - name: Install Dependencies
+        run: npm clean-install
+
+      # comment to be removed
+      #      - name: Run Unit Tests
+      #        if: inputs.RUN_UNIT_TESTS == 'true'
+      #        run: npm run test
+
+      - name: Run SonarQube Scan
+        if: inputs.RUN_SONARQUBE == 'true'
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 #v6.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.WORKING_DIRECTORY }}
+
+      - name: Run SonarQube Quality Gate Check
+        if: inputs.RUN_SONARQUBE == 'true'
+        uses: SonarSource/sonarqube-quality-gate-action@cf038b0e0cdecfa9e56c198bbb7d21d751d62c3b # v1.2.0
+        continue-on-error: ${{ fromJSON(env.CONTINUE_ON_ERROR) }}
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          scanMetadataReportFile: .scannerwork/report-task.txt

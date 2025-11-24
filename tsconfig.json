@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "commonjs",
-    "lib": ["ES2022"],
-    "outDir": "./dist",
-    "rootDir": "./",
+    "target": "es2020",
     "strict": true,
+    "preserveConstEnums": true,
+    "noEmit": true,
+    "sourceMap": true,
+    "module": "es2022",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node"
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["nonce-service/src/**/*", "common/**/*", "verifier-certificate-issuer/src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules"]
 }
