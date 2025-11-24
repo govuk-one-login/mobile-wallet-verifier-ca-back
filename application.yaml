@@ -30,7 +30,7 @@ Parameters:
     Description: |
       The stack name of the VPC where Verifier CA lambdas will be deployed
     Type: String
-    Default: platform-vpc
+    Default: vpc
 
   CaBackendApiParam:
     Description: |

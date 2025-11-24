@@ -56,7 +56,6 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Configure Authentication for Private Packages in .npmrc
-        if: inputs.GENERATE_OPEN_PROXY_API_SPEC == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
