@@ -1,6 +1,7 @@
 # mobile-wallet-verifier-ca-back
 
 ## Overview
+
 This Repository contains `verifier-certificate-issuer` stack to operate a private certificate authority (CA).
 
 ## Pre-requisites
@@ -25,4 +26,3 @@ Run unit tests to test functionality of individual functions:
 ```
 npm run test
 ```
-
