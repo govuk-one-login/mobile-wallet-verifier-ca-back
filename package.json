@@ -8,8 +8,8 @@
     "lint": "node_modules/.bin/eslint .",
     "format": "node_modules/.bin/prettier --write .",
     "format:check": "node_modules/.bin/prettier --check .",
-    "infra:format:check": "rain fmt --verify application.yaml",
-    "infra:format": "rain fmt --write application.yaml"
+    "infra:format:check": "rain fmt --verify infrastructure/application.yaml",
+    "infra:format": "rain fmt --write infrastructure/application.yaml"
   },
   "license": "MIT",
   "dependencies": {
@@ -18,6 +18,7 @@
     "@aws-sdk/client-kms": "^3.758.0",
     "@aws-sdk/client-s3": "^3.758.0",
     "@aws-sdk/client-ssm": "^3.759.0",
+    "@aws-sdk/lib-dynamodb": "^3.936.0",
     "@peculiar/asn1-csr": "^2.3.15",
     "@peculiar/asn1-schema": "^2.3.15",
     "@peculiar/asn1-x509": "^2.3.15",
