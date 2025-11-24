@@ -143,6 +143,33 @@ Globals:
       - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
 
 Resources:
+  NonceServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-${Environment}-nonce-service-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                Resource: !Sub
+                  - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
+                  - TableName:
+                      Fn::ImportValue: !Sub '${Environment}-NonceTableName'
+
   NonceServiceFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -155,22 +182,18 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
       CodeUri: ./
       Handler: src/lambdas/nonce-service/handler.handler
+      Role: !GetAtt NonceServiceRole.Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
+        SubnetIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdA
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdB
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdC
       Environment:
         Variables:
           NONCE_TABLE_NAME:
             Fn::ImportValue: !Sub '${Environment}-NonceTableName'
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - dynamodb:PutItem
-                - dynamodb:GetItem
-                - dynamodb:UpdateItem
-                - dynamodb:DeleteItem
-              Resource: !Sub
-                - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
-                - TableName:
-                    Fn::ImportValue: !Sub '${Environment}-NonceTableName'
 
   NonceServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
