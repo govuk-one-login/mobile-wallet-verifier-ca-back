@@ -66,8 +66,6 @@ jobs:
         if: inputs.RUN_LINTER == 'true'
         run: npm run lint
 
-      ## Do we want to set up home brew?
-
       - name: Set up Homebrew
         if: inputs.RUN_RAIN_FORMAT_VERIFY == 'true'
         id: set-up-homebrew
@@ -97,4 +95,4 @@ jobs:
           done
 
       - name: Build SAM template
-        run: sam build -t application.yaml
+        run: sam build -t infrastructure/application.yaml
