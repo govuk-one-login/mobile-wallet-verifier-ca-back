@@ -1,0 +1,89 @@
+name: Deploy Base Application Infrastructure
+
+on:
+  workflow_call:
+    inputs:
+      AWS_REGION:
+        description: The AWS region
+        type: string
+        default: eu-west-2
+      TEMPLATE_PATH:
+        description: Path to the SAM template
+        type: string
+        default: base-application.yaml
+      STACK_NAME:
+        description: CloudFormation stack name
+        type: string
+        required: true
+      ENVIRONMENT:
+        description: Environment name (dev, build)
+        type: string
+        required: true
+    secrets:
+      GH_ACTIONS_ROLE_ARN:
+        description: AWS role for deployment
+        required: true
+
+jobs:
+  deploy:
+    name: 'Deploy to ${{ inputs.ENVIRONMENT }}'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.ENVIRONMENT }}
+    env:
+      SAM_CLI_TELEMETRY: 0
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04 # v2
+
+      - name: Authenticate with AWS
+        uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          aws-region: ${{ inputs.AWS_REGION }}
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          role-session-name: github-actions-base-app-deploy
+
+      - name: SAM Deploy
+        run: |
+          sam deploy \
+            --template-file ${{ inputs.TEMPLATE_PATH }} \
+            --stack-name ${{ inputs.STACK_NAME }} \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --parameter-overrides Environment=${{ inputs.ENVIRONMENT }} \
+            --no-fail-on-empty-changeset \
+            --region ${{ inputs.AWS_REGION }} \
+            --tags \
+              Environment=${{ inputs.ENVIRONMENT }} \
+              ManagedBy=GitHub-Actions \
+              Project=Mobile-Wallet-Verifier-CA \
+              Component=Base-Application
+
+      - name: Get Stack Outputs
+        id: stack-outputs
+        run: |
+          NONCES_TABLE=$(aws cloudformation describe-stacks \
+            --stack-name ${{ inputs.STACK_NAME }} \
+            --query 'Stacks[0].Outputs[?OutputKey==`NoncesTableName`].OutputValue' \
+            --output text \
+            --region ${{ inputs.AWS_REGION }})
+
+          echo "nonces_table=$NONCES_TABLE" >> $GITHUB_OUTPUT
+
+      - name: Output Deployment Summary
+        run: |
+          echo "### Base Application Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ inputs.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** ${{ inputs.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Stack Name:** ${{ inputs.STACK_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Resources Created:" >> $GITHUB_STEP_SUMMARY
+          echo "- DynamoDB Nonces Table: \`${{ steps.stack-outputs.outputs.nonces_table }}\`" >> $GITHUB_STEP_SUMMARY
