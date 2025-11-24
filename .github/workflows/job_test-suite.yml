@@ -67,9 +67,9 @@ jobs:
         run: npm clean-install
 
       # comment to be removed
-      #      - name: Run Unit Tests
-      #        if: inputs.RUN_UNIT_TESTS == 'true'
-      #        run: npm run test
+      - name: Run Unit Tests
+        if: inputs.RUN_UNIT_TESTS == 'true'
+        run: npm run test
 
       - name: Run SonarQube Scan
         if: inputs.RUN_SONARQUBE == 'true'

@@ -101,11 +101,52 @@ describe('Nonce Handler', () => {
     
     const result = await handler(mockEvent, mockContext);
     
-    console.log('Mock calls:', mockSend.mock.calls.length);
-    console.log('Result status:', result.statusCode);
-    console.log('Result body:', result.body);
+    expect(result.statusCode).toBe(500);
+    expect(result.headers!['Content-Type']).toBe('application/problem+json');
+    
+    const body = JSON.parse(result.body);
+    expect(body.instance).toBe(`https://api.example.com/trace/${mockContext.awsRequestId}`);
+  });
+
+  it('should handle non-Error exceptions', async () => {
+    mockSend.mockRejectedValueOnce('String error');
+    
+    const result = await handler(mockEvent, mockContext);
     
     expect(result.statusCode).toBe(500);
     expect(result.headers!['Content-Type']).toBe('application/problem+json');
+  });
+
+  it('should return 404 for both invalid method and path', async () => {
+    const event = { ...mockEvent, httpMethod: 'GET', path: '/wrong' };
+    const result = await handler(event, mockContext);
+    
+    expect(result.statusCode).toBe(404);
+    const body = JSON.parse(result.body);
+    expect(body.detail).toBe('Not Found');
+  });
+
+  it('should generate correct nonce format and expiration', async () => {
+    mockSend.mockResolvedValueOnce({});
+    const mockDate = new Date('2023-01-01T12:00:00.000Z');
+    jest.spyOn(Date, 'now').mockReturnValue(mockDate.getTime());
+    
+    const result = await handler(mockEvent, mockContext);
+    
+    expect(result.statusCode).toBe(201);
+    const body = JSON.parse(result.body);
+    expect(body.nonce).toBe('test-uuid-1234-5678-9abc-def012345678');
+    expect(body.expiresAt).toBe('2023-01-01T12:05:00.000Z'); // 5 minutes later
+    
+    // Verify PutItemCommand was called with correct TTL
+    expect(PutItemCommand).toHaveBeenCalledWith({
+      TableName: 'test-nonce-table',
+      Item: {
+        nonceValue: { S: 'test-uuid-1234-5678-9abc-def012345678' },
+        timeToLive: { N: '1672574700' } // Unix timestamp + 300 seconds
+      }
+    });
+    
+    jest.restoreAllMocks();
   });
 });
