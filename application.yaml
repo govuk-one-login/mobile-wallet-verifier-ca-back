@@ -289,14 +289,14 @@ Resources:
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
 
-  # CaBackendApiWebAclAssociation:
-  #   Type: AWS::WAFv2::WebACLAssociation
-  #   Properties:
-  #     ResourceArn: !Sub
-  #       - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
-  #       - ApiStage: !Ref CaBackendApi.Stage
-  #     WebACLArn:
-  #       Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
+  CaBackendApiWebAclAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub
+        - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
+        - ApiStage: !Ref CaBackendApi.Stage
+      WebACLArn:
+        Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
 Outputs:
   ApiGatewayDomainName:
