@@ -1,0 +1,30 @@
+name: Base Application Infrastructure Pull Request
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'base-application.yaml'
+      - '.github/workflows/base-application-*.yml'
+      - '.github/workflows/job_*base-application*.yml'
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    name: Validate Template
+    if: github.event.pull_request.draft == false
+    uses: ./.github/workflows/job_validate-base-application.yml

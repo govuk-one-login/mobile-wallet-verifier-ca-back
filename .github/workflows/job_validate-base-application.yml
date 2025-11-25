@@ -1,0 +1,40 @@
+name: Validate Base Application Infrastructure
+
+on:
+  workflow_call:
+    inputs:
+      AWS_REGION:
+        description: The AWS region
+        type: string
+        default: eu-west-2
+      TEMPLATE_PATH:
+        description: Path to the SAM template
+        type: string
+        default: base-application.yaml
+
+jobs:
+  validate:
+    name: 'Validate SAM Template'
+    runs-on: ubuntu-24.04
+    env:
+      SAM_CLI_TELEMETRY: 0
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          submodules: true
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04 # v2
+
+      - name: SAM Validate
+        run: |
+          sam validate --lint --template ${{ inputs.TEMPLATE_PATH }} --region ${{ inputs.AWS_REGION }}
+
+      - name: Run cfn-lint
+        run: |
+          pip install cfn-lint
+          cfn-lint ${{ inputs.TEMPLATE_PATH }}
