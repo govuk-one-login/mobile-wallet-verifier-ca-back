@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       SAM_CLI_TELEMETRY: 0
+      TEMPLATE_PATH: ${{ inputs.TEMPLATE_PATH }}
+      AWS_REGION: ${{ inputs.AWS_REGION }}
     defaults:
       run:
         shell: bash
@@ -32,9 +34,9 @@ jobs:
 
       - name: SAM Validate
         run: |
-          sam validate --lint --template ${{ inputs.TEMPLATE_PATH }} --region ${{ inputs.AWS_REGION }}
+          sam validate --lint --template "$TEMPLATE_PATH" --region "$AWS_REGION"
 
       - name: Run cfn-lint
         run: |
           pip install cfn-lint
-          cfn-lint ${{ inputs.TEMPLATE_PATH }}
+          cfn-lint "$TEMPLATE_PATH"

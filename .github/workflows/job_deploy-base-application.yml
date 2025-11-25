@@ -31,6 +31,10 @@ jobs:
     environment: ${{ inputs.ENVIRONMENT }}
     env:
       SAM_CLI_TELEMETRY: 0
+      TEMPLATE_PATH: ${{ inputs.TEMPLATE_PATH }}
+      STACK_NAME: ${{ inputs.STACK_NAME }}
+      ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+      AWS_REGION: ${{ inputs.AWS_REGION }}
     defaults:
       run:
         shell: bash
@@ -54,14 +58,14 @@ jobs:
       - name: SAM Deploy
         run: |
           sam deploy \
-            --template-file ${{ inputs.TEMPLATE_PATH }} \
-            --stack-name ${{ inputs.STACK_NAME }} \
+            --template-file "$TEMPLATE_PATH" \
+            --stack-name "$STACK_NAME" \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-            --parameter-overrides Environment=${{ inputs.ENVIRONMENT }} \
+            --parameter-overrides Environment="$ENVIRONMENT" \
             --no-fail-on-empty-changeset \
-            --region ${{ inputs.AWS_REGION }} \
+            --region "$AWS_REGION" \
             --tags \
-              Environment=${{ inputs.ENVIRONMENT }} \
+              Environment="$ENVIRONMENT" \
               ManagedBy=GitHub-Actions \
               Project=Mobile-Wallet-Verifier-CA \
               Component=Base-Application
@@ -70,10 +74,10 @@ jobs:
         id: stack-outputs
         run: |
           NONCES_TABLE=$(aws cloudformation describe-stacks \
-            --stack-name ${{ inputs.STACK_NAME }} \
+            --stack-name "$STACK_NAME" \
             --query 'Stacks[0].Outputs[?OutputKey==`NoncesTableName`].OutputValue' \
             --output text \
-            --region ${{ inputs.AWS_REGION }})
+            --region "$AWS_REGION")
 
           echo "nonces_table=$NONCES_TABLE" >> $GITHUB_OUTPUT
 
@@ -81,9 +85,9 @@ jobs:
         run: |
           echo "### Base Application Deployment Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** ${{ inputs.ENVIRONMENT }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Region:** ${{ inputs.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Stack Name:** ${{ inputs.STACK_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** $ENVIRONMENT" >> $GITHUB_STEP_SUMMARY
+          echo "**Region:** $AWS_REGION" >> $GITHUB_STEP_SUMMARY
+          echo "**Stack Name:** $STACK_NAME" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### Resources Created:" >> $GITHUB_STEP_SUMMARY
           echo "- DynamoDB Nonces Table: \`${{ steps.stack-outputs.outputs.nonces_table }}\`" >> $GITHUB_STEP_SUMMARY
