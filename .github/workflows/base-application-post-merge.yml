@@ -14,7 +14,7 @@ on:
       deploy_to_build:
         description: 'Deploy to build environment'
         type: boolean
-        default: false  # Change once sam pipeline in build environment is ready
+        default: false # Change once sam pipeline in build environment is ready
 
 permissions:
   contents: read
