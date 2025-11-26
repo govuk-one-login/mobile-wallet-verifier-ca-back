@@ -168,7 +168,7 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !Sub '${Environment}-NonceTableName'
+                      Fn::ImportValue: !Sub '${Environment}-nonce-store'
 
   NonceServiceFunction:
     Type: AWS::Serverless::Function
@@ -193,7 +193,7 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${Environment}-NonceTableName'
+            Fn::ImportValue: !Sub '${Environment}-nonce-store'
 
   NonceServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -289,14 +289,14 @@ Resources:
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
 
-  CaBackendApiWebAclAssociation:
-    Type: AWS::WAFv2::WebACLAssociation
-    Properties:
-      ResourceArn: !Sub
-        - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
-        - ApiStage: !Ref CaBackendApi.Stage
-      WebACLArn:
-        Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
+  # CaBackendApiWebAclAssociation:
+  #   Type: AWS::WAFv2::WebACLAssociation
+  #   Properties:
+  #     ResourceArn: !Sub
+  #       - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
+  #       - ApiStage: !Ref CaBackendApi.Stage
+  #     WebACLArn:
+  #       Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
 Outputs:
   ApiGatewayDomainName:
