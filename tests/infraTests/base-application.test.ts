@@ -32,7 +32,7 @@ describe('Base Application Infrastructure', () => {
     });
 
     it('should have all required parameters', () => {
-      const requiredParams = ['Environment', 'BaseStackName'];
+      const requiredParams = ['Environment'];
       requiredParams.forEach((param) => {
         expect(template.Parameters[param]).toBeDefined();
       });
@@ -53,7 +53,7 @@ describe('Base Application Infrastructure', () => {
 
     it('should have correct table name pattern', () => {
       const properties = nonceTable.Properties as Record<string, unknown>;
-      expect(properties.TableName).toEqual({ 'Fn::Sub': '${AWS::StackName}-${Environment}-nonce-store' });
+      expect(properties.TableName).toEqual({ 'Fn::Sub': '${Environment}-nonce-store' });
     });
 
     it('should use pay-per-request billing', () => {
@@ -96,24 +96,16 @@ describe('Base Application Infrastructure', () => {
   });
 
   describe('Outputs', () => {
-    it('should export BaseStackName', () => {
-      const baseStackOutput = template.Outputs.BaseStackName as Record<string, unknown>;
-      expect(baseStackOutput.Description).toBe('Base stack name for resource naming');
-      expect(baseStackOutput.Value).toEqual({ Ref: 'BaseStackName' });
-      const exportInfo = baseStackOutput.Export as Record<string, unknown>;
-      expect(exportInfo.Name).toEqual({ 'Fn::Sub': '${Environment}-BaseStackName' });
-    });
-
     it('should export NonceTableName', () => {
       const tableOutput = template.Outputs.NonceTableName as Record<string, unknown>;
       expect(tableOutput.Description).toBe('Name of the DynamoDB nonce table');
       expect(tableOutput.Value).toEqual({ Ref: 'NonceTable' });
       const exportInfo = tableOutput.Export as Record<string, unknown>;
-      expect(exportInfo.Name).toEqual({ 'Fn::Sub': '${Environment}-NonceTableName' });
+      expect(exportInfo.Name).toEqual({ 'Fn::Sub': '${Environment}-nonce-store' });
     });
 
     it('should have all required outputs', () => {
-      const requiredOutputs = ['BaseStackName', 'NonceTableName'];
+      const requiredOutputs = ['NonceTableName'];
       requiredOutputs.forEach((output) => {
         expect(template.Outputs[output]).toBeDefined();
       });
