@@ -1,0 +1,54 @@
+name: Base Application Infrastructure Post Merge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'base-application.yaml'
+      - '.github/workflows/base-application-*.yml'
+      - '.github/workflows/job_*base-application*.yml'
+
+  workflow_dispatch:
+    inputs:
+      deploy_to_build:
+        description: 'Deploy to build environment'
+        type: boolean
+        default: false # Change once sam pipeline in build environment is ready
+
+permissions:
+  contents: read
+  id-token: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    name: Validate Template
+    uses: ./.github/workflows/job_validate-base-application.yml
+
+  deploy-dev:
+    name: Deploy to Dev
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/job_deploy-base-application.yml
+    with:
+      ENVIRONMENT: dev
+      STACK_NAME: base-application
+    secrets:
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
+
+  deploy-build:
+    name: Deploy to Build
+    needs: deploy-dev
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event.inputs.deploy_to_build == 'true')
+    uses: ./.github/workflows/job_deploy-base-application.yml
+    with:
+      ENVIRONMENT: build
+      STACK_NAME: base-application
+    secrets:
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BUILD_GH_ACTIONS_ROLE_ARN }}

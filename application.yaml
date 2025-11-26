@@ -38,7 +38,24 @@ Parameters:
     Type: String
     Default: ca-backend-api
 
+  CloudFrontDistributionName:
+    Description: |
+      The name of the CloudFront distribution
+    Type: String
+    Default: cloudfront-distribution
+
 Conditions:
+  EgressLogsToSplunkUsingCsls: !Or
+    - !Equals
+      - !Ref Environment
+      - staging
+    - !Equals
+      - !Ref Environment
+      - integration
+    - !Equals
+      - !Ref Environment
+      - production
+
   UsePermissionsBoundary: !Not
     - !Equals
       - !Ref PermissionsBoundary
@@ -58,6 +75,12 @@ Mappings:
     build:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+
+    CslsEgress:
+      build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      integration: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      production: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      staging: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
 Globals:
   Function:
@@ -120,8 +143,78 @@ Globals:
       - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
 
 Resources:
+  NonceServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-${Environment}-nonce-service-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                Resource: !Sub
+                  - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
+                  - TableName:
+                      Fn::ImportValue: !Sub '${Environment}-nonce-store'
+
+  NonceServiceFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Sourcemap: false
+        Target: es2022
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
+      CodeUri: ./
+      Handler: src/lambdas/nonce-service/handler.handler
+      Role: !GetAtt NonceServiceRole.Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
+        SubnetIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdA
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdB
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdC
+      Environment:
+        Variables:
+          NONCE_TABLE_NAME:
+            Fn::ImportValue: !Sub '${Environment}-nonce-store'
+
+  NonceServiceFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-nonce-service
+      RetentionInDays: 30
+
+  NonceServiceFunctionSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      DestinationArn: !FindInMap
+        - EnvironmentVariables
+        - CslsEgress
+        - !Ref Environment
+      FilterPattern: ''
+      LogGroupName: !Ref NonceServiceFunctionLogGroup
+    Condition: EgressLogsToSplunkUsingCsls
+
   CaBackendApi:
     Type: AWS::Serverless::Api
+    DependsOn: ApiGatewayAccount
     Properties:
       Name: !Sub ${AWS::StackName}-${CaBackendApiParam}
       Description: Regional API gateway for the verifier certificate authority service
@@ -156,19 +249,59 @@ Resources:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${CaBackendApiParam}-access-logs
       RetentionInDays: 30
 
-  CaBackendApiWebAclAssociation:
-    Type: AWS::WAFv2::WebACLAssociation
+  NonceServicePermission:
+    Type: AWS::Lambda::Permission
     Properties:
-      ResourceArn: !Sub
-        - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
-        - ApiStage: !Ref CaBackendApi.Stage
-      WebACLArn:
-        Fn::ImportValue: !Sub '${AWS::StackName}-cf-dist-CloakingOriginWebACLArn'
+      FunctionName: !Ref NonceServiceFunction.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/*/*'
+
+  ApiGatewayCloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ApiGatewayLogsPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                  - logs:PutLogEvents
+                  - logs:GetLogEvents
+                  - logs:FilterLogEvents
+                Resource: '*'
+
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
+
+  # CaBackendApiWebAclAssociation:
+  #   Type: AWS::WAFv2::WebACLAssociation
+  #   Properties:
+  #     ResourceArn: !Sub
+  #       - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
+  #       - ApiStage: !Ref CaBackendApi.Stage
+  #     WebACLArn:
+  #       Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
 Outputs:
   ApiGatewayDomainName:
     Description: API Gateway regional domain name for CloudFront origin
-    Value: !Sub '${CaBackendApiParam}.execute-api.${AWS::Region}.amazonaws.com'
+    Value: !Sub 'https://${CaBackendApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
     Export:
       Name: !Sub '${AWS::StackName}-api-url'
 

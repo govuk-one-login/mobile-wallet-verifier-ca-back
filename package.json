@@ -1,51 +1,40 @@
 {
-  "name": "ca-backend-api",
+  "name": "mobile-wallet-verifier-ca-back",
   "version": "1.0.0",
+  "description": "Mobile wallet verifier CA backend services",
   "type": "module",
   "scripts": {
-    "test": "node_modules/.bin/jest --silent",
+    "build": "mkdir -p dist && cp -f open-api-spec.yaml dist/ && tsc --noEmit",
+    "test": "jest --silent",
     "test:cov": "jest --coverage",
-    "lint": "node_modules/.bin/eslint .",
-    "format": "node_modules/.bin/prettier --write .",
-    "format:check": "node_modules/.bin/prettier --check .",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "infra:format:check": "rain fmt --verify application.yaml",
     "infra:format": "rain fmt --write application.yaml"
   },
   "license": "MIT",
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.16.0",
-    "@aws-sdk/client-acm-pca": "^3.758.0",
-    "@aws-sdk/client-kms": "^3.758.0",
-    "@aws-sdk/client-s3": "^3.758.0",
-    "@aws-sdk/client-ssm": "^3.759.0",
-    "@peculiar/asn1-csr": "^2.3.15",
-    "@peculiar/asn1-schema": "^2.3.15",
-    "@peculiar/asn1-x509": "^2.3.15",
-    "@peculiar/x509": "^1.12.3",
-    "esbuild": "^0.25.1",
-    "tsc": "^2.0.4"
+    "@aws-sdk/client-dynamodb": "^3.758.0",
+    "esbuild": "^0.25.1"
   },
   "engines": {
     "node": ">=22.0.0 <23.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/aws-lambda": "^8.10.156",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
-    "aws-cdk-lib": "2.219.0",
-    "aws-sdk-client-mock": "^4.1.0",
-    "aws-sdk-client-mock-jest": "^4.1.0",
     "eslint": "^9.39.1",
-    "eslint-config-prettier": "^10.1.8",
     "jest": "^30.2.0",
-    "jest-junit": "^16.0.0",
     "jiti": "^2.6.1",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^4.1.1",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.1",
-    "yaml-cfn": "0.3.2"
+    "typescript-eslint": "^8.46.1"
   }
 }
