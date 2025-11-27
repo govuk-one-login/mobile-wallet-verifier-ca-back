@@ -132,6 +132,12 @@ paths:
                     - 'MIIF2zCCA8OgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCB...'
                     - 'MIIFaTCCA1GgAwIBAgIBBDANBgkqhkiG9w0BAQsFADCB...'
                   playIntegrityToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IssueReaderCertServiceFunction.Arn}:live/invocations'
+        passthroughBehavior: when_no_match
       responses:
         '200':
           description: Reader certificate issued successfully
