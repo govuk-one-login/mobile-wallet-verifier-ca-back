@@ -281,6 +281,14 @@ Resources:
       LogGroupName: !Ref IssueReaderCertServiceFunctionLogGroup
     Condition: EgressLogsToSplunkUsingCsls
 
+  IssueReaderCertServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IssueReaderCertServiceFunction.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/*/*'
+
   CaBackendApi:
     Type: AWS::Serverless::Api
     DependsOn: ApiGatewayAccount
