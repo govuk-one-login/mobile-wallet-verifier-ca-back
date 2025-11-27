@@ -3,11 +3,10 @@ info:
   title: DVS CA Backend API
   version: '1.0.0'
   description: |
-    - Nonce Service API: Public endpoint that issues cryptographically secure, single-use nonces for replay protection or
+    - Nonce Service: Public endpoint that issues cryptographically secure, single-use nonces for replay protection or
     challenge-response workflows
     - Issue Reader Certificate Service: Issues short-lived reader certificates bound to device + app + hardware key
     integrity on iOS (App Attest) and Android (Play Integrity + Key Attestation)
-    
 
 servers:
   - url: https://api.example.com
@@ -111,28 +110,28 @@ paths:
                 summary: iOS App Attest request
                 value:
                   platform: ios
-                  nonce: "Z3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw"
+                  nonce: 'Z3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw'
                   csrPem: |
                     -----BEGIN CERTIFICATE REQUEST-----
                     MIIC...
                     -----END CERTIFICATE REQUEST-----
                   appAttest:
-                    keyId: "Xzy1AbCdEfGhIjKlMnOp"
-                    attestationObject: "o2NmbXRkYXR0ZXN0YXR0..."
-                    clientDataJSON: "eyJjaGFsbGVuZ2UiOiAiZ3VP..."
+                    keyId: 'Xzy1AbCdEfGhIjKlMnOp'
+                    attestationObject: 'o2NmbXRkYXR0ZXN0YXR0...'
+                    clientDataJSON: 'eyJjaGFsbGVuZ2UiOiAiZ3VP...'
               android:
                 summary: Android Play Integrity + Key Attestation request
                 value:
                   platform: android
-                  nonce: "Z3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw"
+                  nonce: 'Z3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw'
                   csrPem: |
                     -----BEGIN CERTIFICATE REQUEST-----
                     MIIC...
                     -----END CERTIFICATE REQUEST-----
                   keyAttestationChain:
-                    - "MIIF2zCCA8OgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCB..."
-                    - "MIIFaTCCA1GgAwIBAgIBBDANBgkqhkiG9w0BAQsFADCB..."
-                  playIntegrityToken: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ..."
+                    - 'MIIF2zCCA8OgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCB...'
+                    - 'MIIFaTCCA1GgAwIBAgIBBDANBgkqhkiG9w0BAQsFADCB...'
+                  playIntegrityToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...'
       responses:
         '200':
           description: Reader certificate issued successfully
@@ -141,7 +140,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/IssueReaderCertResponse'
               example:
-                readerId: "reader-7fd98a2c-2f7a-4a5a-8c7e-3fc735f41e8f"
+                readerId: 'reader-7fd98a2c-2f7a-4a5a-8c7e-3fc735f41e8f'
                 certChain:
                   leaf: |
                     -----BEGIN CERTIFICATE-----
@@ -151,9 +150,9 @@ paths:
                     -----BEGIN CERTIFICATE-----
                     MIIF...
                     -----END CERTIFICATE-----
-                profile: "Reader"
-                notBefore: "2025-01-15T14:01:00Z"
-                notAfter: "2025-01-15T14:06:00Z"
+                profile: 'Reader'
+                notBefore: '2025-01-15T14:01:00Z'
+                notAfter: '2025-01-15T14:06:00Z'
         '400':
           description: Invalid request (bad CSR, missing fields, invalid JSON)
           content:
@@ -161,10 +160,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                code: "bad_request"
-                message: "CSR is not a valid PKCS#10 structure"
+                code: 'bad_request'
+                message: 'CSR is not a valid PKCS#10 structure'
                 details:
-                  field: "csrPem"
+                  field: 'csrPem'
         '401':
           description: Authentication failed
           content:
@@ -181,18 +180,18 @@ paths:
                 nonce_mismatch:
                   summary: Nonce in attestation doesn't match provided nonce
                   value:
-                    code: "nonce_mismatch"
-                    message: "Attestation challenge does not match nonce"
+                    code: 'nonce_mismatch'
+                    message: 'Attestation challenge does not match nonce'
                 app_not_recognized:
                   summary: Play Integrity appRecognitionVerdict not PLAY_RECOGNIZED
                   value:
-                    code: "app_not_recognized"
-                    message: "App integrity verdict is not PLAY_RECOGNIZED"
+                    code: 'app_not_recognized'
+                    message: 'App integrity verdict is not PLAY_RECOGNIZED'
                 boot_state_unverified:
                   summary: Device boot state not verified
                   value:
-                    code: "unverified_boot_state"
-                    message: "verifiedBootState must be VERIFIED"
+                    code: 'unverified_boot_state'
+                    message: 'verifiedBootState must be VERIFIED'
         '409':
           description: Nonce already used (replay) or conflicting device state
           content:
@@ -200,8 +199,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                code: "nonce_replayed"
-                message: "Nonce has already been consumed"
+                code: 'nonce_replayed'
+                message: 'Nonce has already been consumed'
         '429':
           description: Too many requests / rate limited
           content:
@@ -209,8 +208,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                code: "rate_limited"
-                message: "Too many certificate requests for this device"
+                code: 'rate_limited'
+                message: 'Too many certificate requests for this device'
         '500':
           description: Internal server error issuing certificate
           content:
@@ -295,7 +294,7 @@ components:
         platform:
           type: string
           description: Platform identifier (discriminator).
-          enum: [ ios, android ]
+          enum: [ios, android]
         nonce:
           type: string
           description: >
@@ -329,7 +328,7 @@ components:
           properties:
             platform:
               type: string
-              enum: [ ios ]
+              enum: [ios]
             appAttest:
               type: object
               description: App Attest evidence used for app + key integrity.
@@ -374,7 +373,7 @@ components:
           properties:
             platform:
               type: string
-              enum: [ android ]
+              enum: [android]
             keyAttestationChain:
               type: array
               description: >
