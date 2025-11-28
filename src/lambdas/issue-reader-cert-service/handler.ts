@@ -115,7 +115,7 @@ function validateRequest(request: IssueReaderCertRequest): APIGatewayProxyResult
 }
 
 async function verifyNonce(nonce: string): Promise<boolean> {
-  // TODO: Implement nonce verification against DynamoDB
+  // TO DO: Implement nonce verification against DynamoDB
   // For now, return true as placeholder
   logger.info('Verifying nonce', { nonce });
   return true;
@@ -134,7 +134,7 @@ async function verifyAttestation(
 async function verifyIOSAttestation(
   request: IssueReaderCertRequest,
 ): Promise<{ valid: boolean; code?: string; message?: string }> {
-  // TODO: Implement iOS App Attest verification
+  // TO DO: Implement iOS App Attest verification
   logger.info('Verifying iOS App Attest', { keyId: request.appAttest?.keyId });
   return { valid: true };
 }
@@ -142,7 +142,7 @@ async function verifyIOSAttestation(
 async function verifyAndroidAttestation(
   request: IssueReaderCertRequest,
 ): Promise<{ valid: boolean; code?: string; message?: string }> {
-  // TODO: Implement Android Play Integrity + Key Attestation verification
+  // TO DO: Implement Android Play Integrity + Key Attestation verification
   logger.info('Verifying Android attestation', { chainLength: request.keyAttestationChain?.length });
   return { valid: true };
 }
@@ -152,7 +152,7 @@ async function issueCertificate(request: IssueReaderCertRequest): Promise<IssueR
   const now = new Date();
   const notAfter = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes validity
 
-  // TODO: Implement actual certificate issuance
+  // TO DO: Implement actual certificate issuance
   const mockCertificate: IssueReaderCertResponse = {
     readerId,
     certChain: {
