@@ -73,7 +73,7 @@ describe('Issue Reader Cert Handler', () => {
   describe('Request Validation', () => {
     it('should return 400 for missing platform', async () => {
       const request = { ...validIOSRequest };
-      delete (request as any).platform;
+      delete (request as Record<string, unknown>).platform;
       const result = await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(request)), mockContext);
 
       expect(result.statusCode).toBe(400);
@@ -91,7 +91,7 @@ describe('Issue Reader Cert Handler', () => {
 
     it('should return 400 for missing nonce', async () => {
       const request = { ...validIOSRequest };
-      delete (request as any).nonce;
+      delete (request as Record<string, unknown>).nonce;
       const result = await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(request)), mockContext);
 
       expect(result.statusCode).toBe(400);
@@ -109,7 +109,7 @@ describe('Issue Reader Cert Handler', () => {
 
     it('should return 400 for iOS platform missing appAttest', async () => {
       const request = { ...validIOSRequest };
-      delete (request as any).appAttest;
+      delete (request as Record<string, unknown>).appAttest;
       const result = await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(request)), mockContext);
 
       expect(result.statusCode).toBe(400);
@@ -118,7 +118,7 @@ describe('Issue Reader Cert Handler', () => {
 
     it('should return 400 for Android platform missing keyAttestationChain', async () => {
       const request = { ...validAndroidRequest };
-      delete (request as any).keyAttestationChain;
+      delete (request as Record<string, unknown>).keyAttestationChain;
       const result = await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(request)), mockContext);
 
       expect(result.statusCode).toBe(400);
@@ -129,7 +129,7 @@ describe('Issue Reader Cert Handler', () => {
 
     it('should return 400 for Android platform missing playIntegrityToken', async () => {
       const request = { ...validAndroidRequest };
-      delete (request as any).playIntegrityToken;
+      delete (request as Record<string, unknown>).playIntegrityToken;
       const result = await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(request)), mockContext);
 
       expect(result.statusCode).toBe(400);
