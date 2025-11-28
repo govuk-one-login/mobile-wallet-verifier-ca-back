@@ -212,6 +212,83 @@ Resources:
       LogGroupName: !Ref NonceServiceFunctionLogGroup
     Condition: EgressLogsToSplunkUsingCsls
 
+  IssueReaderCertServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:DeleteItem
+                Resource: !Sub
+                  - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
+                  - TableName:
+                      Fn::ImportValue: !Sub '${Environment}-nonce-store'
+
+  IssueReaderCertServiceFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Sourcemap: false
+        Target: es2022
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
+      CodeUri: ./
+      Handler: src/lambdas/issue-reader-cert-service/handler.handler
+      Role: !GetAtt IssueReaderCertServiceRole.Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
+        SubnetIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdA
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdB
+          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdC
+      Environment:
+        Variables:
+          NONCE_TABLE_NAME:
+            Fn::ImportValue: !Sub '${Environment}-nonce-store'
+
+  IssueReaderCertServiceFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-issue-reader-cert-service
+      RetentionInDays: 30
+
+  IssueReaderCertServiceFunctionSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      DestinationArn: !FindInMap
+        - EnvironmentVariables
+        - CslsEgress
+        - !Ref Environment
+      FilterPattern: ''
+      LogGroupName: !Ref IssueReaderCertServiceFunctionLogGroup
+    Condition: EgressLogsToSplunkUsingCsls
+
+  IssueReaderCertServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IssueReaderCertServiceFunction.Alias
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/*/*'
+
   CaBackendApi:
     Type: AWS::Serverless::Api
     DependsOn: ApiGatewayAccount
