@@ -95,7 +95,7 @@ function validateRequest(request: IssueReaderCertRequest): APIGatewayProxyResult
     return createErrorResponse(400, 'bad_request', 'Missing nonce');
   }
 
-  if (!request.csrPem || !request.csrPem.includes('BEGIN CERTIFICATE REQUEST')) {
+  if (!request.csrPem?.includes('BEGIN CERTIFICATE REQUEST')) {
     return createErrorResponse(400, 'bad_request', 'CSR is not a valid PKCS#10 structure', { field: 'csrPem' });
   }
 
