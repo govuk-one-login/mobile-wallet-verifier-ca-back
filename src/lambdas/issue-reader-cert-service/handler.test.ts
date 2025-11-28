@@ -1,5 +1,4 @@
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
-import { handler } from './handler';
 
 const mockRandomUUID = jest.fn(() => 'test-uuid-123');
 
@@ -14,6 +13,8 @@ jest.mock('@aws-lambda-powertools/logger', () => ({
     error: jest.fn(),
   })),
 }));
+
+import { handler } from './handler';
 
 const mockContext: Context = {
   awsRequestId: 'test-request-id',
