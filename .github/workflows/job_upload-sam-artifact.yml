@@ -30,6 +30,9 @@ jobs:
   upload-artifact:
     name: 'Validate and Upload Artifact'
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
     defaults:
       run:
         shell: bash
