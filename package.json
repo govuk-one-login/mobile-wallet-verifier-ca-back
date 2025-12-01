@@ -7,6 +7,8 @@
     "build": "mkdir -p dist && cp -f open-api-spec.yaml dist/ && tsc --noEmit",
     "test": "jest --silent",
     "test:cov": "jest --coverage",
+    "test:handler": "tsx scripts/test-handler.ts",
+    "mock:cert": "tsx scripts/invoke-mock-cert-generator.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -15,9 +17,16 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.758.0",
     "@aws-lambda-powertools/logger": "^2.16.0",
     "@aws-sdk/client-dynamodb": "^3.758.0",
-    "esbuild": "^0.25.1"
+    "@peculiar/asn1-schema": "^2.3.8",
+    "@peculiar/asn1-android": "^2.3.8",
+    "@peculiar/webcrypto": "1.5.0",
+    "@peculiar/x509": "1.14.2",
+    "esbuild": "^0.25.1",
+    "jsonwebtoken": "^9.0.2",
+    "pkijs": "^3.0.15"
   },
   "engines": {
     "node": ">=22.0.0 <23.0.0"
@@ -27,6 +36,7 @@
     "@types/aws-lambda": "^8.10.156",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
+    "@types/jsonwebtoken": "^9.0.10",
     "eslint": "^9.39.1",
     "jest": "^30.2.0",
     "jiti": "^2.6.1",
@@ -34,6 +44,7 @@
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1"
   }
