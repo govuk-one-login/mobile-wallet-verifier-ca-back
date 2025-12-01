@@ -104,16 +104,20 @@ export async function generateCSR(options: CSROptions & { privateKeyPem?: string
 }
 
 export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, rootCert: string): Promise<string> {
-  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags } = await import('@peculiar/x509');
+  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, X509Certificate } = await import('@peculiar/x509');
   const cryptoKeys = await importKeyPair(keyPair);
+  const rootCryptoKeys = await importKeyPair(rootKeys);
+  const parsedRootCert = new X509Certificate(rootCert);
 
-  const cert = await X509CertificateGenerator.createSelfSigned({
+  const cert = await X509CertificateGenerator.create({
     serialNumber: '02',
-    name: 'CN=Test Android Hardware Attestation Intermediate CA, OU=Android, O=Google Inc, C=US',
+    subject: 'CN=Test Android Hardware Attestation Intermediate CA, OU=Android, O=Google Inc, C=US',
+    issuer: parsedRootCert.subject,
     notBefore: new Date(),
     notAfter: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000), // 5 years
     signingAlgorithm: { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    keys: cryptoKeys,
+    publicKey: cryptoKeys.publicKey,
+    signingKey: rootCryptoKeys.privateKey,
     extensions: [
       new BasicConstraintsExtension(true, 0, true),
       new KeyUsagesExtension(KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign, true)
@@ -124,20 +128,24 @@ export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, root
 }
 
 export async function createLeafCertWithAttestation(keyPair: KeyPair, issuerKeys: any, issuerCert: string, nonce: string): Promise<string> {
-  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, Extension } = await import('@peculiar/x509');
+  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, Extension, X509Certificate } = await import('@peculiar/x509');
   const cryptoKeys = await importKeyPair(keyPair);
+  const issuerCryptoKeys = await importKeyPair(issuerKeys);
+  const parsedIssuerCert = new X509Certificate(issuerCert);
   
   // Create Android attestation extension using the exact structure from real certificates
   const attestationExtData = createRealAndroidAttestationExtension(nonce);
   const attestationExt = new Extension('1.3.6.1.4.1.11129.2.1.17', false, new Uint8Array(attestationExtData));
 
-  const cert = await X509CertificateGenerator.createSelfSigned({
+  const cert = await X509CertificateGenerator.create({
     serialNumber: '03',
-    name: 'CN=Test Android Attestation, OU=Android, O=Google Inc, C=US',
+    subject: 'CN=Test Android Attestation, OU=Android, O=Google Inc, C=US',
+    issuer: parsedIssuerCert.subject,
     notBefore: new Date(),
     notAfter: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
     signingAlgorithm: { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    keys: cryptoKeys,
+    publicKey: cryptoKeys.publicKey,
+    signingKey: issuerCryptoKeys.privateKey,
     extensions: [
       new BasicConstraintsExtension(false, undefined, false),
       new KeyUsagesExtension(KeyUsageFlags.digitalSignature | KeyUsageFlags.keyEncipherment, true),
@@ -176,74 +184,74 @@ function createRealAndroidAttestationExtension(nonce: string): Buffer {
   return Buffer.from(parts.join(''), 'hex');
 }
 
-async function createAndroidAttestationExtension(nonce: string) {
-  const { Extension } = await import('@peculiar/x509');
+// async function createAndroidAttestationExtension(nonce: string) {
+//   const { Extension } = await import('@peculiar/x509');
   
-  // Create complete Android Key Attestation extension with all required fields
-  const nonceBuffer = Buffer.from(nonce, 'utf8');
+//   // Create complete Android Key Attestation extension with all required fields
+//   const nonceBuffer = Buffer.from(nonce, 'utf8');
   
-  // Complete KeyDescription with all required fields
-  const parts = [];
-  parts.push(encodeInteger(4));                    // attestationVersion
-  parts.push(encodeInteger(1));                    // attestationSecurityLevel (TEE)
-  parts.push(encodeInteger(4));                    // keymasterVersion
-  parts.push(encodeInteger(1));                    // keymasterSecurityLevel (TEE)
-  parts.push(encodeOctetString(nonceBuffer));      // attestationChallenge
-  parts.push(encodeOctetString(Buffer.alloc(0)));  // uniqueId (empty)
-  parts.push(encodeSequence(Buffer.alloc(0)));     // softwareEnforced (empty)
-  parts.push(encodeSequence(Buffer.alloc(0)));     // teeEnforced (empty)
+//   // Complete KeyDescription with all required fields
+//   const parts = [];
+//   parts.push(encodeInteger(4));                    // attestationVersion
+//   parts.push(encodeInteger(1));                    // attestationSecurityLevel (TEE)
+//   parts.push(encodeInteger(4));                    // keymasterVersion
+//   parts.push(encodeInteger(1));                    // keymasterSecurityLevel (TEE)
+//   parts.push(encodeOctetString(nonceBuffer));      // attestationChallenge
+//   parts.push(encodeOctetString(Buffer.alloc(0)));  // uniqueId (empty)
+//   parts.push(encodeSequence(Buffer.alloc(0)));     // softwareEnforced (empty)
+//   parts.push(encodeSequence(Buffer.alloc(0)));     // teeEnforced (empty)
   
-  const keyDescription = encodeSequence(Buffer.concat(parts));
+//   const keyDescription = encodeSequence(Buffer.concat(parts));
   
-  return new Extension('1.3.6.1.4.1.11129.2.1.17', false, new Uint8Array(keyDescription));
-}
+//   return new Extension('1.3.6.1.4.1.11129.2.1.17', false, new Uint8Array(keyDescription));
+// }
 
-function encodeInteger(value: number): Buffer {
-  const bytes = [];
-  if (value === 0) {
-    bytes.push(0);
-  } else {
-    while (value > 0) {
-      bytes.unshift(value & 0xFF);
-      value >>= 8;
-    }
-    // Add leading zero if high bit is set
-    if (bytes[0] & 0x80) {
-      bytes.unshift(0);
-    }
-  }
-  return Buffer.concat([Buffer.from([0x02, bytes.length]), Buffer.from(bytes)]);
-}
+// function encodeInteger(value: number): Buffer {
+//   const bytes = [];
+//   if (value === 0) {
+//     bytes.push(0);
+//   } else {
+//     while (value > 0) {
+//       bytes.unshift(value & 0xFF);
+//       value >>= 8;
+//     }
+//     // Add leading zero if high bit is set
+//     if (bytes[0] & 0x80) {
+//       bytes.unshift(0);
+//     }
+//   }
+//   return Buffer.concat([Buffer.from([0x02, bytes.length]), Buffer.from(bytes)]);
+// }
 
-function encodeLength(length: number): Buffer {
-  if (length < 0x80) {
-    return Buffer.from([length]);
-  } else if (length < 0x100) {
-    return Buffer.from([0x81, length]);
-  } else if (length < 0x10000) {
-    return Buffer.from([0x82, (length >> 8) & 0xFF, length & 0xFF]);
-  } else {
-    throw new Error('Length too long');
-  }
-}
+// function encodeLength(length: number): Buffer {
+//   if (length < 0x80) {
+//     return Buffer.from([length]);
+//   } else if (length < 0x100) {
+//     return Buffer.from([0x81, length]);
+//   } else if (length < 0x10000) {
+//     return Buffer.from([0x82, (length >> 8) & 0xFF, length & 0xFF]);
+//   } else {
+//     throw new Error('Length too long');
+//   }
+// }
 
-function encodeOctetString(data: Buffer): Buffer {
-  const lengthBytes = encodeLength(data.length);
-  return Buffer.concat([Buffer.from([0x04]), lengthBytes, data]);
-}
+// function encodeOctetString(data: Buffer): Buffer {
+//   const lengthBytes = encodeLength(data.length);
+//   return Buffer.concat([Buffer.from([0x04]), lengthBytes, data]);
+// }
 
-function encodeSequence(data: Buffer): Buffer {
-  const lengthBytes = encodeLength(data.length);
-  return Buffer.concat([Buffer.from([0x30]), lengthBytes, data]);
-}
+// function encodeSequence(data: Buffer): Buffer {
+//   const lengthBytes = encodeLength(data.length);
+//   return Buffer.concat([Buffer.from([0x30]), lengthBytes, data]);
+// }
 
-function encodeSet(data: Buffer): Buffer {
-  const lengthBytes = encodeLength(data.length);
-  return Buffer.concat([Buffer.from([0x31]), lengthBytes, data]);
-}
+// function encodeSet(data: Buffer): Buffer {
+//   const lengthBytes = encodeLength(data.length);
+//   return Buffer.concat([Buffer.from([0x31]), lengthBytes, data]);
+// }
 
-function encodeTagged(tag: number, data: Buffer): Buffer {
-  const tagByte = 0x80 | tag; // Context-specific, primitive
-  const lengthBytes = encodeLength(data.length);
-  return Buffer.concat([Buffer.from([tagByte]), lengthBytes, data]);
-}
+// function encodeTagged(tag: number, data: Buffer): Buffer {
+//   const tagByte = 0x80 | tag; // Context-specific, primitive
+//   const lengthBytes = encodeLength(data.length);
+//   return Buffer.concat([Buffer.from([tagByte]), lengthBytes, data]);
+// }
