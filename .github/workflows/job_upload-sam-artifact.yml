@@ -69,6 +69,7 @@ jobs:
         with:
           aws-region: ${{ inputs.AWS_REGION }}
           role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+          role-session-name: GitHubActions-${{ github.run_id }}
 
       - name: SAM Validate
         run: sam validate --lint --template "$TEMPLATE_NAME"
