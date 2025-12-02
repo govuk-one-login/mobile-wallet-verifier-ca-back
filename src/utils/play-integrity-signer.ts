@@ -36,7 +36,8 @@ export class PlayIntegritySigner {
     
     const header = {
       alg: 'RS256',
-      typ: 'JWT'
+      typ: 'JWT',
+      kid: secretName // Add key ID to match JWKS requirements
     };
 
     const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');

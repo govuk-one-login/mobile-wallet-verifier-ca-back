@@ -3,11 +3,11 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { KeyManager } from '../src/utils/key-manager.js';
 
-export const DEVICE_KEYS_SECRET = 'android-device-keys-3';
-export const PLAY_INTEGRITY_KEYS_SECRET = 'android-play-integrity-keys-3';
-export const ROOT_CA_SECRET = 'android-root-ca-3';
-export const INTERMEDIATE_CA_SECRET = 'android-intermediate-ca-3';
-export const LEAF_CA_SECRET = 'android-leaf-ca-3';
+export const DEVICE_KEYS_SECRET = 'android-device-keys-4';
+export const PLAY_INTEGRITY_KEYS_SECRET = 'android-play-integrity-keys-4';
+export const ROOT_CA_SECRET = 'android-root-ca-4';
+export const INTERMEDIATE_CA_SECRET = 'android-intermediate-ca-4';
+export const LEAF_CA_SECRET = 'android-leaf-ca-4';
 
 function generateDeviceKeyPair() {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', {

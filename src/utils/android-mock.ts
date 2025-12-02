@@ -41,8 +41,8 @@ export class AndroidDeviceSimulator {
     // Generate Play Integrity token using separate keys
     const playIntegrityToken = await this.signPlayIntegrityToken(nonce);
 
-    // Generate test CA chain with nonce in attestation extension
-    const keyAttestationChain = await this.generateTestCAChain(nonce);
+    // Generate test CA chain with nonce in attestation extension using SAME device keys
+    const keyAttestationChain = await this.generateTestCAChain(nonce, deviceKeys);
 
     return {
       nonce,
@@ -76,20 +76,25 @@ export class AndroidDeviceSimulator {
     return await this.playIntegritySigner.signToken(payload, PLAY_INTEGRITY_KEYS_SECRET);
   }
 
-  private async generateTestCAChain(nonce: string): Promise<string[]> {
+  private async generateTestCAChain(nonce: string, deviceKeys: { privateKeyPem: string; publicKeyPem: string }): Promise<string[]> {
     const rootCA = await this.keyProvider.getRootCA();
     const intermediateKeys = await this.keyProvider.getIntermediateCAKeys();
-    const leafKeys = await this.keyProvider.getLeafCAKeys();
 
     // Create certificates using stored keys
     const intermediateCert = await createIntermediateCA(intermediateKeys, rootCA.keyPair, rootCA.certificatePem);
-    const leafCert = await createLeafCertWithAttestation(leafKeys, intermediateKeys, intermediateCert, nonce);
+    // Use the SAME device keys that were used for CSR generation
+    const leafCert = await createLeafCertWithAttestation(deviceKeys, intermediateKeys, intermediateCert, nonce);
 
-    // Convert to base64 for keyAttestationChain
+    // Convert PEM to DER format and then base64 (as Android apps typically send)
+    const { X509Certificate } = await import('@peculiar/x509');
+    const leafDer = new X509Certificate(leafCert).rawData;
+    const intermediateDer = new X509Certificate(intermediateCert).rawData;
+    const rootDer = new X509Certificate(rootCA.certificatePem).rawData;
+
     return [
-      Buffer.from(leafCert).toString('base64'),
-      Buffer.from(intermediateCert).toString('base64'),
-      Buffer.from(rootCA.certificatePem).toString('base64')
+      Buffer.from(leafDer).toString('base64'),
+      Buffer.from(intermediateDer).toString('base64'),
+      Buffer.from(rootDer).toString('base64')
     ];
   }
 

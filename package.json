@@ -8,7 +8,8 @@
     "test": "jest --silent",
     "test:cov": "jest --coverage",
     "test:handler": "tsx scripts/test-handler.ts",
-    "mock:cert": "tsx scripts/invoke-mock-cert-generator.ts",
+    "mock:cert": "tsx src/lambdas/generate-mock-issue-cert/handler.ts",
+    "setup:android": "tsx scripts/setup-android-infrastructure.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -25,6 +26,7 @@
     "@peculiar/webcrypto": "1.5.0",
     "@peculiar/x509": "1.14.2",
     "esbuild": "^0.25.1",
+    "jose":"^6.1.2",
     "jsonwebtoken": "^9.0.2",
     "pkijs": "^3.0.15"
   },
