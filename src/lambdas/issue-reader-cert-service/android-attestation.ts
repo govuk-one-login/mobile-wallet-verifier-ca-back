@@ -5,6 +5,7 @@ import { AsnConvert } from '@peculiar/asn1-schema';
 import * as jose from 'jose';
 import { IssueReaderCertRequest, AttestationResult } from './types.ts';
 
+// Richa TO CHECK - should be store these google root certs in secrets manager or call via api/cache etc?
 // Google Hardware Attestation Root certificates (from Android documentation)
 const TRUSTED_ROOT_CERTIFICATES = [
   // Production Google roots from https://developer.android.com/privacy-and-security/security-key-attestation#root_certificate
@@ -67,25 +68,17 @@ export async function verifyAndroidAttestation(request: IssueReaderCertRequest):
   logger.info('Verifying Android attestation', { chainLength: request.keyAttestationChain?.length });
 
   try {
-    // Verify Play Integrity token
-    const playIntegrityResult = await verifyPlayIntegrityToken(request.playIntegrityToken!, request.nonce);
-    if (!playIntegrityResult.valid) return playIntegrityResult;
-    
-    // Parse and validate certificate chain structure
-    const certificates = parseCertificateChain(request.keyAttestationChain!);
-    if (!certificates.valid) return certificates;
-    
-    // Validate all certificate properties
-    const certificateValidationResult = await validateCertificates(certificates.certificates!);
-    if (!certificateValidationResult.valid) return certificateValidationResult;
-    
-    // Verify attestation challenge
-    const attestationChallengeResult = await verifyAttestationChallenge(request.keyAttestationChain!, request.nonce);
-    if (!attestationChallengeResult.valid) return attestationChallengeResult;
-    
-    // Compare public keys
-    const publicKeyResult = await comparePublicKeys(request.csrPem, request.keyAttestationChain!);
-    if (!publicKeyResult.valid) return publicKeyResult;
+    const validations = [
+      () => verifyPlayIntegrityToken(request.playIntegrityToken!, request.nonce), // Verify Play Integrity token signature and payload
+      () => validateCertificates(request.keyAttestationChain!), // Validate certificate chain properties
+      () => verifyAttestationChallenge(request.keyAttestationChain!, request.nonce), // Verify attestation challenge matches nonce
+      () => comparePublicKeys(request.csrPem, request.keyAttestationChain!) // Ensure CSR and attestation use same key
+    ];
+
+    for (const validation of validations) {
+      const result = await validation();
+      if (!result.valid) return result;
+    }
 
     logger.info('Android attestation verification successful');
     return { valid: true };
@@ -167,12 +160,41 @@ async function verifyPlayIntegrityToken(token: string, expectedNonce: string): P
   }
 }
 
-
-
 /**
- * Parses certificate chain from base64 strings
+ * Validates all certificate properties (Android chains are already properly ordered)
  */
-function parseCertificateChain(x5c: string[]): AttestationResult & { certificates?: X509Certificate[] } {
+async function validateCertificates(x5c: string[]): Promise<AttestationResult> {
+  try {
+    const certificates = parseCertificates(x5c);
+    if (!certificates.valid) return certificates;
+    
+    // Richa TO CHECK - most of these checks on cert chain are not in sequence diag but were present in spike validation?
+    const validations = [
+      () => validateBasicConstraints(certificates.certificates!),
+      () => validateSignatures(certificates.certificates!),
+      () => validateTrustedRoot(certificates.certificates![certificates.certificates!.length - 1]),
+      () => checkCertificateRevocation(certificates.certificates!),
+      () => validateCertificateValidity(certificates.certificates!),
+      () => validateAttestationExtensionCount(certificates.certificates!)
+    ];
+    
+    for (const validation of validations) {
+      const result = await validation();
+      if (!result.valid) return result;
+    }
+    
+    return { valid: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (error instanceof TypeError || errorMessage.includes('verify')) {
+      return { valid: false, message: `Certificate validation error: ${errorMessage}` };
+    }
+    logger.warn('Non-critical validation service error', { error: errorMessage });
+    return { valid: true };
+  }
+}
+
+function parseCertificates(x5c: string[]): AttestationResult & { certificates?: X509Certificate[] } {
   if (!x5c || x5c.length === 0) {
     return { valid: false, message: 'Certificate chain is empty' };
   }
@@ -185,106 +207,106 @@ function parseCertificateChain(x5c: string[]): AttestationResult & { certificate
   return { valid: true, certificates };
 }
 
-/**
- * Validates all certificate properties (Android chains are already properly ordered)
- */
-async function validateCertificates(certificates: X509Certificate[]): Promise<AttestationResult> {
-  try {
-    const now = new Date();
+function validateBasicConstraints(certificates: X509Certificate[]): AttestationResult {
+  for (let i = 0; i < certificates.length; i++) {
+    const cert = certificates[i];
+    const basicConstraintsExts = cert.extensions?.filter(ext => (ext as any).type === '2.5.29.19') || [];
     
-    // Validate Basic Constraints
-    for (let i = 0; i < certificates.length; i++) {
-      const cert = certificates[i];
-      const basicConstraintsExts = cert.extensions?.filter(ext => (ext as any).type === '2.5.29.19') || [];
-      
-      if (i === 0) {
-        // Leaf certificate should NOT be a CA
-        if (basicConstraintsExts.length > 0) {
-          const basicConstraints = new BasicConstraintsExtension(basicConstraintsExts[0].rawData);
-          if (basicConstraints.ca) {
-            return { valid: false, message: 'Leaf certificate incorrectly marked as CA' };
-          }
-        }
-      } else {
-        // Intermediate/root certificates should be CAs
-        if (basicConstraintsExts.length === 0) {
-          return { valid: false, message: `Certificate ${i} missing Basic Constraints extension` };
-        }
+    if (basicConstraintsExts.length > 1) {
+      return { valid: false, message: `Certificate ${i} has multiple Basic Constraints extensions` };
+    }
+    
+    if (i === 0) {
+      // Leaf certificate should NOT be a CA
+      if (basicConstraintsExts.length > 0) {
         const basicConstraints = new BasicConstraintsExtension(basicConstraintsExts[0].rawData);
-        if (!basicConstraints.ca) {
-          return { valid: false, message: `Certificate ${i} not marked as CA` };
-        }
-      }
-    }
-    
-    // Validate signatures (Android chains are already in correct order)
-    for (let i = 0; i < certificates.length; i++) {
-      const cert = certificates[i];
-      const signerKey = i < certificates.length - 1 ? certificates[i + 1].publicKey : cert.publicKey;
-      
-      const isValid = await cert.verify({ publicKey: signerKey, signatureOnly: true });
-      if (!isValid) {
-        return { valid: false, message: `Certificate ${i} signature verification failed` };
-      }
-    }
-    
-    // Validate root certificate trust
-    const rootCert = certificates[certificates.length - 1];
-    const trustedRootResult = validateTrustedRoot(rootCert);
-    if (!trustedRootResult.valid) return trustedRootResult;
-    
-    // Check CRL
-    const response = await fetch(CRL_URL, { 
-      method: 'GET',
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(5000)
-    });
-    
-    if (response.ok) {
-      const crlData = await response.json();
-      const entries = crlData.entries || {};
-      
-      for (const cert of certificates) {
-        const entry = entries[cert.serialNumber];
-        if (entry?.status === 'REVOKED') {
-          return { valid: false, code: 'certificate_revoked', message: `Certificate ${cert.serialNumber} is revoked: ${entry.reason || 'Unknown reason'}` };
+        if (basicConstraints.ca) {
+          return { valid: false, message: 'Leaf certificate incorrectly marked as CA' };
         }
       }
     } else {
-      logger.warn('CRL check failed - service unavailable', { status: response.status });
-    }
-    
-    // Validate certificate validity periods
-    for (let i = 0; i < certificates.length; i++) {
-      const cert = certificates[i];
-      if (now < cert.notBefore || now > cert.notAfter) {
-        const certType = i === 0 ? 'Leaf' : i === certificates.length - 1 ? 'Root' : 'Intermediate';
-        return { valid: false, message: `${certType} certificate not valid at current time (valid from ${cert.notBefore} to ${cert.notAfter})` };
+      // Intermediate/root certificates should have basic constraints and be CAs
+      if (basicConstraintsExts.length === 0) {
+        return { valid: false, message: `Certificate ${i} missing Basic Constraints extension` };
+      }
+      const basicConstraints = new BasicConstraintsExtension(basicConstraintsExts[0].rawData);
+      if (!basicConstraints.ca) {
+        return { valid: false, message: `Certificate ${i} not marked as CA` };
       }
     }
-    
-    // Validate exactly one attestation extension
-    const attestationExtCount = certificates.reduce((count, cert) => {
-      return count + (cert.extensions?.filter(ext => (ext as any).type === '1.3.6.1.4.1.11129.2.1.17').length || 0);
-    }, 0);
-    
-    if (attestationExtCount !== 1) {
-      return { valid: false, message: `Expected exactly 1 attestation extension, found ${attestationExtCount}` };
-    }
-    
-    return { valid: true };
-  } catch (error) {
-    // Distinguish between critical validation errors and non-critical service errors
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (error instanceof TypeError || errorMessage.includes('verify')) {
-      // Critical: Certificate parsing or signature verification errors
-      return { valid: false, message: `Certificate validation error: ${errorMessage}` };
-    }
-    
-    // Non-critical: Network timeouts, CRL service unavailable, etc.
-    logger.warn('Non-critical validation service error', { error: errorMessage });
-    return { valid: true }; // Continue validation despite service issues
   }
+  return { valid: true };
+}
+
+async function validateSignatures(certificates: X509Certificate[]): Promise<AttestationResult> {
+  for (let i = 0; i < certificates.length; i++) {
+    const cert = certificates[i];
+    const signerKey = i < certificates.length - 1 ? certificates[i + 1].publicKey : cert.publicKey;
+    
+    const isValid = await cert.verify({ publicKey: signerKey, signatureOnly: true });
+    if (!isValid) {
+      return { valid: false, message: `Certificate ${i} signature verification failed` };
+    }
+  }
+  return { valid: true };
+}
+
+async function checkCertificateRevocation(certificates: X509Certificate[]): Promise<AttestationResult> {
+  const response = await fetch(CRL_URL, { 
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+    signal: AbortSignal.timeout(5000)
+  });
+  
+  if (!response.ok) {
+    const errorMsg = `CRL service unavailable (HTTP ${response.status})`;
+    logger.error(errorMsg);
+    
+    if (process.env.NODE_ENV === 'production' && process.env.STRICT_CRL_CHECK === 'true') {
+      return { valid: false, code: 'crl_unavailable', message: errorMsg };
+    }
+    
+    logger.warn('Continuing validation without CRL check in non-strict mode');
+    return { valid: true };
+  }
+  
+  const crlData = await response.json();
+  const entries = crlData.entries || {};
+  
+  for (const cert of certificates) {
+    const entry = entries[cert.serialNumber];
+    if (entry?.status === 'REVOKED') {
+      return { valid: false, code: 'certificate_revoked', message: `Certificate ${cert.serialNumber} is revoked: ${entry.reason || 'Unknown reason'}` };
+    }
+  }
+  
+  return { valid: true };
+}
+
+function validateCertificateValidity(certificates: X509Certificate[]): AttestationResult {
+  const now = new Date();
+  
+  for (let i = 0; i < certificates.length; i++) {
+    const cert = certificates[i];
+    if (now < cert.notBefore || now > cert.notAfter) {
+      const certType = i === 0 ? 'Leaf' : i === certificates.length - 1 ? 'Root' : 'Intermediate';
+      return { valid: false, message: `${certType} certificate not valid at current time (valid from ${cert.notBefore} to ${cert.notAfter})` };
+    }
+  }
+  
+  return { valid: true };
+}
+
+function validateAttestationExtensionCount(certificates: X509Certificate[]): AttestationResult {
+  const attestationExtCount = certificates.reduce((count, cert) => {
+    return count + (cert.extensions?.filter(ext => (ext as any).type === '1.3.6.1.4.1.11129.2.1.17').length || 0);
+  }, 0);
+  
+  if (attestationExtCount !== 1) {
+    return { valid: false, message: `Expected exactly 1 attestation extension, found ${attestationExtCount}` };
+  }
+  
+  return { valid: true };
 }
 
 
@@ -335,6 +357,7 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
     
     const challengeBytes = new Uint8Array(keyDescription.attestationChallenge.buffer);
     const attestedChallenge = Buffer.from(challengeBytes).toString('utf8');
+    console.log('Attested Challenge:', attestedChallenge);
     if (attestedChallenge !== expectedNonce) {
       return { valid: false, code: 'challenge_mismatch', message: 'Attested challenge does not match nonce' };
     }

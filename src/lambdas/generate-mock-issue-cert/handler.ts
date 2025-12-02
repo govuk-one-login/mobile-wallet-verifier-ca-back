@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { KeyManager } from './mock-utils/key-manager.ts';
 import { AndroidDeviceSimulator } from './mock-utils/android-mock.ts';
@@ -24,7 +25,7 @@ export const handler = async (): Promise<MockRequest> => {
   }
 
   const deviceSimulator = new AndroidDeviceSimulator();
-  const nonce = '3c18b3e0-e4b2-4f47-a697-c0c7b8d2d68b';
+  const nonce = randomUUID().toLowerCase();
   
   const payload = await deviceSimulator.generateMockRequest(nonce);
   
@@ -47,3 +48,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       process.exit(1);
     });
 }
+
