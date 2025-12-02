@@ -1,3 +1,4 @@
+import { expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { load, DEFAULT_SCHEMA, Type } from 'js-yaml';
 

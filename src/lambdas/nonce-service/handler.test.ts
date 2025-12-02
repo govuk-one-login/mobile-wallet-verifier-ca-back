@@ -1,14 +1,15 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
-const mockSend = jest.fn();
+const mockSend = vi.fn();
 
-jest.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: jest.fn(() => ({ send: mockSend })),
-  PutItemCommand: jest.fn(),
+vi.mock('@aws-sdk/client-dynamodb', () => ({
+  DynamoDBClient: vi.fn(() => ({ send: mockSend })),
+  PutItemCommand: vi.fn(),
 }));
 
-jest.mock('crypto', () => ({
-  randomUUID: jest.fn(() => 'test-uuid'),
+vi.mock('crypto', () => ({
+  randomUUID: vi.fn(() => 'test-uuid'),
 }));
 
 import { handler } from '../../../src/lambdas/nonce-service/handler';
@@ -25,7 +26,7 @@ const mockContext: Context = {
 
 describe('Nonce Handler', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     process.env.NONCE_TABLE_NAME = 'test-table';
   });
 

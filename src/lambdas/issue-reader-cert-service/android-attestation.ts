@@ -77,6 +77,7 @@ async function verifyPlayIntegrityToken(token: string, expectedNonce: string): P
       return { valid: false, code: 'nonce_mismatch', message: 'Play Integrity nonce does not match request nonce' };
     }
     
+    //Richa - TO CHECK is this check needed, in sequence diag?
     // Validate app identity
     const expectedPackageName = process.env.EXPECTED_PACKAGE_NAME || 'org.multipaz.identityreader';
     if (appIntegrity?.packageName !== expectedPackageName) {
@@ -95,6 +96,7 @@ async function verifyPlayIntegrityToken(token: string, expectedNonce: string): P
       return { valid: false, code: 'device_integrity_failed', message: 'Device integrity check failed' };
     }
     
+    //Richa - TO CHECK is this check needed, not in sequence diag?
     // Validate app licensing
     if (accountDetails?.appLicensingVerdict === 'UNEVALUATED') {
       logger.warn('App licensing could not be evaluated');
@@ -164,6 +166,7 @@ function validateLeafCertificate(leafCert: X509Certificate): AttestationResult {
   
   const keyAlgorithm = leafCert.publicKey.algorithm.name;
   
+  //Richa - TO CHECK if have any view on adding checks for keyAlgo/curve?
   if (keyAlgorithm === 'ECDSA') {
     const namedCurve = (leafCert.publicKey.algorithm as any).namedCurve;
     // P-256 is required by Android CDD, others are optional but commonly supported
@@ -181,10 +184,6 @@ function validateLeafCertificate(leafCert: X509Certificate): AttestationResult {
   } else {
     return { valid: false, message: `Unsupported key algorithm: ${keyAlgorithm} (expected ECDSA or RSA per Android Key Attestation spec)` };
   }
-  
-  // Key usage validation is not required by Android Key Attestation spec
-  // Android keys can have various purposes (signing, encryption, key agreement)
-  // depending on the KeyGenParameterSpec used during key generation
   
   return { valid: true };
 }
@@ -208,6 +207,7 @@ function validateCertificateChainValidity(certificates: X509Certificate[]): Atte
 /**
  * Validates root certificate is from Google or test CA
  */
+//TO DO Remove Test check once valid payload is available
 function validateRootCertificate(rootCert: X509Certificate): AttestationResult {
   const rootSubject = rootCert.subject;
   const isGoogleRoot = rootSubject.includes('Google');

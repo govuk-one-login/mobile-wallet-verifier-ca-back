@@ -66,6 +66,10 @@ Conditions:
       - !Ref CodeSigningConfigArn
       - none
 
+  IsDevEnvironment: !Equals
+    - !Ref Environment
+    - dev
+
 Mappings:
   EnvironmentVariables:
     dev:
@@ -263,6 +267,10 @@ Resources:
         Variables:
           NONCE_TABLE_NAME:
             Fn::ImportValue: !Sub '${Environment}-nonce-store'
+          ALLOW_TEST_TOKENS: !If
+            - IsDevEnvironment
+            - 'true'
+            - 'false'
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup

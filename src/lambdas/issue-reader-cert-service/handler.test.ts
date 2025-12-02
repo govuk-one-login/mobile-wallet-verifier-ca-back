@@ -1,16 +1,17 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
-const mockRandomUUID = jest.fn(() => 'test-uuid-123');
+const mockRandomUUID = vi.fn(() => 'test-uuid-123');
 
-jest.mock('node:crypto', () => ({
+vi.mock('node:crypto', () => ({
   randomUUID: mockRandomUUID,
 }));
 
-jest.mock('@aws-lambda-powertools/logger', () => ({
-  Logger: jest.fn(() => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+vi.mock('@aws-lambda-powertools/logger', () => ({
+  Logger: vi.fn(() => ({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   })),
 }));
 
@@ -53,7 +54,7 @@ const validAndroidRequest = {
 
 describe('Issue Reader Cert Handler', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('HTTP Method and Path Validation', () => {
