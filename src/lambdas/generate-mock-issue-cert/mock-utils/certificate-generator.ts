@@ -1,4 +1,4 @@
-import { generateKeyPairSync } from 'node:crypto';
+import { generateRSAKeyPair, importKeyPair, KeyPair } from './crypto-utils';
 
 export interface CSRSubject {
   countryName?: string;
@@ -21,42 +21,6 @@ export interface CSRResult {
   publicKeyPem: string;
 }
 
-interface KeyPair {
-  privateKeyPem: string;
-  publicKeyPem: string;
-}
-
-// Common utility functions
-async function importKeyPair(keyPair: KeyPair): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
-  const privateKeyBuffer = Buffer.from(
-    keyPair.privateKeyPem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----/g, '').replace(/\s/g, ''),
-    'base64'
-  );
-  
-  const publicKeyBuffer = Buffer.from(
-    keyPair.publicKeyPem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----/g, '').replace(/\s/g, ''),
-    'base64'
-  );
-
-  const privateKey = await crypto.subtle.importKey(
-    'pkcs8',
-    privateKeyBuffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    true,
-    ['sign']
-  );
-  
-  const publicKey = await crypto.subtle.importKey(
-    'spki',
-    publicKeyBuffer,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    true,
-    ['verify']
-  );
-
-  return { privateKey, publicKey };
-}
-
 function buildSubjectString(subject: CSRSubject): string {
   const parts = [];
   if (subject.countryName) parts.push(`C=${subject.countryName}`);
@@ -74,14 +38,7 @@ function generateOrUseKeyPair(options: { privateKeyPem?: string; publicKeyPem?: 
     return { privateKeyPem: options.privateKeyPem, publicKeyPem: options.publicKeyPem };
   }
   
-  const keySize = options.keySize || 2048;
-  const keyPair = generateKeyPairSync('rsa', {
-    modulusLength: keySize,
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-  });
-  
-  return { privateKeyPem: keyPair.privateKey, publicKeyPem: keyPair.publicKey };
+  return generateRSAKeyPair(options.keySize || 2048);
 }
 
 export async function generateCSR(options: CSROptions & { privateKeyPem?: string; publicKeyPem?: string }): Promise<CSRResult> {
@@ -183,75 +140,3 @@ function createRealAndroidAttestationExtension(nonce: string): Buffer {
   
   return Buffer.from(parts.join(''), 'hex');
 }
-
-// async function createAndroidAttestationExtension(nonce: string) {
-//   const { Extension } = await import('@peculiar/x509');
-  
-//   // Create complete Android Key Attestation extension with all required fields
-//   const nonceBuffer = Buffer.from(nonce, 'utf8');
-  
-//   // Complete KeyDescription with all required fields
-//   const parts = [];
-//   parts.push(encodeInteger(4));                    // attestationVersion
-//   parts.push(encodeInteger(1));                    // attestationSecurityLevel (TEE)
-//   parts.push(encodeInteger(4));                    // keymasterVersion
-//   parts.push(encodeInteger(1));                    // keymasterSecurityLevel (TEE)
-//   parts.push(encodeOctetString(nonceBuffer));      // attestationChallenge
-//   parts.push(encodeOctetString(Buffer.alloc(0)));  // uniqueId (empty)
-//   parts.push(encodeSequence(Buffer.alloc(0)));     // softwareEnforced (empty)
-//   parts.push(encodeSequence(Buffer.alloc(0)));     // teeEnforced (empty)
-  
-//   const keyDescription = encodeSequence(Buffer.concat(parts));
-  
-//   return new Extension('1.3.6.1.4.1.11129.2.1.17', false, new Uint8Array(keyDescription));
-// }
-
-// function encodeInteger(value: number): Buffer {
-//   const bytes = [];
-//   if (value === 0) {
-//     bytes.push(0);
-//   } else {
-//     while (value > 0) {
-//       bytes.unshift(value & 0xFF);
-//       value >>= 8;
-//     }
-//     // Add leading zero if high bit is set
-//     if (bytes[0] & 0x80) {
-//       bytes.unshift(0);
-//     }
-//   }
-//   return Buffer.concat([Buffer.from([0x02, bytes.length]), Buffer.from(bytes)]);
-// }
-
-// function encodeLength(length: number): Buffer {
-//   if (length < 0x80) {
-//     return Buffer.from([length]);
-//   } else if (length < 0x100) {
-//     return Buffer.from([0x81, length]);
-//   } else if (length < 0x10000) {
-//     return Buffer.from([0x82, (length >> 8) & 0xFF, length & 0xFF]);
-//   } else {
-//     throw new Error('Length too long');
-//   }
-// }
-
-// function encodeOctetString(data: Buffer): Buffer {
-//   const lengthBytes = encodeLength(data.length);
-//   return Buffer.concat([Buffer.from([0x04]), lengthBytes, data]);
-// }
-
-// function encodeSequence(data: Buffer): Buffer {
-//   const lengthBytes = encodeLength(data.length);
-//   return Buffer.concat([Buffer.from([0x30]), lengthBytes, data]);
-// }
-
-// function encodeSet(data: Buffer): Buffer {
-//   const lengthBytes = encodeLength(data.length);
-//   return Buffer.concat([Buffer.from([0x31]), lengthBytes, data]);
-// }
-
-// function encodeTagged(tag: number, data: Buffer): Buffer {
-//   const tagByte = 0x80 | tag; // Context-specific, primitive
-//   const lengthBytes = encodeLength(data.length);
-//   return Buffer.concat([Buffer.from([tagByte]), lengthBytes, data]);
-// }
