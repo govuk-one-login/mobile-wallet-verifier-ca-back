@@ -1,7 +1,7 @@
 import { generateCSR, createIntermediateCA, createLeafCertWithAttestation } from './certificate-generator.ts';
 import { PlayIntegritySigner, PlayIntegrityPayload } from './play-integrity-signer.ts';
 import { AndroidKeyProvider } from './android-key-provider.ts';
-import { PLAY_INTEGRITY_KEYS_SECRET } from '../../scripts/setup-android-infrastructure.ts';
+import { PLAY_INTEGRITY_KEYS_SECRET } from '../../../../scripts/setup-android-infrastructure.ts';
 
 export interface AndroidDeviceSimulation {
   deviceKeyPair: { privateKeyPem: string; publicKeyPem: string };

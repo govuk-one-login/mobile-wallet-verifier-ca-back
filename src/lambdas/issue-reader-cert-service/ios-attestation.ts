@@ -1,5 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
-import { IssueReaderCertRequest, AttestationResult } from './types.js';
+import { IssueReaderCertRequest, AttestationResult } from './types.ts';
 
 const logger = new Logger();
 

@@ -1,6 +1,6 @@
 import type { APIGatewayProxyResult } from 'aws-lambda';
 import { Pkcs10CertificateRequest, X509Certificate } from '@peculiar/x509';
-import { IssueReaderCertRequest, ErrorResponse } from './types.js';
+import { IssueReaderCertRequest, ErrorResponse } from './types.ts';
 
 /**
  * Validates the certificate issuance request

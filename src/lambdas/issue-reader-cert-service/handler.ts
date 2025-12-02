@@ -1,10 +1,10 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { randomUUID } from 'node:crypto';
-import { IssueReaderCertRequest, IssueReaderCertResponse, AttestationResult } from './types.js';
-import { validateRequest, createErrorResponse } from './validation.js';
-import { verifyAndroidAttestation } from './android-attestation.js';
-import { verifyIOSAttestation } from './ios-attestation.js';
+import { IssueReaderCertRequest, IssueReaderCertResponse, AttestationResult } from './types.ts';
+import { validateRequest, createErrorResponse } from './validation.ts';
+import { verifyAndroidAttestation } from './android-attestation.ts';
+import { verifyIOSAttestation } from './ios-attestation.ts';
 
 const logger = new Logger();
 

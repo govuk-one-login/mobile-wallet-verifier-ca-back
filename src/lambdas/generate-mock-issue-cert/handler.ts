@@ -1,6 +1,6 @@
 import { Logger } from '@aws-lambda-powertools/logger';
-import { KeyManager } from '../../utils/key-manager.ts';
-import { AndroidDeviceSimulator } from '../../utils/android-mock.ts';
+import { KeyManager } from './mock-utils/key-manager.ts';
+import { AndroidDeviceSimulator } from './mock-utils/android-mock.ts';
 import { DEVICE_KEYS_SECRET } from '../../../scripts/setup-android-infrastructure.ts';
 
 const logger = new Logger();

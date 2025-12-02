@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
 import { generateKeyPairSync } from 'node:crypto';
-import { KeyManager } from '../src/utils/key-manager.js';
+import { KeyManager } from '../src/lambdas/generate-mock-issue-cert/mock-utils/key-manager.ts';
 
 export const DEVICE_KEYS_SECRET = 'android-device-keys-4';
 export const PLAY_INTEGRITY_KEYS_SECRET = 'android-play-integrity-keys-4';

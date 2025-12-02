@@ -3,7 +3,7 @@ import { X509Certificate, Pkcs10CertificateRequest } from '@peculiar/x509';
 import { KeyDescription, SecurityLevel } from '@peculiar/asn1-android';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import * as jose from 'jose';
-import { IssueReaderCertRequest, AttestationResult } from './types.js';
+import { IssueReaderCertRequest, AttestationResult } from './types.ts';
 
 const logger = new Logger();
 
@@ -265,22 +265,31 @@ async function verifyAttestationExtension(x5c: string[], expectedNonce: string):
 }
 
 /**
- * Compares public key in CSR with attested public key
+ * Verifies that CSR public key matches the attested device public key
+ * This ensures the CSR was generated with the same key that was attested
  */
 async function comparePublicKeys(csrPem: string, attestationChain: string[]): Promise<AttestationResult> {
   try {
+    // Extract public key from CSR (key requesting certificate)
     const csr = new Pkcs10CertificateRequest(csrPem);
     const csrSpkiThumbprint = await csr.publicKey.getThumbprint();
 
+    // Extract public key from leaf attestation certificate (attested device key)
     const leafCert = new X509Certificate(Buffer.from(attestationChain[0], 'base64'));
-    const certSpkiThumbprint = await leafCert.publicKey.getThumbprint();
+    const attestedSpkiThumbprint = await leafCert.publicKey.getThumbprint();
 
-    const matches = Buffer.compare(Buffer.from(csrSpkiThumbprint), Buffer.from(certSpkiThumbprint)) === 0;
+    // Verify both keys are identical (same device key used for CSR and attestation)
+    const keysMatch = Buffer.compare(Buffer.from(csrSpkiThumbprint), Buffer.from(attestedSpkiThumbprint)) === 0;
     
-    if (!matches) {
-      return { valid: false, code: 'public_key_mismatch', message: 'Attested public key does not match CSR public key' };
+    if (!keysMatch) {
+      return { 
+        valid: false, 
+        code: 'public_key_mismatch', 
+        message: 'CSR public key does not match attested device public key - potential key substitution attack' 
+      };
     }
     
+    logger.info('Public key verification successful - CSR and attestation use same device key');
     return { valid: true };
   } catch (error) {
     logger.error('Error comparing public keys', { error: error instanceof Error ? error.message : error });

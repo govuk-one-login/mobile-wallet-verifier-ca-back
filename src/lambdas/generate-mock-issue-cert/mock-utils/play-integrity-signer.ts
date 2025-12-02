@@ -1,5 +1,5 @@
 import { createSign } from 'node:crypto';
-import { KeyManager } from './key-manager.js';
+import { KeyManager } from './key-manager.ts';
 
 export interface PlayIntegrityPayload {
   requestDetails: {
