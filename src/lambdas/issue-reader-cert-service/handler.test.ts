@@ -6,6 +6,13 @@ jest.mock('node:crypto', () => ({
   randomUUID: mockRandomUUID,
 }));
 
+const mockSend = jest.fn();
+
+jest.mock('@aws-sdk/client-dynamodb', () => ({
+  DynamoDBClient: jest.fn(() => ({ send: mockSend })),
+  DeleteItemCommand: jest.fn((params) => params),
+}));
+
 jest.mock('@aws-lambda-powertools/logger', () => ({
   Logger: jest.fn(() => ({
     info: jest.fn(),
@@ -163,6 +170,8 @@ describe('Issue Reader Cert Handler', () => {
 
   describe('Response Headers', () => {
     it('should include correct headers in success response', async () => {
+      mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
+
       const result = await handler(
         createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
         mockContext,
@@ -176,6 +185,35 @@ describe('Issue Reader Cert Handler', () => {
       const result = await handler(createMockEvent('GET'), mockContext);
 
       expect(result.headers?.['Content-Type']).toBe('application/json');
+    });
+  });
+
+  describe('Nonce Verification', () => {
+    beforeEach(() => {
+      process.env.NONCE_TABLE_NAME = 'test-nonce-table';
+    });
+
+    it('should return 409 when nonce verification fails', async () => {
+      mockSend.mockResolvedValue({ Attributes: undefined });
+
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      expect(result.statusCode).toBe(409);
+      expect(JSON.parse(result.body).code).toBe('nonce_replayed');
+    });
+
+    it('should proceed when nonce verification succeeds', async () => {
+      mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
+
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      expect(result.statusCode).toBe(200);
     });
   });
 });
