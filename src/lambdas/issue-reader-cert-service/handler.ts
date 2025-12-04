@@ -41,14 +41,14 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
   if (event.httpMethod !== 'POST' || event.path !== '/issue-reader-cert') {
     logger.warn('Invalid request method or path', { httpMethod: event.httpMethod, path: event.path });
-    return createErrorResponse(404, 'not_found', 'Endpoint not found');
+    return createErrorResponse(404, 'not_found', 'Endpoint not found', undefined, context);
   }
 
   try {
     const request: IssueReaderCertRequest = JSON.parse(event.body || '{}');
 
     // Validate request
-    const validationError = validateRequest(request);
+    const validationError = validateRequest(request, context);
     if (validationError) {
       return validationError;
     }
@@ -56,7 +56,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     // Verify nonce
     const nonceValid = await verifyNonce(request.nonce);
     if (!nonceValid) {
-      return createErrorResponse(409, 'nonce_replayed', 'Nonce has already been consumed');
+      return createErrorResponse(409, 'nonce_replayed', 'Nonce has already been consumed', undefined, context);
     }
 
     // Verify platform attestation
@@ -66,6 +66,8 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
         403,
         attestationResult.code || 'attestation_failed',
         attestationResult.message || 'Platform attestation failed',
+        undefined,
+        context,
       );
     }
 
@@ -84,25 +86,25 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     };
   } catch (error) {
     logger.error('Error processing certificate request', { error: error instanceof Error ? error.message : error });
-    return createErrorResponse(500, 'internal_error', 'Internal server error issuing certificate');
+    return createErrorResponse(500, 'internal_error', 'Internal server error issuing certificate', undefined, context);
   }
 };
 
-function validateRequest(request: IssueReaderCertRequest): APIGatewayProxyResult | null {
+function validateRequest(request: IssueReaderCertRequest, context: Context): APIGatewayProxyResult | null {
   if (!request.platform || !['ios', 'android'].includes(request.platform)) {
-    return createErrorResponse(400, 'bad_request', 'Invalid or missing platform');
+    return createErrorResponse(400, 'bad_request', 'Invalid or missing platform', undefined, context);
   }
 
   if (!request.nonce) {
-    return createErrorResponse(400, 'bad_request', 'Missing nonce');
+    return createErrorResponse(400, 'bad_request', 'Missing nonce', undefined, context);
   }
 
   if (!request.csrPem?.includes('BEGIN CERTIFICATE REQUEST')) {
-    return createErrorResponse(400, 'bad_request', 'CSR is not a valid PKCS#10 structure', { field: 'csrPem' });
+    return createErrorResponse(400, 'bad_request', 'CSR is not a valid PKCS#10 structure', { field: 'csrPem' }, context);
   }
 
   if (request.platform === 'ios' && !request.appAttest) {
-    return createErrorResponse(400, 'bad_request', 'Missing appAttest for iOS platform');
+    return createErrorResponse(400, 'bad_request', 'Missing appAttest for iOS platform', undefined, context);
   }
 
   if (request.platform === 'android' && (!request.keyAttestationChain || !request.playIntegrityToken)) {
@@ -110,6 +112,8 @@ function validateRequest(request: IssueReaderCertRequest): APIGatewayProxyResult
       400,
       'bad_request',
       'Missing keyAttestationChain or playIntegrityToken for Android platform',
+      undefined,
+      context,
     );
   }
 
@@ -196,6 +200,7 @@ function createErrorResponse(
   code: string,
   message: string,
   details?: Record<string, unknown>,
+  context?: Context,
 ): APIGatewayProxyResult {
   const errorResponse: ErrorResponse = {
     code,
@@ -207,6 +212,7 @@ function createErrorResponse(
     statusCode,
     headers: {
       'Content-Type': 'application/json',
+      ...(context && { 'X-Request-Id': context.awsRequestId }),
     },
     body: JSON.stringify(errorResponse),
   };
