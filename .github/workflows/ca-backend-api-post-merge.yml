@@ -32,7 +32,6 @@ jobs:
       WORKING_DIRECTORY: ./
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
 #  upload-sam-artifact-dev:
 #    name: Dev
 #    uses: ./.github/workflows/job_upload-sam-artifact.yml

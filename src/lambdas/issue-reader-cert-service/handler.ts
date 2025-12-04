@@ -100,7 +100,13 @@ function validateRequest(request: IssueReaderCertRequest, context: Context): API
   }
 
   if (!request.csrPem?.includes('BEGIN CERTIFICATE REQUEST')) {
-    return createErrorResponse(400, 'bad_request', 'CSR is not a valid PKCS#10 structure', { field: 'csrPem' }, context);
+    return createErrorResponse(
+      400,
+      'bad_request',
+      'CSR is not a valid PKCS#10 structure',
+      { field: 'csrPem' },
+      context,
+    );
   }
 
   if (request.platform === 'ios' && !request.appAttest) {
