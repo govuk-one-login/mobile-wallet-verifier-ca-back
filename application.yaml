@@ -1,12 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-  - SAM application template for Verifier Certificate Authority backend
-  - Creates an API Gateway custom domain with base path mapping and WAF association.
-    The custom domain serves as the origin for CloudFront, enabling:
-     - Custom domain names (e.g., origin.api.verifier-ca.dev.account.gov.uk)
-     - Base path mapping for cleaner URLs
-     - WAF protection to ensure traffic only comes from CloudFront (origin cloaking)
+Description: SAM application template for Verifier Certificate Authority backend
 
 Parameters:
   Environment:
@@ -51,7 +45,6 @@ Parameters:
     Default: cloudfront-distribution
 
   # API Gateway Custom Domain Parameters
-  # =============================================================================
   EnableCustomDomain:
     Description: Whether to create a custom domain for API Gateway
     Type: String
@@ -452,8 +445,8 @@ Resources:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
 
   # API Gateway Custom Domain Resources
-  # =============================================================================
-
+  # The domain name pattern: {origin}.{api}.{service}.{env}.{base_domain}
+  # Example: origin.api.verifier-ca.dev.account.gov.uk
   ApiGatewayCustomDomain:
     Type: AWS::ApiGateway::DomainName
     Condition: CreateCustomDomain
@@ -500,7 +493,6 @@ Resources:
       ResourceArn: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${Environment}'
       WebACLArn:
         Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
-
 
 Outputs:
   ApiGatewayDomainName:
@@ -557,7 +549,7 @@ Outputs:
 
   DomainSuffix:
     Condition: CreateCustomDomain
-    Description: The domain suffix (e.g., verifier.dev.account.gov.uk)
+    Description: The domain suffix (e.g., verifier-ca.dev.account.gov.uk)
     Value: !If
       - IsProduction
       - !Sub '${ServiceSubdomain}.${BaseDomain}'
