@@ -1,6 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: SAM application template for Verifier Certificate Authority backend
+Description: >
+  - SAM application template for Verifier Certificate Authority backend
+  - Creates an API Gateway custom domain with base path mapping and WAF association.
+    The custom domain serves as the origin for CloudFront, enabling:
+     - Custom domain names (e.g., origin.api.verifier-ca.dev.account.gov.uk)
+     - Base path mapping for cleaner URLs
+     - WAF protection to ensure traffic only comes from CloudFront (origin cloaking)
 
 Parameters:
   Environment:
@@ -44,6 +50,57 @@ Parameters:
     Type: String
     Default: cloudfront-distribution
 
+  # API Gateway Custom Domain Parameters
+  # =============================================================================
+  EnableCustomDomain:
+    Description: Whether to create a custom domain for API Gateway
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+  BaseDomain:
+    Description: The root domain (e.g., account.gov.uk)
+    Type: String
+    Default: account.gov.uk
+
+  ServiceSubdomain:
+    Description: The service-specific subdomain (e.g., verifier)
+    Type: String
+    Default: verifier
+
+  ApiSubdomain:
+    Description: The API-specific subdomain (e.g., api, backend)
+    Type: String
+    Default: api
+
+  OriginPrefix:
+    Description: The prefix for the origin domain (e.g., origin)
+    Type: String
+    Default: origin
+
+  RegionalCertificateArn:
+    Description: |
+      The ARN of the ACM certificate in the same region as API Gateway.
+      Required when EnableCustomDomain is true.
+    Type: String
+    Default: none
+
+  CustomDomainBasePath:
+    Description: |
+      The base path for the API mapping (empty string for root, or a path like 'v1')
+    Type: String
+    Default: ''
+
+  EnableWafAssociation:
+    Description: Whether to associate WAF WebACL with the API Gateway stage
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
 Conditions:
   EgressLogsToSplunkUsingCsls: !Or
     - !Equals
@@ -69,6 +126,26 @@ Conditions:
   IsDevEnvironment: !Equals
     - !Ref Environment
     - dev
+
+  # Custom domain conditions
+  CreateCustomDomain: !Equals
+    - !Ref EnableCustomDomain
+    - 'true'
+
+  IsProduction: !Equals
+    - !Ref Environment
+    - prod
+
+  UseBasePath: !Not
+    - !Equals
+      - !Ref CustomDomainBasePath
+      - ''
+
+  AssociateWebACL: !And
+    - !Condition CreateCustomDomain
+    - !Equals
+      - !Ref EnableWafAssociation
+      - 'true'
 
 Mappings:
   EnvironmentVariables:
@@ -374,14 +451,56 @@ Resources:
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
 
-  # CaBackendApiWebAclAssociation:
-  #   Type: AWS::WAFv2::WebACLAssociation
-  #   Properties:
-  #     ResourceArn: !Sub
-  #       - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
-  #       - ApiStage: !Ref CaBackendApi.Stage
-  #     WebACLArn:
-  #       Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
+  # API Gateway Custom Domain Resources
+  # =============================================================================
+
+  ApiGatewayCustomDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: CreateCustomDomain
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !Ref RegionalCertificateArn
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Name
+          Value: !If
+            - IsProduction
+            - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+            - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Base Path Mapping - Maps the custom domain to the API Gateway stage
+  ApiGatewayBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: CreateCustomDomain
+    DependsOn: CaBackendApi
+    Properties:
+      DomainName: !Ref ApiGatewayCustomDomain
+      RestApiId: !Ref CaBackendApi
+      Stage: !Ref Environment
+      BasePath: !If
+        - UseBasePath
+        - !Ref CustomDomainBasePath
+        - !Ref AWS::NoValue
+
+  # WAF WebACL Association - Protects API Gateway with origin cloaking rules
+  # Ensures traffic only comes through CloudFront
+  ApiGatewayWebACLAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: AssociateWebACL
+    DependsOn: ApiGatewayBasePathMapping
+    Properties:
+      ResourceArn: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${Environment}'
+      WebACLArn:
+        Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
+
 
 Outputs:
   ApiGatewayDomainName:
@@ -401,3 +520,47 @@ Outputs:
     Value: !Ref Environment
     Export:
       Name: !Sub '${AWS::StackName}-api-stage'
+
+  # =============================================================================
+  # Custom Domain Outputs (conditional)
+  # =============================================================================
+  CustomDomainName:
+    Condition: CreateCustomDomain
+    Description: The custom domain name for API Gateway
+    Value: !Ref ApiGatewayCustomDomain
+    Export:
+      Name: !Sub '${AWS::StackName}-CustomDomainName'
+
+  RegionalDomainName:
+    Condition: CreateCustomDomain
+    Description: The regional domain name assigned by API Gateway (use for Route53 alias target)
+    Value: !GetAtt ApiGatewayCustomDomain.RegionalDomainName
+    Export:
+      Name: !Sub '${AWS::StackName}-RegionalDomainName'
+
+  RegionalHostedZoneId:
+    Condition: CreateCustomDomain
+    Description: The regional hosted zone ID for the custom domain (use for Route53 alias target)
+    Value: !GetAtt ApiGatewayCustomDomain.RegionalHostedZoneId
+    Export:
+      Name: !Sub '${AWS::StackName}-RegionalHostedZoneId'
+
+  OriginDomainForCloudFront:
+    Condition: CreateCustomDomain
+    Description: The full origin domain name that CloudFront should use
+    Value: !If
+      - IsProduction
+      - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+      - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+    Export:
+      Name: !Sub '${AWS::StackName}-OriginDomain'
+
+  DomainSuffix:
+    Condition: CreateCustomDomain
+    Description: The domain suffix (e.g., verifier.dev.account.gov.uk)
+    Value: !If
+      - IsProduction
+      - !Sub '${ServiceSubdomain}.${BaseDomain}'
+      - !Sub '${ServiceSubdomain}.${Environment}.${BaseDomain}'
+    Export:
+      Name: !Sub '${AWS::StackName}-DomainSuffix'
