@@ -1,10 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
-const mockSend = vi.fn();
+const mockSend = vi.hoisted(() => vi.fn());
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: vi.fn(() => ({ send: mockSend })),
+  DynamoDBClient: class MockDynamoDBClient {
+    send: any;
+    constructor() {
+      this.send = mockSend;
+    }
+  },
   PutItemCommand: vi.fn(),
 }));
 

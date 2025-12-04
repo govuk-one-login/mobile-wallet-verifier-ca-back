@@ -21,7 +21,7 @@ export function validateRequest(request: IssueReaderCertRequest): APIGatewayProx
     if (!request.csrPem?.includes('BEGIN CERTIFICATE REQUEST')) throw new Error();
     new Pkcs10CertificateRequest(request.csrPem);
   } catch (error) {
-    return createErrorResponse(400, 'bad_request', 'Invalid CSR', { field: 'csrPem' });
+    return createErrorResponse(400, 'bad_request', 'CSR is not a valid PKCS#10 structure', { field: 'csrPem' });
   }
 
   if (request.platform === 'ios' && !request.appAttest) {

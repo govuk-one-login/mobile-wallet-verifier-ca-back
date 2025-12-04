@@ -1,4 +1,3 @@
-import { expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { load, DEFAULT_SCHEMA, Type } from 'js-yaml';
 
@@ -50,19 +49,6 @@ export function loadCloudFormationTemplate(templatePath: string): CloudFormation
   const templateContent = readFileSync(templatePath, 'utf8');
   const cfnSchema = DEFAULT_SCHEMA.extend(cfnTypes);
   return load(templateContent, { schema: cfnSchema }) as CloudFormationTemplate;
-}
-
-export function validateTemplateStructure(template: CloudFormationTemplate) {
-  expect(template.AWSTemplateFormatVersion).toBe('2010-09-09');
-  expect(template.Transform).toBe('AWS::Serverless-2016-10-31');
-  expect(template.Description).toContain('Verifier Certificate Authority backend');
-}
-
-export function validateEnvironmentParameter(template: CloudFormationTemplate) {
-  const envParam = template.Parameters.Environment as Record<string, unknown>;
-  expect(envParam.Type).toBe('String');
-  expect(envParam.Default).toBe('dev');
-  expect(envParam.AllowedValues).toEqual(['dev', 'build', 'staging', 'integration', 'prod']);
 }
 
 export const ENVIRONMENT_VALUES = ['dev', 'build', 'staging', 'integration', 'prod'];

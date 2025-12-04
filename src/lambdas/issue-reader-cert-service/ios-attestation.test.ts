@@ -2,11 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { verifyIOSAttestation } from './ios-attestation';
 
 vi.mock('@aws-lambda-powertools/logger', () => ({
-  Logger: vi.fn(() => ({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  })),
+  Logger: class MockLogger {
+    info = vi.fn();
+    warn = vi.fn();
+    error = vi.fn();
+  },
 }));
 
 describe('iOS Attestation Module', () => {

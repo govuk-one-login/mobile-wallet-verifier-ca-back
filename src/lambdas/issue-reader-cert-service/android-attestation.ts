@@ -1,9 +1,21 @@
 import { Logger } from '@aws-lambda-powertools/logger';
-import { X509Certificate, Pkcs10CertificateRequest, BasicConstraintsExtension, X509ChainBuilder } from '@peculiar/x509';
+import { X509Certificate, Pkcs10CertificateRequest, BasicConstraintsExtension } from '@peculiar/x509';
 import { KeyDescription, SecurityLevel } from '@peculiar/asn1-android';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import * as jose from 'jose';
 import { IssueReaderCertRequest, AttestationResult } from './types.ts';
+import { validatePlayIntegritySignature, validatePlayIntegrityPayload } from './play-integrity-validator';
+
+// Android attestation constants
+//[C-1-5] MUST use verification algorithms as strong as current recommendations from NIST for hashing algorithms (SHA-256) and public key sizes (RSA-2048).
+const ANDROID_ATTESTATION_CONFIG = {
+  BASIC_CONSTRAINTS_OID: '2.5.29.19',
+  ATTESTATION_EXTENSION_OID: '1.3.6.1.4.1.11129.2.1.17',
+  VALID_ECDSA_CURVES: ['P-256', 'P-384', 'P-521'],
+  VALID_RSA_SIZES: [2048, 3072, 4096],
+  CRL_TIMEOUT: 5000,
+  MIN_CERT_CHAIN_LENGTH: 2,
+} as const;
 
 // Richa TO CHECK - should be store these google root certs in secrets manager or call via api/cache etc?
 // Google Hardware Attestation Root certificates (from Android documentation)
@@ -94,66 +106,11 @@ export async function verifyAndroidAttestation(request: IssueReaderCertRequest):
  */
 async function verifyPlayIntegrityToken(token: string, expectedNonce: string): Promise<AttestationResult> {
   try {
-    // Skip signature verification in development mode
-    if (process.env.ALLOW_TEST_TOKENS === 'true') {
-      logger.info('Skipping Google JWKS verification in development mode');
-    } else {
-      // Verify signature using Google's JWKS
-      const header = jose.decodeProtectedHeader(token);
-      if (!header.kid) {
-        return { valid: false, code: 'invalid_play_integrity', message: 'JWT header missing kid (key ID)' };
-      }
-      
-      const JWKS = jose.createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'), {
-        cooldownDuration: 30000,
-        cacheMaxAge: 600000
-      });
-      
-      await jose.jwtVerify(token, JWKS, {
-        issuer: 'https://playintegrity.googleapis.com/',
-        algorithms: ['RS256']
-      });
-    }
+    const signatureResult = await validatePlayIntegritySignature(token);
+    if (!signatureResult.valid) return signatureResult;
 
-    // Decode and validate payload
     const payload = jose.decodeJwt(token);
-    const { requestDetails, appIntegrity, deviceIntegrity, accountDetails } = payload as any;
-    
-    // Verify nonce
-    if (requestDetails?.nonce !== expectedNonce) {
-      return { valid: false, code: 'nonce_mismatch', message: 'Play Integrity nonce does not match request nonce' };
-    }
-    
-    //Richa - TO CHECK is this check needed, in sequence diag?
-    // Validate app identity
-    const expectedPackageName = process.env.EXPECTED_PACKAGE_NAME || 'org.multipaz.identityreader';
-    if (appIntegrity?.packageName !== expectedPackageName) {
-      return { valid: false, code: 'invalid_package', message: 'Package name mismatch' };
-    }
-    
-    if (appIntegrity?.appRecognitionVerdict !== 'PLAY_RECOGNIZED') {
-      return { valid: false, code: 'app_not_recognized', message: 'App not recognized by Play Store' };
-    }
-    
-
-    //Richa - TO CHECK is this check needed, not in sequence diag?
-    // Validate device integrity
-    const deviceVerdicts = deviceIntegrity?.deviceRecognitionVerdict || [];
-    const hasValidDevice = deviceVerdicts.includes('MEETS_DEVICE_INTEGRITY') || 
-                          deviceVerdicts.includes('MEETS_BASIC_INTEGRITY');
-    if (!hasValidDevice) {
-      return { valid: false, code: 'device_integrity_failed', message: 'Device integrity check failed' };
-    }
-    
-    //Richa - TO CHECK is this check needed, not in sequence diag?
-    // Validate app licensing
-    if (accountDetails?.appLicensingVerdict === 'UNEVALUATED') {
-      logger.warn('App licensing could not be evaluated');
-    } else if (accountDetails?.appLicensingVerdict !== 'LICENSED') {
-      return { valid: false, code: 'app_not_licensed', message: 'App is not properly licensed' };
-    }
-    
-    return { valid: true };
+    return validatePlayIntegrityPayload(payload, expectedNonce);
   } catch (error) {
     logger.error('Error verifying Play Integrity token', { error: error instanceof Error ? error.message : error });
     return { valid: false, code: 'invalid_play_integrity', message: 'Play Integrity token verification failed' };
@@ -200,8 +157,8 @@ function parseCertificates(x5c: string[]): AttestationResult & { certificates?: 
   }
   
   const certificates = x5c.map(certB64 => new X509Certificate(Buffer.from(certB64, 'base64')));
-  if (certificates.length < 2) {
-    return { valid: false, message: `Certificate chain too short (${certificates.length} certificates, minimum 2 required)` };
+  if (certificates.length < ANDROID_ATTESTATION_CONFIG.MIN_CERT_CHAIN_LENGTH) {
+    return { valid: false, message: `Certificate chain too short (${certificates.length} certificates, minimum ${ANDROID_ATTESTATION_CONFIG.MIN_CERT_CHAIN_LENGTH} required)` };
   }
   
   return { valid: true, certificates };
@@ -210,7 +167,7 @@ function parseCertificates(x5c: string[]): AttestationResult & { certificates?: 
 function validateBasicConstraints(certificates: X509Certificate[]): AttestationResult {
   for (let i = 0; i < certificates.length; i++) {
     const cert = certificates[i];
-    const basicConstraintsExts = cert.extensions?.filter(ext => (ext as any).type === '2.5.29.19') || [];
+    const basicConstraintsExts = cert.extensions?.filter(ext => (ext as any).type === ANDROID_ATTESTATION_CONFIG.BASIC_CONSTRAINTS_OID) || [];
     
     if (basicConstraintsExts.length > 1) {
       return { valid: false, message: `Certificate ${i} has multiple Basic Constraints extensions` };
@@ -243,6 +200,14 @@ async function validateSignatures(certificates: X509Certificate[]): Promise<Atte
     const cert = certificates[i];
     const signerKey = i < certificates.length - 1 ? certificates[i + 1].publicKey : cert.publicKey;
     
+    // Validate DN chain for non-root certificates
+    if (i < certificates.length - 1) {
+      const issuerCert = certificates[i + 1];
+      if (cert.issuer !== issuerCert.subject) {
+        return { valid: false, message: `Certificate ${i} issuer DN does not match issuing certificate ${i + 1} subject DN` };
+      }
+    }
+    
     const isValid = await cert.verify({ publicKey: signerKey, signatureOnly: true });
     if (!isValid) {
       return { valid: false, message: `Certificate ${i} signature verification failed` };
@@ -255,7 +220,7 @@ async function checkCertificateRevocation(certificates: X509Certificate[]): Prom
   const response = await fetch(CRL_URL, { 
     method: 'GET',
     headers: { 'Accept': 'application/json' },
-    signal: AbortSignal.timeout(5000)
+    signal: AbortSignal.timeout(ANDROID_ATTESTATION_CONFIG.CRL_TIMEOUT)
   });
   
   if (!response.ok) {
@@ -299,7 +264,7 @@ function validateCertificateValidity(certificates: X509Certificate[]): Attestati
 
 function validateAttestationExtensionCount(certificates: X509Certificate[]): AttestationResult {
   const attestationExtCount = certificates.reduce((count, cert) => {
-    return count + (cert.extensions?.filter(ext => (ext as any).type === '1.3.6.1.4.1.11129.2.1.17').length || 0);
+    return count + (cert.extensions?.filter(ext => (ext as any).type === ANDROID_ATTESTATION_CONFIG.ATTESTATION_EXTENSION_OID).length || 0);
   }, 0);
   
   if (attestationExtCount !== 1) {
@@ -324,8 +289,7 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
     }
     
     // Find and validate attestation extension
-    const attestationOid = '1.3.6.1.4.1.11129.2.1.17';
-    const extension = leafCert.extensions?.find((ext: any) => ext.type === attestationOid);
+    const extension = leafCert.extensions?.find((ext: any) => ext.type === ANDROID_ATTESTATION_CONFIG.ATTESTATION_EXTENSION_OID);
     if (!extension) {
       return { valid: false, code: 'missing_attestation_extension', message: 'Missing attestation extension' };
     }
@@ -335,15 +299,13 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
     const keyAlgorithm = leafCert.publicKey.algorithm.name;
     if (keyAlgorithm === 'ECDSA') {
       const namedCurve = (leafCert.publicKey.algorithm as any).namedCurve;
-      const validCurves = ['P-256', 'P-384', 'P-521'];
-      if (!validCurves.includes(namedCurve)) {
-        return { valid: false, message: `Invalid ECDSA curve: ${namedCurve} (expected P-256, P-384, or P-521 per Android CDD)` };
+      if (!ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.includes(namedCurve)) {
+        return { valid: false, message: `Invalid ECDSA curve: ${namedCurve} (expected ${ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.join(', ')} per Android CDD)` };
       }
-    } else if (keyAlgorithm === 'RSASSA-PKCS1-v1_5') {
+    } else if (keyAlgorithm.startsWith('RSA')) {
       const modulusLength = (leafCert.publicKey.algorithm as any).modulusLength;
-      const validSizes = [2048, 3072, 4096];
-      if (!validSizes.includes(modulusLength)) {
-        return { valid: false, message: `Invalid RSA key size: ${modulusLength} (expected 2048, 3072, or 4096 bits per Android CDD)` };
+      if (!ANDROID_ATTESTATION_CONFIG.VALID_RSA_SIZES.includes(modulusLength)) {
+        return { valid: false, message: `Invalid RSA key size: ${modulusLength} (expected ${ANDROID_ATTESTATION_CONFIG.VALID_RSA_SIZES.join(', ')} bits per Android CDD)` };
       }
     } else {
       return { valid: false, message: `Unsupported key algorithm: ${keyAlgorithm} (expected ECDSA or RSA per Android Key Attestation spec)` };
@@ -395,6 +357,7 @@ function validateTrustedRoot(rootCert: X509Certificate): AttestationResult {
     try {
       const rootPublicKeyRaw = Buffer.from(rootCert.publicKey.rawData);
       
+      //Richa TO CHECK - should this be stored in secrets manager or fetched via api/cache etc?
       const isKnownRoot = TRUSTED_ROOT_CERTIFICATES.some(trustedRootPem => {
         try {
           const trustedRoot = new X509Certificate(trustedRootPem);

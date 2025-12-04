@@ -3,8 +3,7 @@ import { join } from 'path';
 import {
   CloudFormationTemplate,
   loadCloudFormationTemplate,
-  validateTemplateStructure,
-  validateEnvironmentParameter,
+  ENVIRONMENT_VALUES,
 } from './cfn-test-utils';
 
 describe('Base Application Infrastructure', () => {
@@ -17,7 +16,9 @@ describe('Base Application Infrastructure', () => {
 
   describe('Template Structure', () => {
     it('should have valid CloudFormation format', () => {
-      validateTemplateStructure(template);
+      expect(template.AWSTemplateFormatVersion).toBe('2010-09-09');
+      expect(template.Transform).toBe('AWS::Serverless-2016-10-31');
+      expect(template.Description).toContain('Verifier Certificate Authority backend');
     });
 
     it('should have required sections', () => {
@@ -29,7 +30,10 @@ describe('Base Application Infrastructure', () => {
 
   describe('Parameters', () => {
     it('should have Environment parameter with correct values', () => {
-      validateEnvironmentParameter(template);
+      const envParam = template.Parameters.Environment as Record<string, unknown>;
+      expect(envParam.Type).toBe('String');
+      expect(envParam.Default).toBe('dev');
+      expect(envParam.AllowedValues).toEqual(ENVIRONMENT_VALUES);
     });
 
     it('should have all required parameters', () => {
