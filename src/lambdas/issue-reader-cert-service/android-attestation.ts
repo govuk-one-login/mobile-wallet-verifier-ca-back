@@ -5,17 +5,7 @@ import { AsnConvert } from '@peculiar/asn1-schema';
 import * as jose from 'jose';
 import { IssueReaderCertRequest, AttestationResult } from './types.ts';
 import { validatePlayIntegritySignature, validatePlayIntegrityPayload } from './play-integrity-validator';
-
-// Android attestation constants
-//[C-1-5] MUST use verification algorithms as strong as current recommendations from NIST for hashing algorithms (SHA-256) and public key sizes (RSA-2048).
-const ANDROID_ATTESTATION_CONFIG = {
-  BASIC_CONSTRAINTS_OID: '2.5.29.19',
-  ATTESTATION_EXTENSION_OID: '1.3.6.1.4.1.11129.2.1.17',
-  VALID_ECDSA_CURVES: ['P-256', 'P-384', 'P-521'],
-  VALID_RSA_SIZES: [2048, 3072, 4096],
-  CRL_TIMEOUT: 5000,
-  MIN_CERT_CHAIN_LENGTH: 2,
-} as const;
+import { ANDROID_ATTESTATION_CONFIG } from '../../../common/const.ts';
 
 // Richa TO CHECK - should be store these google root certs in secrets manager 
 // Google Hardware Attestation Root certificates (from Android documentation)
@@ -319,7 +309,7 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
     // Reject RSA keyAlgo
     // Validate key algorithm
     const keyAlgorithm = leafCert.publicKey.algorithm.name;
-    if (keyAlgorithm === 'ECDSA') {
+    if (keyAlgorithm === ANDROID_ATTESTATION_CONFIG.VALID_KEY_ALGORITHM) {
       const namedCurve = (leafCert.publicKey.algorithm as any).namedCurve;
       if (!ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.includes(namedCurve)) {
         return { valid: false, message: `Invalid ECDSA curve: ${namedCurve} (expected ${ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.join(', ')} per Android CDD)` };

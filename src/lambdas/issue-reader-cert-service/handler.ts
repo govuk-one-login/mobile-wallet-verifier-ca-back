@@ -74,9 +74,13 @@ async function verifyAttestation(request: IssueReaderCertRequest): Promise<Attes
 async function issueCertificate(request: IssueReaderCertRequest): Promise<IssueReaderCertResponse> {
   const readerId = `reader-${randomUUID()}`;
   const now = new Date();
-  const notAfter = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes validity
+  const notAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours validity (ISO 18013-5 compliant)
 
-  // TODO: Implement actual certificate issuance
+  // TODO: Implement actual certificate issuance with ISO 18013-5 compliance:
+  // - BasicConstraints: CA:FALSE (end-entity certificate)
+  // - KeyUsage: digitalSignature, keyAgreement
+  // - ExtendedKeyUsage: mDL reader authentication OID
+  // - CertificatePolicies: ISO 18013-5 policy OIDs
   const mockCertificate: IssueReaderCertResponse = {
     readerId,
     certChain: {
