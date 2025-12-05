@@ -5,6 +5,7 @@ import { AttestationResult } from './types';
 
 const logger = new Logger();
 
+// Validates the Play Integrity token's signature using Google's JWKS (mock for now)
 export async function validatePlayIntegritySignature(token: string): Promise<AttestationResult> {
   if (process.env.ALLOW_TEST_TOKENS === 'true') {
     logger.info('Skipping Google JWKS verification in development mode');
