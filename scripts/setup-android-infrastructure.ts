@@ -1,13 +1,13 @@
 #!/usr/bin/env tsx
 
 import { KeyManager } from '../src/lambdas/generate-mock-issue-cert/mock-utils/key-manager.ts';
-import { generateRSAKeyPair, createRootCA } from '../src/lambdas/generate-mock-issue-cert/mock-utils/crypto-utils.ts';
+import { generateRSAKeyPair, generateECDSAKeyPair, createRootCA } from '../src/lambdas/generate-mock-issue-cert/mock-utils/crypto-utils.ts';
 
-export const DEVICE_KEYS_SECRET = 'android-device-keys-6';
-export const PLAY_INTEGRITY_KEYS_SECRET = 'android-play-integrity-keys-6';
-export const ROOT_CA_SECRET = 'android-root-ca-6';
-export const INTERMEDIATE_CA_SECRET = 'android-intermediate-ca-6';
-export const LEAF_CA_SECRET = 'android-leaf-ca-6';
+export const DEVICE_KEYS_SECRET = 'android-device-keys-9';
+export const PLAY_INTEGRITY_KEYS_SECRET = 'android-play-integrity-keys-9';
+export const ROOT_CA_SECRET = 'android-root-ca-9';
+export const INTERMEDIATE_CA_SECRET = 'android-intermediate-ca-9';
+export const LEAF_CA_SECRET = 'android-leaf-ca-9';
 
 async function main() {
   try {
@@ -22,19 +22,19 @@ async function main() {
       return;
     }
     
-    // Generate device keys
+    // Generate device keys (ECDSA P-256 for Android attestation)
     console.log('Generating Android device keys...');
-    const deviceKeys = generateRSAKeyPair();
+    const deviceKeys = generateECDSAKeyPair('prime256v1');
     await keyManager.storeKeyPair(DEVICE_KEYS_SECRET, deviceKeys);
     
     // Generate Play Integrity keys
     console.log('Generating Play Integrity keys...');
-    const playIntegrityKeys = generateRSAKeyPair();
+    const playIntegrityKeys = generateECDSAKeyPair('prime256v1');
     await keyManager.storeKeyPair(PLAY_INTEGRITY_KEYS_SECRET, playIntegrityKeys);
     
     // Generate Root CA
     console.log('Generating Android Root CA...');
-    const rootCAKeys = generateRSAKeyPair();
+    const rootCAKeys = generateECDSAKeyPair('prime256v1');
     const rootCACert = await createRootCA(rootCAKeys);
     
     await keyManager.storeCA(ROOT_CA_SECRET, {
@@ -44,12 +44,12 @@ async function main() {
     
     // Generate Intermediate CA keys
     console.log('Generating Intermediate CA keys...');
-    const intermediateCAKeys = generateRSAKeyPair();
+    const intermediateCAKeys = generateECDSAKeyPair('prime256v1');
     await keyManager.storeKeyPair(INTERMEDIATE_CA_SECRET, intermediateCAKeys);
     
     // Generate Leaf CA keys
     console.log('Generating Leaf CA keys...');
-    const leafCAKeys = generateRSAKeyPair();
+    const leafCAKeys = generateECDSAKeyPair('prime256v1');
     await keyManager.storeKeyPair(LEAF_CA_SECRET, leafCAKeys);
     
     console.log('✓ Android infrastructure setup complete!');

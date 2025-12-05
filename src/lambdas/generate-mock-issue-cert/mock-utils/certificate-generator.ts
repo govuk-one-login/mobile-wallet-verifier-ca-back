@@ -1,4 +1,4 @@
-import { generateRSAKeyPair, importKeyPair, KeyPair } from './crypto-utils';
+import { generateECDSAKeyPair, importECDSAKeyPair, KeyPair } from './crypto-utils';
 
 export interface CSRSubject {
   countryName?: string;
@@ -38,19 +38,19 @@ function generateOrUseKeyPair(options: { privateKeyPem?: string; publicKeyPem?: 
     return { privateKeyPem: options.privateKeyPem, publicKeyPem: options.publicKeyPem };
   }
   
-  return generateRSAKeyPair(options.keySize || 2048);
+  return generateECDSAKeyPair('prime256v1');
 }
 
 export async function generateCSR(options: CSROptions & { privateKeyPem?: string; publicKeyPem?: string }): Promise<CSRResult> {
   const keyPair = generateOrUseKeyPair(options);
   const subject = buildSubjectString(options.subject);
-  const cryptoKeys = await importKeyPair(keyPair);
+  const cryptoKeys = await importECDSAKeyPair(keyPair);
   
   const { Pkcs10CertificateRequestGenerator } = await import('@peculiar/x509');
   const csr = await Pkcs10CertificateRequestGenerator.create({
     name: subject,
     keys: cryptoKeys,
-    signingAlgorithm: { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }
+    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' }
   });
   
   return {
@@ -62,8 +62,8 @@ export async function generateCSR(options: CSROptions & { privateKeyPem?: string
 
 export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, rootCert: string): Promise<string> {
   const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, X509Certificate } = await import('@peculiar/x509');
-  const cryptoKeys = await importKeyPair(keyPair);
-  const rootCryptoKeys = await importKeyPair(rootKeys);
+  const cryptoKeys = await importECDSAKeyPair(keyPair);
+  const rootCryptoKeys = await importECDSAKeyPair(rootKeys);
   const parsedRootCert = new X509Certificate(rootCert);
 
   const cert = await X509CertificateGenerator.create({
@@ -72,7 +72,7 @@ export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, root
     issuer: parsedRootCert.subject,
     notBefore: new Date(),
     notAfter: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000), // 5 years
-    signingAlgorithm: { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
     publicKey: cryptoKeys.publicKey,
     signingKey: rootCryptoKeys.privateKey,
     extensions: [
@@ -86,8 +86,8 @@ export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, root
 
 export async function createLeafCertWithAttestation(keyPair: KeyPair, issuerKeys: any, issuerCert: string, nonce: string): Promise<string> {
   const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, Extension, X509Certificate } = await import('@peculiar/x509');
-  const cryptoKeys = await importKeyPair(keyPair);
-  const issuerCryptoKeys = await importKeyPair(issuerKeys);
+  const cryptoKeys = await importECDSAKeyPair(keyPair);
+  const issuerCryptoKeys = await importECDSAKeyPair(issuerKeys);
   const parsedIssuerCert = new X509Certificate(issuerCert);
   
   // Create Android attestation extension using the exact structure from real certificates
@@ -100,7 +100,7 @@ export async function createLeafCertWithAttestation(keyPair: KeyPair, issuerKeys
     issuer: parsedIssuerCert.subject,
     notBefore: new Date(),
     notAfter: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-    signingAlgorithm: { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
     publicKey: cryptoKeys.publicKey,
     signingKey: issuerCryptoKeys.privateKey,
     extensions: [

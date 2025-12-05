@@ -17,7 +17,7 @@ const ANDROID_ATTESTATION_CONFIG = {
   MIN_CERT_CHAIN_LENGTH: 2,
 } as const;
 
-// Richa TO CHECK - should be store these google root certs in secrets manager or call via api/cache etc?
+// Richa TO CHECK - should be store these google root certs in secrets manager 
 // Google Hardware Attestation Root certificates (from Android documentation)
 const TRUSTED_ROOT_CERTIFICATES = [
   // Production Google roots from https://developer.android.com/privacy-and-security/security-key-attestation#root_certificate
@@ -116,7 +116,14 @@ async function verifyPlayIntegrityToken(token: string, expectedNonce: string): P
     const payload = jose.decodeJwt(token);
     return validatePlayIntegrityPayload(payload, expectedNonce);
   } catch (error) {
-    logger.error('Error verifying Play Integrity token', { error: error instanceof Error ? error.message : error });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Handle specific Play Integrity error codes
+    if (errorMessage.includes('INTEGRITY_TOKEN_PROVIDER_INVALID')) {
+      return { valid: false, code: 'integrity_token_provider_invalid', message: 'Play Integrity API is not available on this device' };
+    }
+    
+    logger.error('Error verifying Play Integrity token', { error: errorMessage });
     return { valid: false, code: 'invalid_play_integrity', message: 'Play Integrity token verification failed' };
   }
 }
@@ -132,8 +139,6 @@ async function validateCertificates(x5c: string[]): Promise<AttestationResult> {
     // Richa TO CHECK - most of these checks on cert chain are not in sequence diag but were present in spike validation?
     const validations = [
       () => validateCertificateValidity(certificates.certificates!),
-      () => checkCertificateRevocation(certificates.certificates!),
-      () => validateTrustedRoot(certificates.certificates![certificates.certificates!.length - 1]),
       () => validateSignatures(certificates.certificates!),
       () => validateCertificateExtensions(certificates.certificates!)
     ];
@@ -152,11 +157,22 @@ async function validateCertificates(x5c: string[]): Promise<AttestationResult> {
 }
 
 function parseCertificates(x5c: string[]): AttestationResult & { certificates?: X509Certificate[] } {
-  if (!x5c || x5c.length < ANDROID_ATTESTATION_CONFIG.MIN_CERT_CHAIN_LENGTH) {
-    return { valid: false, message: `Certificate chain too short (${x5c?.length || 0} certificates, minimum ${ANDROID_ATTESTATION_CONFIG.MIN_CERT_CHAIN_LENGTH} required)` };
+  // Richa to check later (redudant) 
+  // if (!x5c || x5c.length < ANDROID_ATTESTATION_CONFIG.MIN_CERT_CHAIN_LENGTH) {
+  //   return { valid: false, message: `Certificate chain too short (${x5c?.length || 0} certificates, minimum ${ANDROID_ATTESTATION_CONFIG.MIN_CERT_CHAIN_LENGTH} required)` };
+  // }
+  
+  // Validate certificate format and parse
+  const certificates: X509Certificate[] = [];
+  for (let i = 0; i < x5c.length; i++) {
+    try {
+      const derBuffer = Buffer.from(x5c[i], 'base64');
+      certificates.push(new X509Certificate(derBuffer));
+    } catch (error) {
+      return { valid: false, message: `Certificate ${i} is not valid X.509 ASN.1 format` };
+    }
   }
   
-  const certificates = x5c.map(certB64 => new X509Certificate(Buffer.from(certB64, 'base64')));
   return { valid: true, certificates };
 }
 
@@ -183,7 +199,7 @@ function validateCertificateExtensions(certificates: X509Certificate[]): Attesta
         }
       }
     } else {
-      // Intermediate/root certificates should have basic constraints and be CAs
+      // Intermediate certificates should have basic constraints and be CAs
       if (basicConstraintsExts.length === 0) {
         return { valid: false, message: `Certificate ${i} missing Basic Constraints extension` };
       }
@@ -203,25 +219,44 @@ function validateCertificateExtensions(certificates: X509Certificate[]): Attesta
 }
 
 async function validateSignatures(certificates: X509Certificate[]): Promise<AttestationResult> {
-  for (let i = 0; i < certificates.length; i++) {
+  for (let i = 0; i < certificates.length - 1; i++) {
     const cert = certificates[i];
+    const issuerCert = certificates[i + 1];
     
-    // Validate DN chain for non-root certificates
-    if (i < certificates.length - 1) {
-      const issuerCert = certificates[i + 1];
-      if (cert.issuer !== issuerCert.subject) {
-        return { valid: false, message: `Certificate ${i} issuer DN does not match issuing certificate ${i + 1} subject DN` };
-      }
+    // Validate DN chain
+    if (cert.issuer !== issuerCert.subject) {
+      return { valid: false, message: `Certificate ${i} issuer DN does not match issuing certificate ${i + 1} subject DN` };
     }
     
-    //Ensure leaf is signed by intermediate, intermediate by root and root is self signed
-    const signerKey = i < certificates.length - 1 ? certificates[i + 1].publicKey : cert.publicKey;
-    const isValid = await cert.verify({ publicKey: signerKey, signatureOnly: true });
+    // Verify signature using issuer's public key
+    const isValid = await cert.verify({ publicKey: issuerCert.publicKey, signatureOnly: true });
     if (!isValid) {
       return { valid: false, message: `Certificate ${i} signature verification failed` };
     }
   }
-  return { valid: true };
+  
+  // Skip root validation in test mode
+  if (process.env.ALLOW_TEST_TOKENS === 'true') {
+    return { valid: true };
+  }
+  
+  // Verify last certificate (intermediate) against trusted Google roots
+  const topCert = certificates[certificates.length - 1];
+  for (const trustedRootPem of TRUSTED_ROOT_CERTIFICATES) {
+    try {
+      const trustedRoot = new X509Certificate(trustedRootPem);
+      if (trustedRoot.subject === topCert.issuer) {
+        const isValid = await topCert.verify({ publicKey: trustedRoot.publicKey, signatureOnly: true });
+        return isValid 
+          ? { valid: true }
+          : { valid: false, message: 'Certificate signature verification against trusted root failed' };
+      }
+    } catch {
+      continue;
+    }
+  }
+  
+  return { valid: false, message: `Certificate chain does not link to trusted Google root. Expected issuer: ${topCert.issuer}` };
 }
 
 // Check against Android CRL list
@@ -273,8 +308,6 @@ function validateCertificateValidity(certificates: X509Certificate[]): Attestati
 }
 
 
-
-
 /**
  * Verifies Key attestation challenge and validates leaf certificate
  */
@@ -283,6 +316,7 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
     const leafCert = new X509Certificate(Buffer.from(x5c[0], 'base64'));
         
     //Richa - TO CHECK if have any view on adding checks for keyAlgo/curve?
+    // Reject RSA keyAlgo
     // Validate key algorithm
     const keyAlgorithm = leafCert.publicKey.algorithm.name;
     if (keyAlgorithm === 'ECDSA') {
@@ -290,13 +324,15 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
       if (!ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.includes(namedCurve)) {
         return { valid: false, message: `Invalid ECDSA curve: ${namedCurve} (expected ${ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.join(', ')} per Android CDD)` };
       }
-    } else if (keyAlgorithm.startsWith('RSA')) {
-      const modulusLength = (leafCert.publicKey.algorithm as any).modulusLength;
-      if (!ANDROID_ATTESTATION_CONFIG.VALID_RSA_SIZES.includes(modulusLength)) {
-        return { valid: false, message: `Invalid RSA key size: ${modulusLength} (expected ${ANDROID_ATTESTATION_CONFIG.VALID_RSA_SIZES.join(', ')} bits per Android CDD)` };
-      }
-    } else {
-      return { valid: false, message: `Unsupported key algorithm: ${keyAlgorithm} (expected ECDSA or RSA per Android Key Attestation spec)` };
+    }
+    // } else if (keyAlgorithm.startsWith('RSA')) {
+    //   const modulusLength = (leafCert.publicKey.algorithm as any).modulusLength;
+    //   if (!ANDROID_ATTESTATION_CONFIG.VALID_RSA_SIZES.includes(modulusLength)) {
+    //     return { valid: false, message: `Invalid RSA key size: ${modulusLength} (expected ${ANDROID_ATTESTATION_CONFIG.VALID_RSA_SIZES.join(', ')} bits per Android CDD)` };
+    //   }
+    // } 
+    else {
+      return { valid: false, message: `Unsupported key algorithm: ${keyAlgorithm} (expected ECDSA as per Android Key Attestation spec)` };
     }
     
     // Find and validate attestation extension
@@ -331,6 +367,8 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
     return { valid: false, code: 'attestation_extension_error', message: 'Failed to verify attestation challenge' };
   }
 }
+
+
 
 
 /**

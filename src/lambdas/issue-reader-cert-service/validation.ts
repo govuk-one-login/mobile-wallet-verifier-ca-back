@@ -32,17 +32,7 @@ export function validateRequest(request: IssueReaderCertRequest): APIGatewayProx
     return createErrorResponse(400, 'bad_request', 'Missing keyAttestationChain or playIntegrityToken for Android platform');
   }
   
-  // Validate certificate chain format for Android
-  if (request.platform === 'android' && request.keyAttestationChain) {
-    for (let i = 0; i < request.keyAttestationChain.length; i++) {
-      try {
-        const derBuffer = Buffer.from(request.keyAttestationChain[i], 'base64');
-        new X509Certificate(derBuffer);
-      } catch (error) {
-        return createErrorResponse(400, 'bad_request', `Certificate ${i} is not valid X.509 ASN.1 format`, { field: 'keyAttestationChain' });
-      }
-    }
-  }
+
 
   return null;
 }

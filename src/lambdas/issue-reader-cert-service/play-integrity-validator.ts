@@ -17,6 +17,7 @@ export async function validatePlayIntegritySignature(token: string): Promise<Att
     return { valid: false, code: 'invalid_play_integrity', message: 'JWT header missing kid (key ID)' };
   }
   
+  //Pin certificate in secrets manager instead of calling google JWKS every time
   const JWKS = jose.createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'), {
     cooldownDuration: 30000,
     cacheMaxAge: 600000
@@ -38,6 +39,7 @@ export function validatePlayIntegrityPayload(payload: any, expectedNonce: string
     return { valid: false, code: 'nonce_mismatch', message: 'Play Integrity nonce does not match request nonce' };
   }
   //Richa - TO CHECK is this check needed, in sequence diag?
+  //Get expected paackge name from verifier app
   // Validate app identity
   const expectedPackageName = process.env.EXPECTED_PACKAGE_NAME || 'org.multipaz.identityreader';
   if (appIntegrity?.packageName !== expectedPackageName) {
@@ -48,7 +50,7 @@ export function validatePlayIntegrityPayload(payload: any, expectedNonce: string
     return { valid: false, code: 'app_not_recognized', message: 'App not recognized by Play Store' };
   }
   
-  //Richa - TO CHECK is this check needed, not in sequence diag?
+  //Richa - TO CHECK is this check needed, not in sequence diag? good to keep
   // Validate device integrity
   const deviceVerdicts = deviceIntegrity?.deviceRecognitionVerdict || [];
   const hasValidDevice = deviceVerdicts.includes('MEETS_DEVICE_INTEGRITY') || 
@@ -57,7 +59,7 @@ export function validatePlayIntegrityPayload(payload: any, expectedNonce: string
     return { valid: false, code: 'device_integrity_failed', message: 'Device integrity check failed' };
   }
   
-  //Richa - TO CHECK is this check needed, not in sequence diag?
+  //Richa - TO CHECK is this check needed, not in sequence diag? good to keep
   // Validate app licensing
   if (accountDetails?.appLicensingVerdict === 'UNEVALUATED') {
     logger.warn('App licensing could not be evaluated');

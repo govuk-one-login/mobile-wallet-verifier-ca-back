@@ -93,8 +93,8 @@ export class AndroidDeviceSimulator {
 
     return [
       Buffer.from(leafDer).toString('base64'),
-      Buffer.from(intermediateDer).toString('base64'),
-      Buffer.from(rootDer).toString('base64')
+      Buffer.from(intermediateDer).toString('base64')
+      //Buffer.from(rootDer).toString('base64')
     ];
   }
 
