@@ -70,7 +70,7 @@ npm run setup:android
 
 This creates:
 - Device keys (ECDSA P-256) for Android attestation
-- Play Integrity signing keys (RSA 2048)
+- Play Integrity signing keys (ECDSA P-256)
 - Root CA certificate and keys
 - Intermediate CA keys
 
@@ -109,7 +109,7 @@ The service automatically configures:
 
 The mock infrastructure stores keys in AWS Secrets Manager with these secret names:
 - `android-device-keys-`: Device ECDSA P-256 key pair
-- `android-play-integrity-keys-`: Play Integrity RSA 2048 key pair  
+- `android-play-integrity-keys-`: Play Integrity ECDSA P-256 key pair  
 - `android-root-ca-`: Root CA certificate and key pair
 - `android-intermediate-ca-`: Intermediate CA key pair
 

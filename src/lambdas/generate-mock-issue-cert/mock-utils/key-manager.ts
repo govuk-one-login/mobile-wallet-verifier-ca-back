@@ -38,7 +38,7 @@ export class KeyManager {
     await this.client.send(new CreateSecretCommand({
       Name: secretName,
       SecretString: JSON.stringify({ keyPair }),
-      Description: 'RSA key pair for CSR generation and Play Integrity token signing'
+      Description: 'ECDSA key pair for CSR generation and Play Integrity token signing'
     }));
   }
 

@@ -35,9 +35,9 @@ export class PlayIntegritySigner {
     }
     
     const header = {
-      alg: 'RS256',
+      alg: 'ES256',
       typ: 'JWT',
-      kid: secretName // Add key ID to match JWKS requirements
+      kid: secretName
     };
 
     const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
@@ -45,7 +45,7 @@ export class PlayIntegritySigner {
     
     const data = `${encodedHeader}.${encodedPayload}`;
     
-    const sign = createSign('RSA-SHA256');
+    const sign = createSign('SHA256');
     sign.update(data);
     const signature = sign.sign(keyPair.privateKeyPem, 'base64url');
     
