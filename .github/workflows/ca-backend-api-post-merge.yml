@@ -32,22 +32,23 @@ jobs:
       WORKING_DIRECTORY: ./
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-#  upload-sam-artifact-dev:
-#    name: Dev
-#    uses: ./.github/workflows/job_upload-sam-artifact.yml
-#    with:
-#      WORKING_DIRECTORY: ./
-#    secrets:
-#      ARTIFACT_BUCKET: ${{ secrets.DEV_ARTIFACT_BUCKET }}
-#      GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
-#      SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
-#
-#  upload-sam-artifact-build:
-#    name: Build
-#    uses: ./.github/workflows/job_upload-sam-artifact.yml
-#    with:
-#      WORKING_DIRECTORY: ./
-#    secrets:
-#      ARTIFACT_BUCKET: ${{ secrets.BUILD_ARTIFACT_BUCKET }}
-#      GH_ACTIONS_ROLE_ARN: ${{ secrets.BUILD_GH_ACTIONS_ROLE_ARN }}
-#      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
+
+  upload-sam-artifact-dev:
+    name: Dev
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      WORKING_DIRECTORY: ./
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BACKEND_DEV_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
+
+  upload-sam-artifact-build:
+    name: Build
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      WORKING_DIRECTORY: ./
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BACKEND_BUILD_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_BUILD_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
