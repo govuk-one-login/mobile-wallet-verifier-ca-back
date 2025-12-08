@@ -7,10 +7,11 @@ jest.mock('node:crypto', () => ({
 }));
 
 const mockSend = jest.fn();
+const mockDeleteItemCommand = jest.fn((params) => params);
 
 jest.mock('@aws-sdk/client-dynamodb', () => ({
   DynamoDBClient: jest.fn(() => ({ send: mockSend })),
-  DeleteItemCommand: jest.fn((params) => params),
+  DeleteItemCommand: mockDeleteItemCommand,
 }));
 
 jest.mock('@aws-lambda-powertools/logger', () => ({
@@ -214,6 +215,34 @@ describe('Issue Reader Cert Handler', () => {
       );
 
       expect(result.statusCode).toBe(200);
+    });
+
+    it('should include TTL condition in delete command', async () => {
+      mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
+
+      await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)), mockContext);
+
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ConditionExpression: '#ttl > :now',
+          ExpressionAttributeNames: { '#ttl': 'ttl' },
+          ExpressionAttributeValues: {
+            ':now': { N: expect.any(String) },
+          },
+        }),
+      );
+    });
+
+    it('should return 409 when TTL condition fails', async () => {
+      mockSend.mockRejectedValue(new Error('ConditionalCheckFailedException'));
+
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      expect(result.statusCode).toBe(409);
+      expect(JSON.parse(result.body).code).toBe('nonce_replayed');
     });
   });
 });

@@ -140,6 +140,13 @@ async function verifyNonce(nonce: string): Promise<boolean> {
         nonceValue: { S: nonce },
       },
       ReturnValues: 'ALL_OLD',
+      ConditionExpression: '#ttl > :now',
+      ExpressionAttributeNames: {
+        '#ttl': 'ttl',
+      },
+      ExpressionAttributeValues: {
+        ':now': { N: Math.floor(Date.now() / 1000).toString() },
+      },
     });
 
     const result = await dynamoClient.send(deleteCommand);
