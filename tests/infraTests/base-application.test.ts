@@ -3,7 +3,11 @@ import { join } from 'path';
 import {
   CloudFormationTemplate,
   loadCloudFormationTemplate,
-  ENVIRONMENT_VALUES,
+  testTemplateStructure,
+  testRequiredSections,
+  testEnvironmentParameter,
+  testRequiredParameters,
+  testRequiredOutputs,
 } from './cfn-test-utils';
 
 describe('Base Application Infrastructure', () => {
@@ -16,31 +20,21 @@ describe('Base Application Infrastructure', () => {
 
   describe('Template Structure', () => {
     it('should have valid CloudFormation format', () => {
-      expect(template.AWSTemplateFormatVersion).toBe('2010-09-09');
-      expect(template.Transform).toBe('AWS::Serverless-2016-10-31');
-      expect(template.Description).toContain('Verifier Certificate Authority backend');
+      expect(() => testTemplateStructure(template)).not.toThrow();
     });
 
     it('should have required sections', () => {
-      expect(template.Parameters).toBeDefined();
-      expect(template.Resources).toBeDefined();
-      expect(template.Outputs).toBeDefined();
+      expect(() => testRequiredSections(template)).not.toThrow();
     });
   });
 
   describe('Parameters', () => {
     it('should have Environment parameter with correct values', () => {
-      const envParam = template.Parameters.Environment as Record<string, unknown>;
-      expect(envParam.Type).toBe('String');
-      expect(envParam.Default).toBe('dev');
-      expect(envParam.AllowedValues).toEqual(ENVIRONMENT_VALUES);
+      expect(() => testEnvironmentParameter(template)).not.toThrow();
     });
 
     it('should have all required parameters', () => {
-      const requiredParams = ['Environment'];
-      requiredParams.forEach((param) => {
-        expect(template.Parameters[param]).toBeDefined();
-      });
+      expect(() => testRequiredParameters(template, ['Environment'])).not.toThrow();
     });
   });
 
@@ -110,10 +104,7 @@ describe('Base Application Infrastructure', () => {
     });
 
     it('should have all required outputs', () => {
-      const requiredOutputs = ['NonceTableName'];
-      requiredOutputs.forEach((output) => {
-        expect(template.Outputs[output]).toBeDefined();
-      });
+      expect(() => testRequiredOutputs(template, ['NonceTableName'])).not.toThrow();
     });
   });
 });
