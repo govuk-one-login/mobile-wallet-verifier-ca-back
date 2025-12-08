@@ -13,8 +13,6 @@ await build({
   target: 'node22',
   sourcemap: true,
   external: ['@aws-sdk/*'],
-  minify: false,
-  keepNames: true,
 });
 
 console.log('Build completed successfully');

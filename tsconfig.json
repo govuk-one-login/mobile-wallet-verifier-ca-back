@@ -5,13 +5,8 @@
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "preserveConstEnums": true,
-    "sourceMap": true,
-    "declaration": true,
-    "outDir": "./dist",
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true

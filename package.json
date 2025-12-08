@@ -3,17 +3,10 @@
   "version": "1.0.0",
   "description": "Mobile wallet verifier CA backend services",
   "type": "module",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "scripts": {
     "build": "mkdir -p dist && cp -f open-api-spec.yaml dist/ && node build.mjs",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
-    "test:handler": "tsx scripts/test-handler.ts",
     "mock:cert": "tsx src/lambdas/generate-mock-issue-cert/handler.ts",
     "setup:android": "tsx scripts/setup-android-infrastructure.ts",
     "lint": "eslint .",
@@ -24,16 +17,16 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@aws-lambda-powertools/logger": "^2.16.0",
-    "@aws-sdk/client-dynamodb": "^3.758.0",
-    "@aws-sdk/client-secrets-manager": "^3.758.0",
+    "@aws-lambda-powertools/logger": "^2.29.0",
+    "@aws-sdk/client-dynamodb": "^3.946.0",
+    "@aws-sdk/client-secrets-manager": "^3.946.0",
     "@peculiar/asn1-android": "^2.3.8",
     "@peculiar/asn1-schema": "^2.3.8",
     "@peculiar/webcrypto": "1.5.0",
     "@peculiar/x509": "1.14.2",
-    "esbuild": "^0.25.1",
-    "jose": "^6.1.2",
-    "jsonwebtoken": "^9.0.2",
+    "esbuild": "^0.27.1",
+    "jose": "^6.1.3",
+    "jsonwebtoken": "^9.0.3",
     "pkijs": "^3.0.15"
   },
   "engines": {
@@ -41,7 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
-    "@types/aws-lambda": "^8.10.156",
+    "@types/aws-lambda": "^8.10.159",
     "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@vitest/coverage-v8": "^4.0.15",
@@ -49,11 +42,11 @@
     "glob": "^13.0.0",
     "jiti": "^2.6.1",
     "js-yaml": "^4.1.1",
-    "prettier": "^3.6.2",
+    "prettier": "^3.7.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.1",
+    "typescript-eslint": "^8.48.1",
     "vitest": "^4.0.15"
   }
 }
