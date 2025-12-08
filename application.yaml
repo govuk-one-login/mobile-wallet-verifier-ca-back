@@ -48,7 +48,7 @@ Parameters:
   EnableCustomDomain:
     Description: Whether to create a custom domain for API Gateway
     Type: String
-    Default: 'false'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
@@ -59,9 +59,9 @@ Parameters:
     Default: account.gov.uk
 
   ServiceSubdomain:
-    Description: The service-specific subdomain (e.g., verifier)
+    Description: The service-specific subdomain (e.g., verifier-ca)
     Type: String
-    Default: verifier
+    Default: verifier-ca
 
   ApiSubdomain:
     Description: The API-specific subdomain (e.g., api, backend)
@@ -73,12 +73,12 @@ Parameters:
     Type: String
     Default: origin
 
-  RegionalCertificateArn:
+  RegionalCertificateStack:
     Description: |
-      The ARN of the ACM certificate in the same region as API Gateway.
+      The name of Regional ACM certificate stack in the same region as API Gateway.
       Required when EnableCustomDomain is true.
     Type: String
-    Default: none
+    Default: regional-certificates
 
   CustomDomainBasePath:
     Description: |
@@ -458,7 +458,8 @@ Resources:
       EndpointConfiguration:
         Types:
           - REGIONAL
-      RegionalCertificateArn: !Ref RegionalCertificateArn
+      RegionalCertificateArn: !ImportValue
+        Fn::Sub: '${RegionalCertificateStack}-CertificateARN'
       SecurityPolicy: TLS_1_2
       Tags:
         - Key: Name
@@ -477,7 +478,7 @@ Resources:
     Properties:
       DomainName: !Ref ApiGatewayCustomDomain
       RestApiId: !Ref CaBackendApi
-      Stage: !Ref Environment
+      Stage: !Ref CaBackendApi.Stage
       BasePath: !If
         - UseBasePath
         - !Ref CustomDomainBasePath
