@@ -1,8 +1,10 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { randomUUID } from 'node:crypto';
+import { DynamoDBClient, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
 
 const logger = new Logger();
+const dynamoClient = new DynamoDBClient({});
 
 interface IssueReaderCertRequest {
   platform: 'ios' | 'android';
@@ -39,14 +41,14 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
   if (event.httpMethod !== 'POST' || event.path !== '/issue-reader-cert') {
     logger.warn('Invalid request method or path', { httpMethod: event.httpMethod, path: event.path });
-    return createErrorResponse(404, 'not_found', 'Endpoint not found');
+    return createErrorResponse(404, 'not_found', 'Endpoint not found', undefined, context);
   }
 
   try {
     const request: IssueReaderCertRequest = JSON.parse(event.body || '{}');
 
     // Validate request
-    const validationError = validateRequest(request);
+    const validationError = validateRequest(request, context);
     if (validationError) {
       return validationError;
     }
@@ -54,7 +56,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     // Verify nonce
     const nonceValid = await verifyNonce(request.nonce);
     if (!nonceValid) {
-      return createErrorResponse(409, 'nonce_replayed', 'Nonce has already been consumed');
+      return createErrorResponse(409, 'nonce_replayed', 'Nonce has already been consumed', undefined, context);
     }
 
     // Verify platform attestation
@@ -64,6 +66,8 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
         403,
         attestationResult.code || 'attestation_failed',
         attestationResult.message || 'Platform attestation failed',
+        undefined,
+        context,
       );
     }
 
@@ -82,25 +86,31 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     };
   } catch (error) {
     logger.error('Error processing certificate request', { error: error instanceof Error ? error.message : error });
-    return createErrorResponse(500, 'internal_error', 'Internal server error issuing certificate');
+    return createErrorResponse(500, 'internal_error', 'Internal server error issuing certificate', undefined, context);
   }
 };
 
-function validateRequest(request: IssueReaderCertRequest): APIGatewayProxyResult | null {
+function validateRequest(request: IssueReaderCertRequest, context: Context): APIGatewayProxyResult | null {
   if (!request.platform || !['ios', 'android'].includes(request.platform)) {
-    return createErrorResponse(400, 'bad_request', 'Invalid or missing platform');
+    return createErrorResponse(400, 'bad_request', 'Invalid or missing platform', undefined, context);
   }
 
   if (!request.nonce) {
-    return createErrorResponse(400, 'bad_request', 'Missing nonce');
+    return createErrorResponse(400, 'bad_request', 'Missing nonce', undefined, context);
   }
 
   if (!request.csrPem?.includes('BEGIN CERTIFICATE REQUEST')) {
-    return createErrorResponse(400, 'bad_request', 'CSR is not a valid PKCS#10 structure', { field: 'csrPem' });
+    return createErrorResponse(
+      400,
+      'bad_request',
+      'CSR is not a valid PKCS#10 structure',
+      { field: 'csrPem' },
+      context,
+    );
   }
 
   if (request.platform === 'ios' && !request.appAttest) {
-    return createErrorResponse(400, 'bad_request', 'Missing appAttest for iOS platform');
+    return createErrorResponse(400, 'bad_request', 'Missing appAttest for iOS platform', undefined, context);
   }
 
   if (request.platform === 'android' && (!request.keyAttestationChain || !request.playIntegrityToken)) {
@@ -108,6 +118,8 @@ function validateRequest(request: IssueReaderCertRequest): APIGatewayProxyResult
       400,
       'bad_request',
       'Missing keyAttestationChain or playIntegrityToken for Android platform',
+      undefined,
+      context,
     );
   }
 
@@ -115,10 +127,36 @@ function validateRequest(request: IssueReaderCertRequest): APIGatewayProxyResult
 }
 
 async function verifyNonce(nonce: string): Promise<boolean> {
-  // TO DO: Implement nonce verification against DynamoDB
-  // For now, return true as placeholder
-  logger.info('Verifying nonce', { nonce });
-  return true;
+  const tableName = process.env.NONCE_TABLE_NAME;
+  if (!tableName) {
+    logger.error('Dynamodb table not found');
+    return false;
+  }
+
+  try {
+    const deleteCommand = new DeleteItemCommand({
+      TableName: tableName,
+      Key: {
+        nonceValue: { S: nonce },
+      },
+      ReturnValues: 'ALL_OLD',
+      ConditionExpression: '#timeToLive > :now',
+      ExpressionAttributeNames: {
+        '#timeToLive': 'timeToLive',
+      },
+      ExpressionAttributeValues: {
+        ':now': { N: Math.floor(Date.now() / 1000).toString() },
+      },
+    });
+
+    const result = await dynamoClient.send(deleteCommand);
+    const success = !!result.Attributes;
+    logger.info('Nonce verification result', { nonce, success });
+    return success;
+  } catch (error) {
+    logger.error('Error verifying nonce', { nonce, error: error instanceof Error ? error.message : error });
+    return false;
+  }
 }
 
 async function verifyAttestation(
@@ -175,6 +213,7 @@ function createErrorResponse(
   code: string,
   message: string,
   details?: Record<string, unknown>,
+  context?: Context,
 ): APIGatewayProxyResult {
   const errorResponse: ErrorResponse = {
     code,
@@ -186,6 +225,7 @@ function createErrorResponse(
     statusCode,
     headers: {
       'Content-Type': 'application/json',
+      ...(context && { 'X-Request-Id': context.awsRequestId }),
     },
     body: JSON.stringify(errorResponse),
   };
