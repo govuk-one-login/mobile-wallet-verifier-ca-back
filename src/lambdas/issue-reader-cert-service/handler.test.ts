@@ -217,15 +217,15 @@ describe('Issue Reader Cert Handler', () => {
       expect(result.statusCode).toBe(200);
     });
 
-    it('should include TTL condition in delete command', async () => {
+    it('should include timeToLive condition in delete command', async () => {
       mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
 
       await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)), mockContext);
 
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          ConditionExpression: '#ttl > :now',
-          ExpressionAttributeNames: { '#ttl': 'ttl' },
+          ConditionExpression: '#timeToLive > :now',
+          ExpressionAttributeNames: { '#timeToLive': 'timeToLive' },
           ExpressionAttributeValues: {
             ':now': { N: expect.any(String) },
           },
@@ -233,7 +233,7 @@ describe('Issue Reader Cert Handler', () => {
       );
     });
 
-    it('should return 409 when TTL condition fails', async () => {
+    it('should return 409 when timeToLive condition fails', async () => {
       mockSend.mockRejectedValue(new Error('ConditionalCheckFailedException'));
 
       const result = await handler(

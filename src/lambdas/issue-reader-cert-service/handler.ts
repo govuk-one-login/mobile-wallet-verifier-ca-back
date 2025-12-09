@@ -140,9 +140,9 @@ async function verifyNonce(nonce: string): Promise<boolean> {
         nonceValue: { S: nonce },
       },
       ReturnValues: 'ALL_OLD',
-      ConditionExpression: '#ttl > :now',
+      ConditionExpression: '#timeToLive > :now',
       ExpressionAttributeNames: {
-        '#ttl': 'ttl',
+        '#timeToLive': 'timeToLive',
       },
       ExpressionAttributeValues: {
         ':now': { N: Math.floor(Date.now() / 1000).toString() },
