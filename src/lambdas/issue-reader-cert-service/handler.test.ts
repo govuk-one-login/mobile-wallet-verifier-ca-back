@@ -34,7 +34,7 @@ const createMockEvent = (
 const validIOSRequest = {
   platform: 'ios',
   nonce: 'test-nonce',
-  csrPem: '-----BEGIN CERTIFICATE REQUEST-----\nMIIC...\n-----END CERTIFICATE REQUEST-----',
+  csrPem: "-----BEGIN CERTIFICATE REQUEST-----\nMIHyMIGaAgEAMDgxCzAJBgNVBAYTAlVLMQwwCgYDVQQKEwNHRFMxGzAZBgNVBAMT\nEkFuZHJvaWQgRGV2aWNlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDlt\n4vSyJY/RnL8bC5bHhhfxDZ3m69UBx/IADlbZhZ4nzImHuzVJsck2LsPefb91g6hc\nhq81PZei3c7qN2rfJIqgADAKBggqhkjOPQQDAgNHADBEAiBB/OcSic76VdMJuaZZ\nDb7APgiSkx8KMGbrqo4PgDy25AIgJH+tVfzC4B8R0ZNCuTpEJlJx9DVW0I1X24dI\nKnLJRN8=\n-----END CERTIFICATE REQUEST-----",
   appAttest: {
     keyId: 'test-key-id',
     attestationObject: 'test-attestation',

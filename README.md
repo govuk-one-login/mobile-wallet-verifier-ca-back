@@ -96,7 +96,7 @@ This outputs a JSON payload containing:
 The certificate issuer service uses these environment variables:
 
 - `ALLOW_TEST_TOKENS`: Set to `'true'` in dev environment to skip Play Integrity signature verification
-- `EXPECTED_PACKAGE_NAME`: Android app package name for validation (default: `org.multipaz.identityreader`)
+- `EXPECTED_ANDROID_PACKAGE_NAME`: Android app package name for validation (default: `org.multipaz.identityreader`)
 - `NONCE_TABLE_NAME`: DynamoDB table for nonce storage
 
 #### Deployment
