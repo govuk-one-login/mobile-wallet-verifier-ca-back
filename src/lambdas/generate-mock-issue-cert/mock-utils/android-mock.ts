@@ -92,12 +92,10 @@ export class AndroidDeviceSimulator {
     const { X509Certificate } = await import('@peculiar/x509');
     const leafDer = new X509Certificate(leafCert).rawData;
     const intermediateDer = new X509Certificate(intermediateCert).rawData;
-    const rootDer = new X509Certificate(rootCA.certificatePem).rawData;
 
     return [
       Buffer.from(leafDer).toString('base64'),
-      Buffer.from(intermediateDer).toString('base64'),
-      //Buffer.from(rootDer).toString('base64')
+      Buffer.from(intermediateDer).toString('base64')
     ];
   }
 }

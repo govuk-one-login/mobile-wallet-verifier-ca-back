@@ -26,8 +26,8 @@ export class KeyManager {
         const data = JSON.parse(response.SecretString);
         return data.keyPair || data;
       }
-    } catch (error: any) {
-      if (error.name !== 'ResourceNotFoundException') {
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'ResourceNotFoundException') {
         throw error;
       }
     }
@@ -62,8 +62,8 @@ export class KeyManager {
       if (response.SecretString) {
         return JSON.parse(response.SecretString);
       }
-    } catch (error: any) {
-      if (error.name !== 'ResourceNotFoundException') {
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'ResourceNotFoundException') {
         throw error;
       }
     }

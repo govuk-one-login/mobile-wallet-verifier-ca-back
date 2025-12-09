@@ -62,7 +62,7 @@ export async function generateCSR(
   };
 }
 
-export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, rootCert: string): Promise<string> {
+export async function createIntermediateCA(keyPair: KeyPair, rootKeys: KeyPair, rootCert: string): Promise<string> {
   const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, X509Certificate } =
     await import('@peculiar/x509');
   const cryptoKeys = await importECDSAKeyPair(keyPair);
@@ -89,7 +89,7 @@ export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, root
 
 export async function createLeafCertWithAttestation(
   keyPair: KeyPair,
-  issuerKeys: any,
+  issuerKeys: KeyPair,
   issuerCert: string,
   nonce: string,
 ): Promise<string> {
