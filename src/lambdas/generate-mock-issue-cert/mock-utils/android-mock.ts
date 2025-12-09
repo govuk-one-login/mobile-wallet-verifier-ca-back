@@ -93,9 +93,6 @@ export class AndroidDeviceSimulator {
     const leafDer = new X509Certificate(leafCert).rawData;
     const intermediateDer = new X509Certificate(intermediateCert).rawData;
 
-    return [
-      Buffer.from(leafDer).toString('base64'),
-      Buffer.from(intermediateDer).toString('base64')
-    ];
+    return [Buffer.from(leafDer).toString('base64'), Buffer.from(intermediateDer).toString('base64')];
   }
 }
