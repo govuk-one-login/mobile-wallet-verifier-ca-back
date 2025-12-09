@@ -9,7 +9,7 @@ export function generateECDSAKeyPair(curve: string = 'prime256v1'): KeyPair {
   const { privateKey, publicKey } = generateKeyPairSync('ec', {
     namedCurve: curve,
     publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
   });
   return { privateKeyPem: privateKey, publicKeyPem: publicKey };
 }
@@ -17,12 +17,12 @@ export function generateECDSAKeyPair(curve: string = 'prime256v1'): KeyPair {
 export async function importECDSAKeyPair(keyPair: KeyPair): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
   const privateKeyBuffer = Buffer.from(
     keyPair.privateKeyPem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----/g, '').replace(/\s/g, ''),
-    'base64'
+    'base64',
   );
-  
+
   const publicKeyBuffer = Buffer.from(
     keyPair.publicKeyPem.replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----/g, '').replace(/\s/g, ''),
-    'base64'
+    'base64',
   );
 
   const privateKey = await crypto.subtle.importKey(
@@ -30,22 +30,23 @@ export async function importECDSAKeyPair(keyPair: KeyPair): Promise<{ privateKey
     privateKeyBuffer,
     { name: 'ECDSA', namedCurve: 'P-256' },
     true,
-    ['sign']
+    ['sign'],
   );
-  
+
   const publicKey = await crypto.subtle.importKey(
     'spki',
     publicKeyBuffer,
     { name: 'ECDSA', namedCurve: 'P-256' },
     true,
-    ['verify']
+    ['verify'],
   );
 
   return { privateKey, publicKey };
 }
 
 export async function createRootCA(keyPair: KeyPair): Promise<string> {
-  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags } = await import('@peculiar/x509');
+  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags } =
+    await import('@peculiar/x509');
   const cryptoKeys = await importECDSAKeyPair(keyPair);
 
   const cert = await X509CertificateGenerator.create({
@@ -59,8 +60,8 @@ export async function createRootCA(keyPair: KeyPair): Promise<string> {
     signingKey: cryptoKeys.privateKey,
     extensions: [
       new BasicConstraintsExtension(true, undefined, true),
-      new KeyUsagesExtension(KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign, true)
-    ]
+      new KeyUsagesExtension(KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign, true),
+    ],
   });
 
   return cert.toString('pem');

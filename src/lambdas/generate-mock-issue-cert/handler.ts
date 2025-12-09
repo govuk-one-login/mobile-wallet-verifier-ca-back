@@ -19,33 +19,32 @@ export const handler = async (): Promise<MockRequest> => {
 
   const keyManager = new KeyManager();
   const keyPair = await keyManager.getKeyPair(DEVICE_KEYS_SECRET);
-  
+
   if (!keyPair) {
     throw new Error('Key pair not found. Run setup-android-infrastructure.ts first.');
   }
 
   const deviceSimulator = new AndroidDeviceSimulator();
   const nonce = randomUUID().toLowerCase();
-  
+
   const payload = await deviceSimulator.generateMockRequest(nonce);
-  
+
   return {
     ...payload,
-    platform: 'android'
+    platform: 'android',
   };
 };
 
 // Execute when run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   handler()
-    .then(result => {
+    .then((result) => {
       console.log('✅ Mock certificate generator invoked successfully');
       console.log('Generated mock request:');
       console.log(JSON.stringify(result, null, 2));
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('❌ Error invoking mock certificate generator:', error);
       process.exit(1);
     });
 }
-

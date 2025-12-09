@@ -37,31 +37,34 @@ function generateOrUseKeyPair(options: { privateKeyPem?: string; publicKeyPem?: 
   if (options.privateKeyPem && options.publicKeyPem) {
     return { privateKeyPem: options.privateKeyPem, publicKeyPem: options.publicKeyPem };
   }
-  
+
   return generateECDSAKeyPair('prime256v1');
 }
 
-export async function generateCSR(options: CSROptions & { privateKeyPem?: string; publicKeyPem?: string }): Promise<CSRResult> {
+export async function generateCSR(
+  options: CSROptions & { privateKeyPem?: string; publicKeyPem?: string },
+): Promise<CSRResult> {
   const keyPair = generateOrUseKeyPair(options);
   const subject = buildSubjectString(options.subject);
   const cryptoKeys = await importECDSAKeyPair(keyPair);
-  
+
   const { Pkcs10CertificateRequestGenerator } = await import('@peculiar/x509');
   const csr = await Pkcs10CertificateRequestGenerator.create({
     name: subject,
     keys: cryptoKeys,
-    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' }
+    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
   });
-  
+
   return {
     privateKeyPem: keyPair.privateKeyPem,
     csrPem: csr.toString('pem'),
-    publicKeyPem: keyPair.publicKeyPem
+    publicKeyPem: keyPair.publicKeyPem,
   };
 }
 
 export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, rootCert: string): Promise<string> {
-  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, X509Certificate } = await import('@peculiar/x509');
+  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, X509Certificate } =
+    await import('@peculiar/x509');
   const cryptoKeys = await importECDSAKeyPair(keyPair);
   const rootCryptoKeys = await importECDSAKeyPair(rootKeys);
   const parsedRootCert = new X509Certificate(rootCert);
@@ -77,19 +80,31 @@ export async function createIntermediateCA(keyPair: KeyPair, rootKeys: any, root
     signingKey: rootCryptoKeys.privateKey,
     extensions: [
       new BasicConstraintsExtension(true, 0, true),
-      new KeyUsagesExtension(KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign, true)
-    ]
+      new KeyUsagesExtension(KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign, true),
+    ],
   });
 
   return cert.toString('pem');
 }
 
-export async function createLeafCertWithAttestation(keyPair: KeyPair, issuerKeys: any, issuerCert: string, nonce: string): Promise<string> {
-  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, Extension, X509Certificate } = await import('@peculiar/x509');
+export async function createLeafCertWithAttestation(
+  keyPair: KeyPair,
+  issuerKeys: any,
+  issuerCert: string,
+  nonce: string,
+): Promise<string> {
+  const {
+    X509CertificateGenerator,
+    BasicConstraintsExtension,
+    KeyUsagesExtension,
+    KeyUsageFlags,
+    Extension,
+    X509Certificate,
+  } = await import('@peculiar/x509');
   const cryptoKeys = await importECDSAKeyPair(keyPair);
   const issuerCryptoKeys = await importECDSAKeyPair(issuerKeys);
   const parsedIssuerCert = new X509Certificate(issuerCert);
-  
+
   // Create Android attestation extension using the exact structure from real certificates
   const attestationExtData = createRealAndroidAttestationExtension(nonce);
   const attestationExt = new Extension('1.3.6.1.4.1.11129.2.1.17', false, new Uint8Array(attestationExtData));
@@ -106,8 +121,8 @@ export async function createLeafCertWithAttestation(keyPair: KeyPair, issuerKeys
     extensions: [
       new BasicConstraintsExtension(false, undefined, false),
       new KeyUsagesExtension(KeyUsageFlags.digitalSignature | KeyUsageFlags.keyEncipherment, true),
-      attestationExt
-    ]
+      attestationExt,
+    ],
   });
 
   return cert.toString('pem');
@@ -117,26 +132,26 @@ function createRealAndroidAttestationExtension(nonce: string): Buffer {
   const nonceBuffer = Buffer.from(nonce, 'utf8');
   const nonceHex = nonceBuffer.toString('hex');
   const nonceLength = nonceBuffer.length;
-  
+
   // Calculate total sequence length dynamically
   const fixedPartsLength = 3 + 3 + 3 + 3 + 2 + 2 + 2 + 2; // All fixed parts
   const totalLength = fixedPartsLength + nonceLength;
   const totalLengthHex = totalLength.toString(16).padStart(2, '0');
   const nonceLengthHex = nonceLength.toString(16).padStart(2, '0');
-  
+
   // Build the structure with dynamic lengths
   const parts = [
-    '30' + totalLengthHex,    // SEQUENCE (dynamic length)
-    '020104',                 // INTEGER 4 (attestationVersion)
-    '0A0101',                 // INTEGER 1 (attestationSecurityLevel - TEE)
-    '020104',                 // INTEGER 4 (keymasterVersion)
-    '0A0101',                 // INTEGER 1 (keymasterSecurityLevel - TEE)
-    '04' + nonceLengthHex,    // OCTET STRING (dynamic length)
-    nonceHex,                 // The actual nonce
-    '0400',                   // OCTET STRING (0 bytes) - uniqueId
-    '3000',                   // SEQUENCE (0 bytes) - softwareEnforced
-    '3000'                    // SEQUENCE (0 bytes) - teeEnforced
+    '30' + totalLengthHex, // SEQUENCE (dynamic length)
+    '020104', // INTEGER 4 (attestationVersion)
+    '0A0101', // INTEGER 1 (attestationSecurityLevel - TEE)
+    '020104', // INTEGER 4 (keymasterVersion)
+    '0A0101', // INTEGER 1 (keymasterSecurityLevel - TEE)
+    '04' + nonceLengthHex, // OCTET STRING (dynamic length)
+    nonceHex, // The actual nonce
+    '0400', // OCTET STRING (0 bytes) - uniqueId
+    '3000', // SEQUENCE (0 bytes) - softwareEnforced
+    '3000', // SEQUENCE (0 bytes) - teeEnforced
   ];
-  
+
   return Buffer.from(parts.join(''), 'hex');
 }

@@ -26,7 +26,7 @@ export class AndroidDeviceSimulator {
 
   async generateMockRequest(nonce: string): Promise<MockAndroidRequest> {
     const deviceKeys = await this.keyProvider.getDeviceKeys();
-    
+
     // Generate CSR using device keys (simulates app generating CSR)
     const csr = await generateCSR({
       privateKeyPem: deviceKeys.privateKeyPem,
@@ -34,8 +34,8 @@ export class AndroidDeviceSimulator {
       subject: {
         countryName: 'UK',
         organizationName: 'GDS',
-        commonName: 'Android Device Key'
-      }
+        commonName: 'Android Device Key',
+      },
     });
 
     // Generate Play Integrity token using separate keys
@@ -48,7 +48,7 @@ export class AndroidDeviceSimulator {
       nonce,
       csrPem: csr.csrPem,
       keyAttestationChain,
-      playIntegrityToken
+      playIntegrityToken,
     };
   }
 
@@ -57,26 +57,29 @@ export class AndroidDeviceSimulator {
       requestDetails: {
         requestPackageName: 'org.multipaz.identityreader',
         timestampMillis: Date.now().toString(),
-        nonce
+        nonce,
       },
       appIntegrity: {
         appRecognitionVerdict: 'PLAY_RECOGNIZED',
         packageName: 'org.multipaz.identityreader',
         certificateSha256Digest: ['abc123'],
-        versionCode: '1'
+        versionCode: '1',
       },
       deviceIntegrity: {
-        deviceRecognitionVerdict: ['MEETS_DEVICE_INTEGRITY']
+        deviceRecognitionVerdict: ['MEETS_DEVICE_INTEGRITY'],
       },
       accountDetails: {
-        appLicensingVerdict: 'LICENSED'
-      }
+        appLicensingVerdict: 'LICENSED',
+      },
     };
 
     return await this.playIntegritySigner.signToken(payload, PLAY_INTEGRITY_KEYS_SECRET);
   }
 
-  private async generateTestCAChain(nonce: string, deviceKeys: { privateKeyPem: string; publicKeyPem: string }): Promise<string[]> {
+  private async generateTestCAChain(
+    nonce: string,
+    deviceKeys: { privateKeyPem: string; publicKeyPem: string },
+  ): Promise<string[]> {
     const rootCA = await this.keyProvider.getRootCA();
     const intermediateKeys = await this.keyProvider.getIntermediateCAKeys();
 
@@ -93,9 +96,8 @@ export class AndroidDeviceSimulator {
 
     return [
       Buffer.from(leafDer).toString('base64'),
-      Buffer.from(intermediateDer).toString('base64')
+      Buffer.from(intermediateDer).toString('base64'),
       //Buffer.from(rootDer).toString('base64')
     ];
   }
-
 }

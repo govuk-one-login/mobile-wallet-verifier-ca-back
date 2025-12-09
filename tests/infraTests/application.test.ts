@@ -34,7 +34,14 @@ describe('Application Infrastructure', () => {
     });
 
     it('should have all required parameters', () => {
-      expect(() => testRequiredParameters(template, ['Environment', 'CodeSigningConfigArn', 'PermissionsBoundary', 'VpcStackName'])).not.toThrow();
+      expect(() =>
+        testRequiredParameters(template, [
+          'Environment',
+          'CodeSigningConfigArn',
+          'PermissionsBoundary',
+          'VpcStackName',
+        ]),
+      ).not.toThrow();
     });
   });
 
