@@ -7,13 +7,17 @@ This Repository contains two services (lambda functions) to operate a private ce
 ### Lambda Functions
 
 #### Nonce Service (`/nonce`)
+
 Generates cryptographically secure, single-use nonces for replay protection. Each nonce:
+
 - Is a UUID v4 (36 characters)
 - Has a 5-minute TTL in DynamoDB
 - Can only be consumed once by the certificate issuance service
 
 #### Issue Reader Certificate Service (`/issue-reader-cert`)
+
 Issues short-lived X.509 reader certificates (24-hours validity) after verifying:
+
 - **iOS**: Apple App Attest (keyId, attestation object, client data)
 - **Android**: Google Play Integrity + Key Attestation chains
 - Nonce consumption (prevents replay attacks)
