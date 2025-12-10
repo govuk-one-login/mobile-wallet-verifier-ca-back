@@ -115,7 +115,6 @@ async function validateCertificates(x5c: string[]): Promise<AttestationResult> {
     const certificates = parseCertificates(x5c);
     if (!certificates.valid) return certificates;
 
-    // Richa TO CHECK - most of these checks on cert chain are not in sequence diag but were present in spike validation?
     const validations = [
       () => validateCertificateValidity(certificates.certificates!),
       () => validateSignatures(certificates.certificates!),
