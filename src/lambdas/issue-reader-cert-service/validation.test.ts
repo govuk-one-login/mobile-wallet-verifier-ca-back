@@ -1,8 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { validateRequest, createErrorResponse } from './validation';
+import { describe, it, expect, vi } from 'vitest';
+import { validateRequest, createErrorResponse, validateReaderCertSubject, validateCSRContent } from './validation';
 
-describe('Validation Module', () => {
-  describe('validateRequest', () => {
     const validIOSRequest = {
       platform: 'ios' as const,
       nonce: 'test-nonce',
@@ -26,6 +24,8 @@ describe('Validation Module', () => {
   "platform": "android" as const
 };
 
+describe('Validation Module', () => {
+  describe('validateRequest', () => {
     // it('should return null for valid iOS request', () => {
     //   const result = validateRequest(validIOSRequest);
     //   expect(result).toBeNull();
@@ -131,3 +131,180 @@ describe('Validation Module', () => {
     });
    });
 });
+
+  describe('validateReaderCertSubject', () => {
+    it('should return valid for correct subject DN', () => {
+      const result = validateReaderCertSubject('CN=Test Reader, O=Test Org, C=GB');
+      
+      expect(result.valid).toBe(true);
+    });
+
+    it('should return invalid for missing CN', () => {
+      const result = validateReaderCertSubject('O=Test Org, C=GB');
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_subject_dn');
+      expect(result.message).toContain('Common Name');
+    });
+
+    it('should return invalid for missing O', () => {
+      const result = validateReaderCertSubject('CN=Test Reader, C=GB');
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_subject_dn');
+      expect(result.message).toContain('Organization');
+    });
+
+    it('should return invalid for missing C', () => {
+      const result = validateReaderCertSubject('CN=Test Reader, O=Test Org');
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_subject_dn');
+      expect(result.message).toContain('Country');
+    });
+
+    it('should return invalid for invalid country code', () => {
+      const result = validateReaderCertSubject('CN=Test Reader, O=Test Org, C=XX');
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_subject_dn');
+      expect(result.message).toContain('ISO 3166-1');
+    });
+
+    it('should accept valid ISO 3166-1 country codes', () => {
+      const validCodes = ['US', 'GB', 'FR', 'DE', 'JP'];
+      
+      validCodes.forEach(code => {
+        const result = validateReaderCertSubject(`CN=Test, O=Org, C=${code}`);
+        expect(result.valid).toBe(true);
+      });
+    });
+  });
+
+  describe('validateCSRContent', () => {
+    it('should return invalid for CSR with invalid subject DN', async () => {
+      const { Pkcs10CertificateRequest } = await import('@peculiar/x509');
+      
+      const mockPublicKey = {
+        getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32))
+      };
+      
+      const csrPem = '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
+      
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('O=Test Org');
+      
+      const result = await validateCSRContent(csrPem, mockPublicKey as any);
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_subject_dn');
+    });
+
+    it('should return invalid for non-ECDSA algorithm', async () => {
+      const { Pkcs10CertificateRequest } = await import('@peculiar/x509');
+      
+      const mockPublicKey = {
+        algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
+        getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32))
+      };
+      
+      //const csrPem = '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
+      
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+        algorithm: { name: 'RSA' },
+        getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32))
+      } as any);
+      
+      const result = await validateCSRContent(validAndroidRequest.csrPem, mockPublicKey as any);
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_key_algorithm');
+    });
+
+    it('should return invalid for unsupported ECDSA curve', async () => {
+      const { Pkcs10CertificateRequest } = await import('@peculiar/x509');
+      
+      const mockPublicKey = {
+        algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
+        getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32))
+      };
+      
+      const csrPem = '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
+      
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+        algorithm: { name: 'ECDSA', namedCurve: 'P-192' },
+        getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32))
+      } as any);
+      
+      const result = await validateCSRContent(csrPem, mockPublicKey as any);
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_key_curve');
+    });
+
+    it('should return invalid for public key mismatch', async () => {
+      const { Pkcs10CertificateRequest } = await import('@peculiar/x509');
+      
+      const mockPublicKey = {
+        algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
+        getThumbprint: vi.fn().mockResolvedValue(Buffer.from('different'))
+      };
+      
+      const csrPem = '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
+      
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+        algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
+        getThumbprint: vi.fn().mockResolvedValue(Buffer.from('original'))
+      } as any);
+      
+      const result = await validateCSRContent(csrPem, mockPublicKey as any);
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('public_key_mismatch');
+    });
+
+    it('should return valid for matching CSR and attested key', async () => {
+      const { Pkcs10CertificateRequest } = await import('@peculiar/x509');
+      
+      const thumbprint = Buffer.from('matching-thumbprint');
+      const mockPublicKey = {
+        algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
+        getThumbprint: vi.fn().mockResolvedValue(thumbprint)
+      };
+      
+      const csrPem = '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
+      
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+        algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
+        getThumbprint: vi.fn().mockResolvedValue(thumbprint)
+      } as any);
+      
+      const result = await validateCSRContent(csrPem, mockPublicKey as any);
+      
+      expect(result.valid).toBe(true);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const { Pkcs10CertificateRequest } = await import('@peculiar/x509');
+      
+      const mockPublicKey = {
+        getThumbprint: vi.fn().mockRejectedValue(new Error('Thumbprint error'))
+      };
+      
+      const csrPem = '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
+      
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
+      vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+        algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
+        getThumbprint: vi.fn().mockRejectedValue(new Error('Error'))
+      } as any);
+      
+      const result = await validateCSRContent(csrPem, mockPublicKey as any);
+      
+      expect(result.valid).toBe(false);
+      expect(result.code).toBe('invalid_csr');
+    });
+  });
