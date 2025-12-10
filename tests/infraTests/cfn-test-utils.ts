@@ -71,7 +71,8 @@ export function testEnvironmentParameter(template: CloudFormationTemplate) {
   const envParam = template.Parameters.Environment as Record<string, unknown>;
   if (envParam.Type !== 'String') throw new Error('Invalid Environment Type');
   if (envParam.Default !== 'dev') throw new Error('Invalid Environment Default');
-  if (JSON.stringify(envParam.AllowedValues) !== JSON.stringify(ENVIRONMENT_VALUES)) throw new Error('Invalid AllowedValues');
+  if (JSON.stringify(envParam.AllowedValues) !== JSON.stringify(ENVIRONMENT_VALUES))
+    throw new Error('Invalid AllowedValues');
 }
 
 export function testRequiredParameters(template: CloudFormationTemplate, params: string[]) {

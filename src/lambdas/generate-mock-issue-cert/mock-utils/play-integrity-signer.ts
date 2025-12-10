@@ -33,22 +33,22 @@ export class PlayIntegritySigner {
     if (!keyPair) {
       throw new Error(`Key pair not found: ${secretName}`);
     }
-    
+
     const header = {
       alg: 'ES256',
       typ: 'JWT',
-      kid: secretName
+      kid: secretName,
     };
 
     const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
     const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    
+
     const data = `${encodedHeader}.${encodedPayload}`;
-    
+
     const sign = createSign('SHA256');
     sign.update(data);
     const signature = sign.sign(keyPair.privateKeyPem, 'base64url');
-    
+
     return `${data}.${signature}`;
   }
 }

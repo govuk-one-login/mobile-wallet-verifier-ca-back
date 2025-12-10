@@ -1,5 +1,9 @@
 import { KeyManager } from './key-manager.ts';
-import { DEVICE_KEYS_SECRET, INTERMEDIATE_CA_SECRET, ROOT_CA_SECRET } from '../../../../scripts/setup-android-infrastructure.ts';
+import {
+  DEVICE_KEYS_SECRET,
+  INTERMEDIATE_CA_SECRET,
+  ROOT_CA_SECRET,
+} from '../../../../scripts/setup-android-infrastructure.ts';
 
 export class AndroidKeyProvider {
   private keyManager = new KeyManager();

@@ -13,7 +13,29 @@ vi.mock('@aws-lambda-powertools/logger', () => ({
   },
 }));
 
+vi.mock('@aws-sdk/client-dynamodb', () => {
+  const mockSend = vi.fn();
+  return {
+    DynamoDBClient: class {
+      send = mockSend;
+    },
+    DeleteItemCommand: class {
+      constructor(params: Record<string, unknown>) {
+        Object.assign(this, params);
+      }
+      // Add method to satisfy no-extraneous-class rule
+      toJSON() {
+        return this;
+      }
+    },
+    __mockSend: mockSend, // Export for test access
+  };
+});
+
 import { handler } from './handler';
+import * as dynamoModule from '@aws-sdk/client-dynamodb';
+
+const mockSend = (dynamoModule as unknown as { __mockSend: ReturnType<typeof vi.fn> }).__mockSend;
 
 const mockContext: Context = {
   awsRequestId: 'test-request-id',
@@ -162,6 +184,8 @@ describe('Issue Reader Cert Handler', () => {
 
   describe('Response Headers', () => {
     it('should include correct headers in success response', async () => {
+      mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
+
       const result = await handler(
         createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
         mockContext,
@@ -175,6 +199,71 @@ describe('Issue Reader Cert Handler', () => {
       const result = await handler(createMockEvent('GET'), mockContext);
 
       expect(result.headers?.['Content-Type']).toBe('application/json');
+    });
+  });
+
+  describe('Nonce Verification', () => {
+    beforeEach(() => {
+      process.env.NONCE_TABLE_NAME = 'test-nonce-table';
+    });
+
+    it('should return 409 when nonce verification fails', async () => {
+      mockSend.mockResolvedValue({ Attributes: undefined });
+
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      expect(result.statusCode).toBe(409);
+      expect(JSON.parse(result.body).code).toBe('nonce_replayed');
+    });
+
+    it('should proceed when nonce verification succeeds', async () => {
+      mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
+
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      expect(result.statusCode).toBe(200);
+    });
+
+    it('should include timeToLive condition in delete command', async () => {
+      mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
+
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      console.log('Mock calls:', mockSend.mock.calls.length);
+      console.log('Result status:', result.statusCode);
+      console.log('Environment:', process.env.NONCE_TABLE_NAME);
+      console.log('First call args:', JSON.stringify(mockSend.mock.calls[0], null, 2));
+
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ConditionExpression: '#timeToLive > :now',
+          ExpressionAttributeNames: { '#timeToLive': 'timeToLive' },
+          ExpressionAttributeValues: {
+            ':now': { N: expect.any(String) },
+          },
+        }),
+      );
+    });
+
+    it('should return 409 when timeToLive condition fails', async () => {
+      mockSend.mockRejectedValue(new Error('ConditionalCheckFailedException'));
+
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      expect(result.statusCode).toBe(409);
+      expect(JSON.parse(result.body).code).toBe('nonce_replayed');
     });
   });
 });

@@ -5,8 +5,10 @@ import { IssueReaderCertRequest, IssueReaderCertResponse, AttestationResult } fr
 import { validateRequest, createErrorResponse } from './validation.ts';
 import { verifyAndroidAttestation } from './android-attestation.ts';
 import { verifyIOSAttestation } from './ios-attestation.ts';
+import { DynamoDBClient, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
 
 const logger = new Logger();
+const dynamoClient = new DynamoDBClient({});
 
 export const handler = async (event: APIGatewayProxyEvent, context: Context): Promise<APIGatewayProxyResult> => {
   logger.info('Reader certificate service handler invoked', { httpMethod: event.httpMethod, path: event.path });
@@ -58,9 +60,36 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 };
 
 async function verifyNonce(nonce: string): Promise<boolean> {
-  // TODO: Implement nonce verification against DynamoDB
-  logger.info('Verifying nonce', { nonce });
-  return true;
+  const tableName = process.env.NONCE_TABLE_NAME;
+  if (!tableName) {
+    logger.error('Dynamodb table not found');
+    return false;
+  }
+
+  try {
+    const deleteCommand = new DeleteItemCommand({
+      TableName: tableName,
+      Key: {
+        nonceValue: { S: nonce },
+      },
+      ReturnValues: 'ALL_OLD',
+      ConditionExpression: '#timeToLive > :now',
+      ExpressionAttributeNames: {
+        '#timeToLive': 'timeToLive',
+      },
+      ExpressionAttributeValues: {
+        ':now': { N: Math.floor(Date.now() / 1000).toString() },
+      },
+    });
+
+    const result = await dynamoClient.send(deleteCommand);
+    const success = !!result.Attributes;
+    logger.info('Nonce verification result', { nonce, success });
+    return success;
+  } catch (error) {
+    logger.error('Error verifying nonce', { nonce, error: error instanceof Error ? error.message : error });
+    return false;
+  }
 }
 
 async function verifyAttestation(request: IssueReaderCertRequest): Promise<AttestationResult> {

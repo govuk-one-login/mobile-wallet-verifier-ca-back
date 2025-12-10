@@ -5,7 +5,7 @@ const mockSend = vi.hoisted(() => vi.fn());
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
   DynamoDBClient: class MockDynamoDBClient {
-    send: any;
+    send: typeof mockSend;
     constructor() {
       this.send = mockSend;
     }
