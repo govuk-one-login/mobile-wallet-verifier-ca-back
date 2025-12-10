@@ -491,7 +491,9 @@ Resources:
     Condition: AssociateWebACL
     DependsOn: ApiGatewayBasePathMapping
     Properties:
-      ResourceArn: !Sub 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${Environment}'
+      ResourceArn: !Sub
+        - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
+        - ApiStage: !Ref CaBackendApi.Stage
       WebACLArn:
         Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
