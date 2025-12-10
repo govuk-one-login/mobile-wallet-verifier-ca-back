@@ -8,6 +8,7 @@
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
     "mock:cert": "tsx src/lambdas/generate-mock-issue-cert/handler.ts",
+    "mock:cert:nonce": "tsx src/lambdas/generate-mock-issue-cert/handler.ts",
     "setup:android": "tsx scripts/setup-android-infrastructure.ts",
     "lint": "eslint .",
     "format": "prettier --write .",

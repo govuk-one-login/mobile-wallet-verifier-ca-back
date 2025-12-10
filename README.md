@@ -32,6 +32,7 @@ Issues short-lived X.509 reader certificates (24-hours validity) after verifying
 ## Project Architecture
 
 This project uses **ECMAScript Modules (ESM)** as the module system:
+
 - Native `import`/`export` syntax throughout the codebase
 - `"type": "module"` in package.json enables ESM
 - [esbuild](https://esbuild.github.io/) for fast TypeScript compilation and bundling
@@ -54,6 +55,7 @@ npm run build
 ```
 
 This uses esbuild to:
+
 - Compile TypeScript to ESM JavaScript
 - Bundle Lambda functions for optimal performance
 - Generate source maps for debugging
@@ -88,6 +90,7 @@ npm run setup:android
 ```
 
 This creates:
+
 - Device keys (ECDSA P-256) for Android attestation
 - Play Integrity signing keys (ECDSA P-256)
 - Root CA certificate and keys
@@ -98,14 +101,19 @@ This creates:
 Generate a complete mock Android attestation request:
 
 ```bash
+# Generate with random nonce
 npm run mock:cert
+
+# Generate with specific nonce
+npm run mock:cert your-nonce-value
 ```
 
 This outputs a JSON payload containing:
+
 - `csrPem`: Certificate signing request
 - `keyAttestationChain`: Android key attestation certificate chain (DER format, base64 encoded)
 - `playIntegrityToken`: Signed Play Integrity JWT token
-- `nonce`: Challenge nonce
+- `nonce`: Challenge nonce (random UUID or provided value)
 - `platform`: "android"
 
 ### AWS Environment Setup
@@ -121,14 +129,16 @@ The certificate issuer service uses these environment variables:
 #### Deployment
 
 The service automatically configures:
+
 - **Dev environment**: `ALLOW_TEST_TOKENS=true` (allows mock Play Integrity tokens)
 - **Production environments**: `ALLOW_TEST_TOKENS=false` (enforces Google JWKS verification)
 
 #### AWS Secrets Manager
 
 The mock infrastructure stores keys in AWS Secrets Manager with these secret names:
+
 - `android-device-keys-`: Device ECDSA P-256 key pair
-- `android-play-integrity-keys-`: Play Integrity ECDSA P-256 key pair  
+- `android-play-integrity-keys-`: Play Integrity ECDSA P-256 key pair
 - `android-root-ca-`: Root CA certificate and key pair
 - `android-intermediate-ca-`: Intermediate CA key pair
 

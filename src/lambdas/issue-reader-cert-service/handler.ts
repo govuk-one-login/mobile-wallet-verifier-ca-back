@@ -1,10 +1,10 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { randomUUID } from 'node:crypto';
-import { IssueReaderCertRequest, IssueReaderCertResponse, AttestationResult } from './types.ts';
-import { validateRequest, createErrorResponse } from './validation.ts';
-import { verifyAndroidAttestation } from './android-attestation.ts';
-import { verifyIOSAttestation } from './ios-attestation.ts';
+import { IssueReaderCertRequest, IssueReaderCertResponse, AttestationResult } from './types';
+import { validateRequest, createErrorResponse } from './validation';
+import { verifyAndroidAttestation } from './android-attestation';
+import { verifyIOSAttestation } from './ios-attestation';
 import { DynamoDBClient, DeleteItemCommand } from '@aws-sdk/client-dynamodb';
 
 const logger = new Logger();
@@ -20,7 +20,7 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
 
   try {
     const request: IssueReaderCertRequest = JSON.parse(event.body || '{}');
-    
+
     // Validate request
     const validationError = validateRequest(request);
     if (validationError) {
@@ -36,14 +36,18 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
     // Verify platform attestation
     const attestationResult = await verifyAttestation(request);
     if (!attestationResult.valid) {
-      return createErrorResponse(403, attestationResult.code || 'attestation_failed', attestationResult.message || 'Platform attestation failed');
+      return createErrorResponse(
+        403,
+        attestationResult.code || 'attestation_failed',
+        attestationResult.message || 'Platform attestation failed',
+      );
     }
 
     // Issue certificate
-    const certificate = await issueCertificate(request);
-    
+    const certificate = await issueCertificate();
+
     logger.info('Certificate issued successfully', { readerId: certificate.readerId });
-    
+
     return {
       statusCode: 200,
       headers: {
@@ -52,7 +56,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
       },
       body: JSON.stringify(certificate),
     };
-
   } catch (error) {
     logger.error('Error processing certificate request', { error: error instanceof Error ? error.message : error });
     return createErrorResponse(500, 'internal_error', 'Internal server error issuing certificate');
@@ -100,7 +103,7 @@ async function verifyAttestation(request: IssueReaderCertRequest): Promise<Attes
   }
 }
 
-async function issueCertificate(request: IssueReaderCertRequest): Promise<IssueReaderCertResponse> {
+async function issueCertificate(): Promise<IssueReaderCertResponse> {
   const readerId = `reader-${randomUUID()}`;
   const now = new Date();
   const notAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours validity (ISO 18013-5 compliant)

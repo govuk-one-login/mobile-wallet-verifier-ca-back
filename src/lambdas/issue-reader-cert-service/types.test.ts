@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { 
-  IssueReaderCertRequest, 
-  IssueReaderCertResponse, 
-  ErrorResponse, 
-  AttestationResult 
-} from './types';
+import type { IssueReaderCertRequest, IssueReaderCertResponse, ErrorResponse, AttestationResult } from './types';
 
 describe('Types Module', () => {
   describe('IssueReaderCertRequest', () => {

@@ -24,7 +24,7 @@ describe('iOS Attestation Module', () => {
 
     it('should return valid result for iOS request', async () => {
       const result = await verifyIOSAttestation(mockRequest);
-      
+
       expect(result.valid).toBe(true);
       expect(result.code).toBeUndefined();
       expect(result.message).toBeUndefined();
@@ -35,9 +35,9 @@ describe('iOS Attestation Module', () => {
         ...mockRequest,
         appAttest: undefined,
       };
-      
+
       const result = await verifyIOSAttestation(requestWithoutAppAttest);
-      
+
       expect(result.valid).toBe(true);
     });
 
@@ -49,9 +49,9 @@ describe('iOS Attestation Module', () => {
           keyId: 'different-key-id',
         },
       };
-      
+
       const result = await verifyIOSAttestation(requestWithDifferentKeyId);
-      
+
       expect(result.valid).toBe(true);
     });
   });
