@@ -1,9 +1,13 @@
+import { describe, it, expect, beforeAll } from 'vitest';
 import { join } from 'path';
 import {
   CloudFormationTemplate,
   loadCloudFormationTemplate,
-  validateTemplateStructure,
-  validateEnvironmentParameter,
+  testTemplateStructure,
+  testRequiredSections,
+  testEnvironmentParameter,
+  testRequiredParameters,
+  testRequiredOutputs,
 } from './cfn-test-utils';
 
 describe('Application Infrastructure', () => {
@@ -16,27 +20,28 @@ describe('Application Infrastructure', () => {
 
   describe('Template Structure', () => {
     it('should have valid CloudFormation format', () => {
-      validateTemplateStructure(template);
+      expect(() => testTemplateStructure(template)).not.toThrow();
     });
 
     it('should have required sections', () => {
-      expect(template.Parameters).toBeDefined();
-      expect(template.Resources).toBeDefined();
-      expect(template.Outputs).toBeDefined();
-      expect(template.Globals).toBeDefined();
+      expect(() => testRequiredSections(template, true)).not.toThrow();
     });
   });
 
   describe('Parameters', () => {
     it('should have Environment parameter', () => {
-      validateEnvironmentParameter(template);
+      expect(() => testEnvironmentParameter(template)).not.toThrow();
     });
 
     it('should have all required parameters', () => {
-      const requiredParams = ['Environment', 'CodeSigningConfigArn', 'PermissionsBoundary', 'VpcStackName'];
-      requiredParams.forEach((param) => {
-        expect(template.Parameters[param]).toBeDefined();
-      });
+      expect(() =>
+        testRequiredParameters(template, [
+          'Environment',
+          'CodeSigningConfigArn',
+          'PermissionsBoundary',
+          'VpcStackName',
+        ]),
+      ).not.toThrow();
     });
   });
 
@@ -147,10 +152,7 @@ describe('Application Infrastructure', () => {
     });
 
     it('should have all required outputs', () => {
-      const requiredOutputs = ['ApiGatewayDomainName', 'ApiGatewayId', 'ApiStage'];
-      requiredOutputs.forEach((output) => {
-        expect(template.Outputs[output]).toBeDefined();
-      });
+      expect(() => testRequiredOutputs(template, ['ApiGatewayDomainName', 'ApiGatewayId', 'ApiStage'])).not.toThrow();
     });
   });
 });

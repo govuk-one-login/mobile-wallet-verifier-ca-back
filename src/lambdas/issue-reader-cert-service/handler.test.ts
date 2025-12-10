@@ -1,28 +1,41 @@
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
+import { vi, describe, it, beforeEach, expect } from 'vitest';
 
-const mockRandomUUID = jest.fn(() => 'test-uuid-123');
-
-jest.mock('node:crypto', () => ({
-  randomUUID: mockRandomUUID,
+vi.mock('node:crypto', () => ({
+  randomUUID: vi.fn(() => 'test-uuid-123'),
 }));
 
-const mockSend = jest.fn();
-const mockDeleteItemCommand = jest.fn((params) => params);
-
-jest.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: jest.fn(() => ({ send: mockSend })),
-  DeleteItemCommand: mockDeleteItemCommand,
+vi.mock('@aws-lambda-powertools/logger', () => ({
+  Logger: class {
+    info = vi.fn();
+    warn = vi.fn();
+    error = vi.fn();
+  },
 }));
 
-jest.mock('@aws-lambda-powertools/logger', () => ({
-  Logger: jest.fn(() => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  })),
-}));
+vi.mock('@aws-sdk/client-dynamodb', () => {
+  const mockSend = vi.fn();
+  return {
+    DynamoDBClient: class {
+      send = mockSend;
+    },
+    DeleteItemCommand: class {
+      constructor(params: Record<string, unknown>) {
+        Object.assign(this, params);
+      }
+      // Add method to satisfy no-extraneous-class rule
+      toJSON() {
+        return this;
+      }
+    },
+    __mockSend: mockSend, // Export for test access
+  };
+});
 
 import { handler } from './handler';
+import * as dynamoModule from '@aws-sdk/client-dynamodb';
+
+const mockSend = (dynamoModule as unknown as { __mockSend: ReturnType<typeof vi.fn> }).__mockSend;
 
 const mockContext: Context = {
   awsRequestId: 'test-request-id',
@@ -61,7 +74,7 @@ const validAndroidRequest = {
 
 describe('Issue Reader Cert Handler', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('HTTP Method and Path Validation', () => {
@@ -220,7 +233,15 @@ describe('Issue Reader Cert Handler', () => {
     it('should include timeToLive condition in delete command', async () => {
       mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
 
-      await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)), mockContext);
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
+      console.log('Mock calls:', mockSend.mock.calls.length);
+      console.log('Result status:', result.statusCode);
+      console.log('Environment:', process.env.NONCE_TABLE_NAME);
+      console.log('First call args:', JSON.stringify(mockSend.mock.calls[0], null, 2));
 
       expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({

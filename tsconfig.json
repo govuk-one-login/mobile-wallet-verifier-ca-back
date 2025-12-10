@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "strict": true,
-    "preserveConstEnums": true,
-    "noEmit": true,
-    "sourceMap": true,
-    "module": "es2022",
+    "target": "ES2022",
+    "module": "ES2022",
     "moduleResolution": "node",
+    "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist", "coverage", "scripts"]
 }

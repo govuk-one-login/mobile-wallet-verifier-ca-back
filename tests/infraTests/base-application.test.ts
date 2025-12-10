@@ -1,9 +1,13 @@
+import { describe, it, expect, beforeAll } from 'vitest';
 import { join } from 'path';
 import {
   CloudFormationTemplate,
   loadCloudFormationTemplate,
-  validateTemplateStructure,
-  validateEnvironmentParameter,
+  testTemplateStructure,
+  testRequiredSections,
+  testEnvironmentParameter,
+  testRequiredParameters,
+  testRequiredOutputs,
 } from './cfn-test-utils';
 
 describe('Base Application Infrastructure', () => {
@@ -16,26 +20,21 @@ describe('Base Application Infrastructure', () => {
 
   describe('Template Structure', () => {
     it('should have valid CloudFormation format', () => {
-      validateTemplateStructure(template);
+      expect(() => testTemplateStructure(template)).not.toThrow();
     });
 
     it('should have required sections', () => {
-      expect(template.Parameters).toBeDefined();
-      expect(template.Resources).toBeDefined();
-      expect(template.Outputs).toBeDefined();
+      expect(() => testRequiredSections(template)).not.toThrow();
     });
   });
 
   describe('Parameters', () => {
     it('should have Environment parameter with correct values', () => {
-      validateEnvironmentParameter(template);
+      expect(() => testEnvironmentParameter(template)).not.toThrow();
     });
 
     it('should have all required parameters', () => {
-      const requiredParams = ['Environment'];
-      requiredParams.forEach((param) => {
-        expect(template.Parameters[param]).toBeDefined();
-      });
+      expect(() => testRequiredParameters(template, ['Environment'])).not.toThrow();
     });
   });
 
@@ -105,10 +104,7 @@ describe('Base Application Infrastructure', () => {
     });
 
     it('should have all required outputs', () => {
-      const requiredOutputs = ['NonceTableName'];
-      requiredOutputs.forEach((output) => {
-        expect(template.Outputs[output]).toBeDefined();
-      });
+      expect(() => testRequiredOutputs(template, ['NonceTableName'])).not.toThrow();
     });
   });
 });

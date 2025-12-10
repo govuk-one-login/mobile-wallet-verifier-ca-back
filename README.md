@@ -8,6 +8,16 @@ This Repository contains `verifier-certificate-issuer` stack to operate a privat
 
 - [Node.js](https://nodejs.org/en) version 22 or higher (use the provided `.nvmrc` file with [nvm](https://github.com/nvm-sh/nvm) for easy version management)
 - [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) for deployment
+- AWS CLI configured with appropriate credentials for Secrets Manager access
+
+## Project Architecture
+
+This project uses **ECMAScript Modules (ESM)** as the module system:
+
+- Native `import`/`export` syntax throughout the codebase
+- `"type": "module"` in package.json enables ESM
+- [esbuild](https://esbuild.github.io/) for fast TypeScript compilation and bundling
+- [Vitest](https://vitest.dev/) for testing with native ESM support
 
 ## Quickstart
 
@@ -17,12 +27,96 @@ This Repository contains `verifier-certificate-issuer` stack to operate a privat
 npm install
 ```
 
+### Build
+
+Build the project for deployment:
+
+```bash
+npm run build
+```
+
+This uses esbuild to:
+
+- Compile TypeScript to ESM JavaScript
+- Bundle Lambda functions for optimal performance
+- Generate source maps for debugging
+- Handle module resolution automatically
+
 ### Test
 
 #### Unit Tests
 
-Run unit tests to test functionality of individual functions:
+Run unit tests using Vitest (with native ESM support):
 
-```
+```bash
 npm run test
 ```
+
+Run tests with coverage:
+
+```bash
+npm run test:cov
+```
+
+#### Mock Certificate Generation
+
+For testing Android attestation flows, you can generate mock certificates and attestation data:
+
+##### Setup Android Infrastructure
+
+First, set up the required keys and certificates in AWS Secrets Manager:
+
+```bash
+npm run setup:android
+```
+
+This creates:
+
+- Device keys (ECDSA P-256) for Android attestation
+- Play Integrity signing keys (ECDSA P-256)
+- Root CA certificate and keys
+- Intermediate CA keys
+
+##### Generate Mock Request
+
+Generate a complete mock Android attestation request:
+
+```bash
+npm run mock:cert
+```
+
+This outputs a JSON payload containing:
+
+- `csrPem`: Certificate signing request
+- `keyAttestationChain`: Android key attestation certificate chain (DER format, base64 encoded)
+- `playIntegrityToken`: Signed Play Integrity JWT token
+- `nonce`: Challenge nonce
+- `platform`: "android"
+
+### AWS Environment Setup
+
+#### Environment Variables
+
+The certificate issuer service uses these environment variables:
+
+- `ALLOW_TEST_TOKENS`: Set to `'true'` in dev environment to skip Play Integrity signature verification
+- `EXPECTED_PACKAGE_NAME`: Android app package name for validation (default: `org.multipaz.identityreader`)
+- `NONCE_TABLE_NAME`: DynamoDB table for nonce storage
+
+#### Deployment
+
+The service automatically configures:
+
+- **Dev environment**: `ALLOW_TEST_TOKENS=true` (allows mock Play Integrity tokens)
+- **Production environments**: `ALLOW_TEST_TOKENS=false` (enforces Google JWKS verification)
+
+#### AWS Secrets Manager
+
+The mock infrastructure stores keys in AWS Secrets Manager with these secret names:
+
+- `android-device-keys-`: Device ECDSA P-256 key pair
+- `android-play-integrity-keys-`: Play Integrity ECDSA P-256 key pair
+- `android-root-ca-`: Root CA certificate and key pair
+- `android-intermediate-ca-`: Intermediate CA key pair
+
+**Note**: Ensure your AWS credentials have access to Secrets Manager in the `eu-west-2` region.
