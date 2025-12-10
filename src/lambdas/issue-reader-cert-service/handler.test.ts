@@ -20,8 +20,12 @@ vi.mock('@aws-sdk/client-dynamodb', () => {
       send = mockSend;
     },
     DeleteItemCommand: class {
-      constructor(params: any) {
+      constructor(params: Record<string, unknown>) {
         Object.assign(this, params);
+      }
+      // Add method to satisfy no-extraneous-class rule
+      toJSON() {
+        return this;
       }
     },
     __mockSend: mockSend, // Export for test access
@@ -31,7 +35,7 @@ vi.mock('@aws-sdk/client-dynamodb', () => {
 import { handler } from './handler';
 import * as dynamoModule from '@aws-sdk/client-dynamodb';
 
-const mockSend = (dynamoModule as any).__mockSend;
+const mockSend = (dynamoModule as unknown as { __mockSend: ReturnType<typeof vi.fn> }).__mockSend;
 
 const mockContext: Context = {
   awsRequestId: 'test-request-id',
@@ -229,8 +233,11 @@ describe('Issue Reader Cert Handler', () => {
     it('should include timeToLive condition in delete command', async () => {
       mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
 
-      const result = await handler(createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)), mockContext);
-      
+      const result = await handler(
+        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validIOSRequest)),
+        mockContext,
+      );
+
       console.log('Mock calls:', mockSend.mock.calls.length);
       console.log('Result status:', result.statusCode);
       console.log('Environment:', process.env.NONCE_TABLE_NAME);
