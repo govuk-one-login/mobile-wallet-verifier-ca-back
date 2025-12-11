@@ -87,9 +87,11 @@ Parameters:
     Default: ''
 
   EnableWafAssociation:
-    Description: Whether to associate WAF WebACL with the API Gateway stage
+    Description: |
+      Whether to associate the Cloaking WAF WebACL with the API Gateway stage.
+      The Cloaking WAF blocks ALL requests that don't come from CloudFront.
     Type: String
-    Default: 'true'
+    Default: 'false'
     AllowedValues:
       - 'true'
       - 'false'
@@ -445,8 +447,9 @@ Resources:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
 
   # API Gateway Custom Domain Resources
-  # The domain name pattern: {origin}.{api}.{service}.{env}.{base_domain}
-  # Example: origin.api.verifier-ca.dev.account.gov.uk
+  # Two custom domains are created:
+  # 1. Origin domain (origin.api.verifier-ca.dev.account.gov.uk) - used by CloudFront as origin
+  # 2. Public domain (api.verifier-ca.dev.account.gov.uk) - used by clients via CloudFront
   ApiGatewayCustomDomain:
     Type: AWS::ApiGateway::DomainName
     Condition: CreateCustomDomain
@@ -470,13 +473,51 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
-  # Base Path Mapping - Maps the custom domain to the API Gateway stage
+  # Public Custom Domain - for CloudFront to forward requests with viewer Host header
+  ApiGatewayPublicDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: CreateCustomDomain
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !ImportValue
+        Fn::Sub: '${RegionalCertificateStack}-CertificateARN'
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Name
+          Value: !If
+            - IsProduction
+            - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+            - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Base Path Mapping for Origin Domain
   ApiGatewayBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateCustomDomain
     DependsOn: CaBackendApi
     Properties:
       DomainName: !Ref ApiGatewayCustomDomain
+      RestApiId: !Ref CaBackendApi
+      Stage: !Ref CaBackendApi.Stage
+      BasePath: !If
+        - UseBasePath
+        - !Ref CustomDomainBasePath
+        - !Ref AWS::NoValue
+
+  # Base Path Mapping for Public Domain - maps the same API to the public domain
+  ApiGatewayPublicBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: CreateCustomDomain
+    DependsOn: CaBackendApi
+    Properties:
+      DomainName: !Ref ApiGatewayPublicDomain
       RestApiId: !Ref CaBackendApi
       Stage: !Ref CaBackendApi.Stage
       BasePath: !If
@@ -516,9 +557,7 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-api-stage'
 
-  # =============================================================================
   # Custom Domain Outputs (conditional)
-  # =============================================================================
   CustomDomainName:
     Condition: CreateCustomDomain
     Description: The custom domain name for API Gateway
@@ -559,3 +598,21 @@ Outputs:
       - !Sub '${ServiceSubdomain}.${Environment}.${BaseDomain}'
     Export:
       Name: !Sub '${AWS::StackName}-DomainSuffix'
+
+  # Public domain outputs (for CloudFront integration)
+  PublicDomainName:
+    Condition: CreateCustomDomain
+    Description: The public custom domain name for API Gateway (used by CloudFront)
+    Value: !Ref ApiGatewayPublicDomain
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicDomainName'
+
+  PublicDomainForCloudFront:
+    Condition: CreateCustomDomain
+    Description: The full public domain name that clients use via CloudFront
+    Value: !If
+      - IsProduction
+      - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+      - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicDomain'
