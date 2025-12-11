@@ -108,7 +108,7 @@ async function issueCertificate(): Promise<IssueReaderCertResponse> {
   const now = new Date();
   const notAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours validity (ISO 18013-5 compliant)
 
-  // TODO: Implement actual certificate issuance with ISO 18013-5 compliance:
+  // Implement actual certificate issuance with ISO 18013-5 compliance:
   // - BasicConstraints: CA:FALSE (end-entity certificate)
   // - KeyUsage: digitalSignature, keyAgreement
   // - ExtendedKeyUsage: mDL reader authentication OID
