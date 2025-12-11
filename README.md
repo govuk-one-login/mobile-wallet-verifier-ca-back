@@ -101,9 +101,6 @@ This creates:
 Generate a complete mock Android attestation request:
 
 ```bash
-# Generate with random nonce
-npm run mock:cert
-
 # Generate with specific nonce
 npm run mock:cert your-nonce-value
 ```
