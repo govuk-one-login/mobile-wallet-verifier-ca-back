@@ -154,13 +154,15 @@ function validateCertificateExtensions(certificates: X509Certificate[]): Attesta
 
   for (let i = 0; i < certificates.length; i++) {
     const cert = certificates[i];
-    const basicConstraintsExts = cert.extensions?.filter(
-      (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.BASIC_CONSTRAINTS_OID,
-    ) || [];
-    
-    attestationExtCount += cert.extensions?.filter(
-      (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.ATTESTATION_EXTENSION_OID,
-    ).length || 0;
+    const basicConstraintsExts =
+      cert.extensions?.filter(
+        (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.BASIC_CONSTRAINTS_OID,
+      ) || [];
+
+    attestationExtCount +=
+      cert.extensions?.filter(
+        (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.ATTESTATION_EXTENSION_OID,
+      ).length || 0;
 
     if (basicConstraintsExts.length > 1) {
       return { valid: false, message: `Certificate ${i} has multiple Basic Constraints extensions` };
@@ -170,26 +172,29 @@ function validateCertificateExtensions(certificates: X509Certificate[]): Attesta
     if (!constraintResult.valid) return constraintResult;
   }
 
-  return attestationExtCount === 1 
+  return attestationExtCount === 1
     ? { valid: true }
     : { valid: false, message: `Expected exactly 1 attestation extension, found ${attestationExtCount}` };
 }
 
-function validateConstraints(basicConstraintsExts: any[], certIndex: number): AttestationResult {
+function validateConstraints(basicConstraintsExts: { rawData: ArrayBuffer }[], certIndex: number): AttestationResult {
   const isLeaf = certIndex === 0;
-  
+
   if (isLeaf && basicConstraintsExts.length === 0) return { valid: true };
-  
+
   if (!isLeaf && basicConstraintsExts.length === 0) {
     return { valid: false, message: `Certificate ${certIndex} missing Basic Constraints extension` };
   }
-  
+
   const basicConstraints = new BasicConstraintsExtension(basicConstraintsExts[0].rawData);
   const shouldBeCA = !isLeaf;
-  
+
   return basicConstraints.ca === shouldBeCA
     ? { valid: true }
-    : { valid: false, message: isLeaf ? 'Leaf certificate incorrectly marked as CA' : `Certificate ${certIndex} not marked as CA` };
+    : {
+        valid: false,
+        message: isLeaf ? 'Leaf certificate incorrectly marked as CA' : `Certificate ${certIndex} not marked as CA`,
+      };
 }
 
 async function validateSignatures(certificates: X509Certificate[]): Promise<AttestationResult> {

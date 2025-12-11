@@ -76,7 +76,8 @@ const validIOSRequest = {
 const validAndroidRequest = {
   platform: 'android',
   nonce: 'test-nonce',
-  csrPem: '-----BEGIN CERTIFICATE REQUEST-----\nMIHyMIGaAgEAMDgxCzAJBgNVBAYTAlVLMQwwCgYDVQQKEwNHRFMxGzAZBgNVBAMT\nEkFuZHJvaWQgRGV2aWNlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDlt\n4vSyJY/RnL8bC5bHhhfxDZ3m69UBx/IADlbZhZ4nzImHuzVJsck2LsPefb91g6hc\nhq81PZei3c7qN2rfJIqgADAKBggqhkjOPQQDAgNHADBEAiBB/OcSic76VdMJuaZZ\nDb7APgiSkx8KMGbrqo4PgDy25AIgJH+tVfzC4B8R0ZNCuTpEJlJx9DVW0I1X24dI\nKnLJRN8=\n-----END CERTIFICATE REQUEST-----',
+  csrPem:
+    '-----BEGIN CERTIFICATE REQUEST-----\nMIHyMIGaAgEAMDgxCzAJBgNVBAYTAlVLMQwwCgYDVQQKEwNHRFMxGzAZBgNVBAMT\nEkFuZHJvaWQgRGV2aWNlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDlt\n4vSyJY/RnL8bC5bHhhfxDZ3m69UBx/IADlbZhZ4nzImHuzVJsck2LsPefb91g6hc\nhq81PZei3c7qN2rfJIqgADAKBggqhkjOPQQDAgNHADBEAiBB/OcSic76VdMJuaZZ\nDb7APgiSkx8KMGbrqo4PgDy25AIgJH+tVfzC4B8R0ZNCuTpEJlJx9DVW0I1X24dI\nKnLJRN8=\n-----END CERTIFICATE REQUEST-----',
   keyAttestationChain: ['cert1', 'cert2'],
   playIntegrityToken: 'test-token',
 };
@@ -310,8 +311,12 @@ describe('Issue Reader Cert Handler', () => {
     it('should call verifyAndroidAttestation for Android platform (line 102)', async () => {
       // Clear the Android attestation mock so it returns undefined (fails)
       const { verifyAndroidAttestation } = await import('./android-attestation');
-      vi.mocked(verifyAndroidAttestation).mockResolvedValue({ valid: false, code: 'test_failure', message: 'Test failure' });
-      
+      vi.mocked(verifyAndroidAttestation).mockResolvedValue({
+        valid: false,
+        code: 'test_failure',
+        message: 'Test failure',
+      });
+
       process.env.NONCE_TABLE_NAME = 'test-nonce-table';
       mockSend.mockResolvedValue({ Attributes: { nonceValue: { S: 'test-nonce' } } });
 

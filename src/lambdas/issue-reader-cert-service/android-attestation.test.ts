@@ -286,7 +286,8 @@ describe('Android Attestation Module', () => {
     });
 
     it('should handle certificate with multiple Basic Constraints extensions', async () => {
-      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
+      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } =
+        await import('./play-integrity-validator');
       vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
       vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
 
@@ -296,7 +297,7 @@ describe('Android Attestation Module', () => {
         this.notAfter = new Date('2030-01-01');
         this.extensions = [
           { type: '2.5.29.19', rawData: new ArrayBuffer(0) },
-          { type: '2.5.29.19', rawData: new ArrayBuffer(0) }
+          { type: '2.5.29.19', rawData: new ArrayBuffer(0) },
         ];
         this.publicKey = { algorithm: { name: 'ECDSA' } };
         this.subject = 'CN=Test';
@@ -312,7 +313,8 @@ describe('Android Attestation Module', () => {
     });
 
     it('should handle intermediate certificate missing Basic Constraints extension', async () => {
-      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
+      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } =
+        await import('./play-integrity-validator');
       vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
       vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
 
@@ -341,8 +343,9 @@ describe('Android Attestation Module', () => {
 
     it('should handle failure to fetch trusted root certificates', async () => {
       process.env.ALLOW_TEST_TOKENS = 'false';
-      
-      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
+
+      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } =
+        await import('./play-integrity-validator');
       vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
       vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
 
@@ -377,147 +380,151 @@ describe('Android Attestation Module', () => {
 
       expect(result.valid).toBe(false);
       expect(result.message).toBe('Failed to fetch trusted root certificates from Google API');
-      
+
       process.env.ALLOW_TEST_TOKENS = 'true';
     });
   });
-    it('should handle trusted root certificate parsing error (line 202)', async () => {
-      process.env.ALLOW_TEST_TOKENS = 'false';
-      
-      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
-      vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
-      vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
+  it('should handle trusted root certificate parsing error (line 202)', async () => {
+    process.env.ALLOW_TEST_TOKENS = 'false';
 
-      const { X509Certificate, BasicConstraintsExtension } = await import('@peculiar/x509');
-      let certCount = 0;
-      vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
-        certCount++;
-        const isLeaf = certCount === 1;
-        if (certCount > 2) {
-          throw new Error('Certificate parsing error');
-        }
-        this.notBefore = new Date('2020-01-01');
-        this.notAfter = new Date('2030-01-01');
-        this.extensions = isLeaf
-          ? [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }]
-          : [{ type: '2.5.29.19', rawData: new ArrayBuffer(0) }];
-        this.publicKey = { algorithm: { name: 'ECDSA' } };
-        this.subject = isLeaf ? 'CN=Leaf' : 'CN=Intermediate';
-        this.issuer = isLeaf ? 'CN=Intermediate' : 'CN=Root';
-        this.verify = vi.fn().mockResolvedValue(true);
-        return this;
-      } as unknown as typeof X509Certificate);
+    const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
+    vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
+    vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
 
-      vi.mocked(BasicConstraintsExtension).mockImplementation(function (this: Record<string, unknown>) {
-        this.ca = true;
-        return this;
-      } as unknown as typeof BasicConstraintsExtension);
+    const { X509Certificate, BasicConstraintsExtension } = await import('@peculiar/x509');
+    let certCount = 0;
+    vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
+      certCount++;
+      const isLeaf = certCount === 1;
+      if (certCount > 2) {
+        throw new Error('Certificate parsing error');
+      }
+      this.notBefore = new Date('2020-01-01');
+      this.notAfter = new Date('2030-01-01');
+      this.extensions = isLeaf
+        ? [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }]
+        : [{ type: '2.5.29.19', rawData: new ArrayBuffer(0) }];
+      this.publicKey = { algorithm: { name: 'ECDSA' } };
+      this.subject = isLeaf ? 'CN=Leaf' : 'CN=Intermediate';
+      this.issuer = isLeaf ? 'CN=Intermediate' : 'CN=Root';
+      this.verify = vi.fn().mockResolvedValue(true);
+      return this;
+    } as unknown as typeof X509Certificate);
 
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ entries: { 'root1': '-----BEGIN CERTIFICATE-----invalid-----END CERTIFICATE-----' } }),
-      } as unknown as Response);
+    vi.mocked(BasicConstraintsExtension).mockImplementation(function (this: Record<string, unknown>) {
+      this.ca = true;
+      return this;
+    } as unknown as typeof BasicConstraintsExtension);
 
-      const result = await verifyAndroidAttestation(mockRequest);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi
+        .fn()
+        .mockResolvedValue({ entries: { root1: '-----BEGIN CERTIFICATE-----invalid-----END CERTIFICATE-----' } }),
+    } as unknown as Response);
 
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('Certificate chain does not link to trusted Google root');
-      
-      process.env.ALLOW_TEST_TOKENS = 'true';
-    });
+    const result = await verifyAndroidAttestation(mockRequest);
 
-    it('should handle certificate chain not linking to trusted root (line 211)', async () => {
-      process.env.ALLOW_TEST_TOKENS = 'false';
-      
-      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
-      vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
-      vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain('Certificate chain does not link to trusted Google root');
 
-      const { X509Certificate, BasicConstraintsExtension } = await import('@peculiar/x509');
-      let certCount = 0;
-      vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
-        certCount++;
-        const isLeaf = certCount === 1;
-        const isTrustedRoot = certCount === 3;
-        this.notBefore = new Date('2020-01-01');
-        this.notAfter = new Date('2030-01-01');
-        this.extensions = isLeaf
-          ? [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }]
-          : [{ type: '2.5.29.19', rawData: new ArrayBuffer(0) }];
-        this.publicKey = { algorithm: { name: 'ECDSA' } };
-        this.subject = isLeaf ? 'CN=Leaf' : isTrustedRoot ? 'CN=DifferentRoot' : 'CN=Intermediate';
-        this.issuer = isLeaf ? 'CN=Intermediate' : 'CN=UnknownRoot';
-        this.verify = vi.fn().mockResolvedValue(true);
-        return this;
-      } as unknown as typeof X509Certificate);
-
-      vi.mocked(BasicConstraintsExtension).mockImplementation(function (this: Record<string, unknown>) {
-        this.ca = true;
-        return this;
-      } as unknown as typeof BasicConstraintsExtension);
-
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({ entries: { 'root1': '-----BEGIN CERTIFICATE-----test-----END CERTIFICATE-----' } }),
-      } as unknown as Response);
-
-      const result = await verifyAndroidAttestation(mockRequest);
-
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('Certificate chain does not link to trusted Google root');
-      
-      process.env.ALLOW_TEST_TOKENS = 'true';
-    });
-
-    it('should handle expired certificate (lines 226-240)', async () => {
-      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
-      vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
-      vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
-
-      const { X509Certificate } = await import('@peculiar/x509');
-      vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
-        this.notBefore = new Date('2020-01-01');
-        this.notAfter = new Date('2021-01-01'); // Expired certificate
-        this.extensions = [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }];
-        this.publicKey = { algorithm: { name: 'ECDSA' } };
-        this.subject = 'CN=Test';
-        this.issuer = 'CN=Test';
-        this.verify = vi.fn().mockResolvedValue(true);
-        return this;
-      } as unknown as typeof X509Certificate);
-
-      const result = await verifyAndroidAttestation(mockRequest);
-
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('certificate not valid at current time');
-    });
-
-    it('should handle expired intermediate certificate (lines 230-231)', async () => {
-      const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
-      vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
-      vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
-
-      const { X509Certificate } = await import('@peculiar/x509');
-      let certCount = 0;
-      vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
-        certCount++;
-        const isLeaf = certCount === 1;
-        const isRoot = certCount === 3;
-        this.notBefore = new Date('2020-01-01');
-        this.notAfter = isLeaf || isRoot ? new Date('2030-01-01') : new Date('2021-01-01'); // Expired intermediate
-        this.extensions = isLeaf
-          ? [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }]
-          : [];
-        this.publicKey = { algorithm: { name: 'ECDSA' } };
-        this.subject = 'CN=Test';
-        this.issuer = 'CN=Test';
-        this.verify = vi.fn().mockResolvedValue(true);
-        return this;
-      } as unknown as typeof X509Certificate);
-
-      const result = await verifyAndroidAttestation({ ...mockRequest, keyAttestationChain: ['cert1', 'cert2', 'cert3'] });
-
-      expect(result.valid).toBe(false);
-      expect(result.message).toContain('Intermediate certificate not valid at current time');
-    });
+    process.env.ALLOW_TEST_TOKENS = 'true';
   });
+
+  it('should handle certificate chain not linking to trusted root (line 211)', async () => {
+    process.env.ALLOW_TEST_TOKENS = 'false';
+
+    const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
+    vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
+    vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
+
+    const { X509Certificate, BasicConstraintsExtension } = await import('@peculiar/x509');
+    let certCount = 0;
+    vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
+      certCount++;
+      const isLeaf = certCount === 1;
+      const isTrustedRoot = certCount === 3;
+      this.notBefore = new Date('2020-01-01');
+      this.notAfter = new Date('2030-01-01');
+      this.extensions = isLeaf
+        ? [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }]
+        : [{ type: '2.5.29.19', rawData: new ArrayBuffer(0) }];
+      this.publicKey = { algorithm: { name: 'ECDSA' } };
+      this.subject = isLeaf ? 'CN=Leaf' : isTrustedRoot ? 'CN=DifferentRoot' : 'CN=Intermediate';
+      this.issuer = isLeaf ? 'CN=Intermediate' : 'CN=UnknownRoot';
+      this.verify = vi.fn().mockResolvedValue(true);
+      return this;
+    } as unknown as typeof X509Certificate);
+
+    vi.mocked(BasicConstraintsExtension).mockImplementation(function (this: Record<string, unknown>) {
+      this.ca = true;
+      return this;
+    } as unknown as typeof BasicConstraintsExtension);
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi
+        .fn()
+        .mockResolvedValue({ entries: { root1: '-----BEGIN CERTIFICATE-----test-----END CERTIFICATE-----' } }),
+    } as unknown as Response);
+
+    const result = await verifyAndroidAttestation(mockRequest);
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain('Certificate chain does not link to trusted Google root');
+
+    process.env.ALLOW_TEST_TOKENS = 'true';
+  });
+
+  it('should handle expired certificate (lines 226-240)', async () => {
+    const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
+    vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
+    vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
+
+    const { X509Certificate } = await import('@peculiar/x509');
+    vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
+      this.notBefore = new Date('2020-01-01');
+      this.notAfter = new Date('2021-01-01'); // Expired certificate
+      this.extensions = [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }];
+      this.publicKey = { algorithm: { name: 'ECDSA' } };
+      this.subject = 'CN=Test';
+      this.issuer = 'CN=Test';
+      this.verify = vi.fn().mockResolvedValue(true);
+      return this;
+    } as unknown as typeof X509Certificate);
+
+    const result = await verifyAndroidAttestation(mockRequest);
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain('certificate not valid at current time');
+  });
+
+  it('should handle expired intermediate certificate (lines 230-231)', async () => {
+    const { validatePlayIntegritySignature, validatePlayIntegrityPayload } = await import('./play-integrity-validator');
+    vi.mocked(validatePlayIntegritySignature).mockResolvedValue({ valid: true });
+    vi.mocked(validatePlayIntegrityPayload).mockReturnValue({ valid: true });
+
+    const { X509Certificate } = await import('@peculiar/x509');
+    let certCount = 0;
+    vi.mocked(X509Certificate).mockImplementation(function (this: Record<string, unknown>) {
+      certCount++;
+      const isLeaf = certCount === 1;
+      const isRoot = certCount === 3;
+      this.notBefore = new Date('2020-01-01');
+      this.notAfter = isLeaf || isRoot ? new Date('2030-01-01') : new Date('2021-01-01'); // Expired intermediate
+      this.extensions = isLeaf
+        ? [{ type: '1.3.6.1.4.1.11129.2.1.17', value: new ArrayBuffer(0), rawData: new ArrayBuffer(0) }]
+        : [];
+      this.publicKey = { algorithm: { name: 'ECDSA' } };
+      this.subject = 'CN=Test';
+      this.issuer = 'CN=Test';
+      this.verify = vi.fn().mockResolvedValue(true);
+      return this;
+    } as unknown as typeof X509Certificate);
+
+    const result = await verifyAndroidAttestation({ ...mockRequest, keyAttestationChain: ['cert1', 'cert2', 'cert3'] });
+
+    expect(result.valid).toBe(false);
+    expect(result.message).toContain('Intermediate certificate not valid at current time');
+  });
+});
