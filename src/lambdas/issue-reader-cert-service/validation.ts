@@ -34,7 +34,7 @@ export function validateRequest(request: IssueReaderCertRequest): APIGatewayProx
 
   // Validate CSR format
   try {
-    if (!request.csrPem?.includes('BEGIN CERTIFICATE REQUEST')) throw new Error();
+    if (!request.csrPem?.includes('BEGIN CERTIFICATE REQUEST')) throw new Error('Invalid CSR format');
     new Pkcs10CertificateRequest(request.csrPem);
   } catch {
     return createErrorResponse(400, 'bad_request', 'CSR is not a valid PKCS#10 structure', { field: 'csrPem' });

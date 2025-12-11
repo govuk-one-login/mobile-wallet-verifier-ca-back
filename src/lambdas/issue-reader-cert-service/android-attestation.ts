@@ -154,47 +154,42 @@ function validateCertificateExtensions(certificates: X509Certificate[]): Attesta
 
   for (let i = 0; i < certificates.length; i++) {
     const cert = certificates[i];
-    const basicConstraintsExts =
-      cert.extensions?.filter(
-        (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.BASIC_CONSTRAINTS_OID,
-      ) || [];
-
-    // Count attestation extensions across all certificates
-    attestationExtCount +=
-      cert.extensions?.filter(
-        (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.ATTESTATION_EXTENSION_OID,
-      ).length || 0;
+    const basicConstraintsExts = cert.extensions?.filter(
+      (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.BASIC_CONSTRAINTS_OID,
+    ) || [];
+    
+    attestationExtCount += cert.extensions?.filter(
+      (ext) => (ext as { type: string }).type === ANDROID_ATTESTATION_CONFIG.ATTESTATION_EXTENSION_OID,
+    ).length || 0;
 
     if (basicConstraintsExts.length > 1) {
       return { valid: false, message: `Certificate ${i} has multiple Basic Constraints extensions` };
     }
 
-    if (i === 0) {
-      // Leaf certificate should NOT be a CA
-      if (basicConstraintsExts.length > 0) {
-        const basicConstraints = new BasicConstraintsExtension(basicConstraintsExts[0].rawData);
-        if (basicConstraints.ca) {
-          return { valid: false, message: 'Leaf certificate incorrectly marked as CA' };
-        }
-      }
-    } else {
-      // Intermediate certificates should have basic constraints and be CAs
-      if (basicConstraintsExts.length === 0) {
-        return { valid: false, message: `Certificate ${i} missing Basic Constraints extension` };
-      }
-      const basicConstraints = new BasicConstraintsExtension(basicConstraintsExts[0].rawData);
-      if (!basicConstraints.ca) {
-        return { valid: false, message: `Certificate ${i} not marked as CA` };
-      }
-    }
+    const constraintResult = validateConstraints(basicConstraintsExts, i);
+    if (!constraintResult.valid) return constraintResult;
   }
 
-  // Validate attestation extension count
-  if (attestationExtCount !== 1) {
-    return { valid: false, message: `Expected exactly 1 attestation extension, found ${attestationExtCount}` };
-  }
+  return attestationExtCount === 1 
+    ? { valid: true }
+    : { valid: false, message: `Expected exactly 1 attestation extension, found ${attestationExtCount}` };
+}
 
-  return { valid: true };
+function validateConstraints(basicConstraintsExts: any[], certIndex: number): AttestationResult {
+  const isLeaf = certIndex === 0;
+  
+  if (isLeaf && basicConstraintsExts.length === 0) return { valid: true };
+  
+  if (!isLeaf && basicConstraintsExts.length === 0) {
+    return { valid: false, message: `Certificate ${certIndex} missing Basic Constraints extension` };
+  }
+  
+  const basicConstraints = new BasicConstraintsExtension(basicConstraintsExts[0].rawData);
+  const shouldBeCA = !isLeaf;
+  
+  return basicConstraints.ca === shouldBeCA
+    ? { valid: true }
+    : { valid: false, message: isLeaf ? 'Leaf certificate incorrectly marked as CA' : `Certificate ${certIndex} not marked as CA` };
 }
 
 async function validateSignatures(certificates: X509Certificate[]): Promise<AttestationResult> {
@@ -223,7 +218,7 @@ async function validateSignatures(certificates: X509Certificate[]): Promise<Atte
   }
 
   // Verify last certificate (intermediate) against trusted Google roots
-  const topCert = certificates[certificates.length - 1];
+  const topCert = certificates.at(-1)!;
   const trustedRootCertificates = await getTrustedRootCertificates();
   if (!trustedRootCertificates) {
     return { valid: false, message: 'Failed to fetch trusted root certificates from Google API' };
@@ -254,7 +249,14 @@ function validateCertificateValidity(certificates: X509Certificate[]): Attestati
   for (let i = 0; i < certificates.length; i++) {
     const cert = certificates[i];
     if (now < cert.notBefore || now > cert.notAfter) {
-      const certType = i === 0 ? 'Leaf' : i === certificates.length - 1 ? 'Root' : 'Intermediate';
+      let certType: string;
+      if (i === 0) {
+        certType = 'Leaf';
+      } else if (i === certificates.length - 1) {
+        certType = 'Root';
+      } else {
+        certType = 'Intermediate';
+      }
       return {
         valid: false,
         message: `${certType} certificate not valid at current time (valid from ${cert.notBefore} to ${cert.notAfter})`,
@@ -293,9 +295,9 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
     }
 
     // Verify security levels
-    const validSecurityLevels = [SecurityLevel.trustedEnvironment, SecurityLevel.strongBox];
+    const validSecurityLevels = new Set([SecurityLevel.trustedEnvironment, SecurityLevel.strongBox]);
     const validLevels = [keyDescription.attestationSecurityLevel, keyDescription.keymasterSecurityLevel].every(
-      (level) => validSecurityLevels.includes(level),
+      (level) => validSecurityLevels.has(level),
     );
     if (!validLevels) {
       return {
