@@ -1,4 +1,4 @@
-name: Base Application Infrastructure Post Merge
+name: CA Base Application Infrastructure Upload Artifact to S3
 
 on:
   push:
@@ -10,15 +10,11 @@ on:
       - '.github/workflows/job_*base-application*.yml'
 
   workflow_dispatch:
-    inputs:
-      deploy_to_build:
-        description: 'Deploy to build environment'
-        type: boolean
-        default: false # Change once sam pipeline in build environment is ready
 
 permissions:
   contents: read
   id-token: write
+  packages: read
 
 defaults:
   run:
@@ -29,26 +25,35 @@ jobs:
     name: Validate Template
     uses: ./.github/workflows/job_validate-base-application.yml
 
-  deploy-dev:
-    name: Deploy to Dev
-    needs: validate
-    if: github.ref == 'refs/heads/main'
-    uses: ./.github/workflows/job_deploy-base-application.yml
+  run-test-suite:
+    name: Pre-deployment
+    uses: ./.github/workflows/job_test-suite.yml
     with:
-      ENVIRONMENT: dev
-      STACK_NAME: base-application
+      PRIVATE_PACKAGES_REQUIRED: true
+      PUBLISH_PACT_VERIFICATION_RESULTS: true
+      SONARQUBE_CONTINUE_ON_ERROR: true
+      WORKING_DIRECTORY: ./
     secrets:
-      GH_ACTIONS_ROLE_ARN: ${{ secrets.DEV_GH_ACTIONS_ROLE_ARN }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  deploy-build:
-    name: Deploy to Build
-    needs: deploy-dev
-    if: |
-      github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' || github.event.inputs.deploy_to_build == 'true')
-    uses: ./.github/workflows/job_deploy-base-application.yml
+  upload-sam-artifact-dev:
+    name: Dev
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
-      ENVIRONMENT: build
-      STACK_NAME: base-application
+      WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: base-application.yaml
     secrets:
-      GH_ACTIONS_ROLE_ARN: ${{ secrets.BUILD_GH_ACTIONS_ROLE_ARN }}
+      ARTIFACT_BUCKET: ${{ secrets.BACKEND_DEV_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
+
+  upload-sam-artifact-build:
+    name: Build
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: base-application.yaml
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BACKEND_BUILD_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_BUILD_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
