@@ -502,7 +502,6 @@ Resources:
   ApiGatewayBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateCustomDomain
-    DependsOn: CaBackendApi
     Properties:
       DomainName: !Ref ApiGatewayCustomDomain
       RestApiId: !Ref CaBackendApi
@@ -516,7 +515,6 @@ Resources:
   ApiGatewayPublicBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateCustomDomain
-    DependsOn: CaBackendApi
     Properties:
       DomainName: !Ref ApiGatewayPublicDomain
       RestApiId: !Ref CaBackendApi
