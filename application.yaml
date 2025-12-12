@@ -91,7 +91,7 @@ Parameters:
       Whether to associate the Cloaking WAF WebACL with the API Gateway stage.
       The Cloaking WAF blocks ALL requests that don't come from CloudFront.
     Type: String
-    Default: 'false'
+    Default: 'true'
     AllowedValues:
       - 'true'
       - 'false'
@@ -113,10 +113,14 @@ Conditions:
       - !Ref PermissionsBoundary
       - none
 
-  UseCodeSigning: !Not
+  UseCodeSigning: !And
+    - !Not
+      - !Equals
+        - !Ref CodeSigningConfigArn
+        - none
     - !Equals
-      - !Ref CodeSigningConfigArn
-      - none
+      - !Ref Environment
+      - prod
 
   IsDevEnvironment: !Equals
     - !Ref Environment
