@@ -144,7 +144,7 @@ export async function validateCSRContent(csrPem: string, attestedPublicKey: Publ
     }
 
     const namedCurve = (csr.publicKey.algorithm as { namedCurve?: string }).namedCurve;
-    if (!namedCurve || !ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.some((curve) => curve === namedCurve)) {
+    if (!namedCurve || !ANDROID_ATTESTATION_CONFIG.VALID_ECDSA_CURVES.includes(namedCurve)) {
       return {
         valid: false,
         code: 'invalid_key_curve',
