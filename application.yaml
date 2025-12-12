@@ -271,6 +271,7 @@ Resources:
             - IsDevEnvironment
             - 'true'
             - 'false'
+          EXPECTED_ANDROID_PACKAGE_NAME: 'org.multipaz.identityreader'
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
