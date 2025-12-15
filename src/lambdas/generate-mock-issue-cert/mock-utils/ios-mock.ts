@@ -25,6 +25,12 @@ export class IOSDeviceSimulator {
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
 
+    const publicKeyDer = crypto.createPublicKey(keyPair.publicKey).export({ type: 'spki', format: 'der' });
+    const keyId = crypto.createHash('sha256').update(publicKeyDer).digest('base64');
+
+    // Create attestation object with the same key pair
+    const attestationObject = await this.createAttestationObject(keyPair.publicKey, keyPair.privateKey, nonce, keyId);
+    
     const csr = await generateCSR({
       privateKeyPem: keyPair.privateKey,
       publicKeyPem: keyPair.publicKey,
@@ -35,10 +41,6 @@ export class IOSDeviceSimulator {
       },
     });
 
-    const publicKeyDer = crypto.createPublicKey(keyPair.publicKey).export({ type: 'spki', format: 'der' });
-    const keyId = crypto.createHash('sha256').update(publicKeyDer).digest('base64');
-
-    const attestationObject = await this.createAttestationObject(keyPair.publicKey, nonce);
     const clientDataJSON = Buffer.from(JSON.stringify({ challenge: nonce, origin: 'ios-app' })).toString('base64');
 
     return {
@@ -50,15 +52,20 @@ export class IOSDeviceSimulator {
     };
   }
 
-  private async createAttestationObject(publicKeyPem: string, nonce: string): Promise<string> {
+  private async createAttestationObject(publicKeyPem: string, privateKeyPem: string, nonce: string, keyId: string): Promise<string> {
     const publicKey = crypto.createPublicKey(publicKeyPem);
     const jwk = publicKey.export({ format: 'jwk' }) as crypto.JsonWebKey;
     
-    const authData = this.createAuthData(jwk);
+    const authData = this.createAuthData(jwk, keyId);
     
     const rootCA = await this.keyProvider.getRootCA();
     const intermediateKeys = await this.keyProvider.getIntermediateCAKeys();
-    const deviceKeys = await this.keyProvider.getDeviceKeys();
+    
+    // Use the same key pair for the certificate as in the authenticator data
+    const deviceKeys = {
+      privateKeyPem: privateKeyPem,
+      publicKeyPem: publicKeyPem
+    };
 
     const intermediateCert = await createIntermediateCA(intermediateKeys, rootCA.keyPair, rootCA.certificatePem);
     const leafCert = await createIOSAttestationCert(deviceKeys, intermediateKeys, intermediateCert, nonce, authData);
@@ -79,16 +86,19 @@ export class IOSDeviceSimulator {
     return this.encodeCBOR(attestation);
   }
 
-  private createAuthData(jwk: crypto.JsonWebKey): Buffer {
+  private createAuthData(jwk: crypto.JsonWebKey, keyId: string): Buffer {
     const rpIdHash = crypto.createHash('sha256').update('appattestdevelop').digest();
     const flags = Buffer.from([0x41]);
     const counter = Buffer.alloc(4);
     counter.writeUInt32BE(0, 0);
     const aaguid = Buffer.alloc(16);
     aaguid.write('appattestdevelop', 0, 16, 'utf8');
+    
+    // Use keyId as credential ID (base64 decoded)
+    const credId = Buffer.from(keyId, 'base64');
     const credIdLen = Buffer.alloc(2);
-    credIdLen.writeUInt16BE(32, 0);
-    const credId = crypto.randomBytes(32);
+    credIdLen.writeUInt16BE(credId.length, 0);
+    
     const publicKeyCBOR = this.encodePublicKeyCBOR(jwk);
 
     const authData = Buffer.concat([rpIdHash, flags, counter, aaguid, credIdLen, credId, publicKeyCBOR]);
