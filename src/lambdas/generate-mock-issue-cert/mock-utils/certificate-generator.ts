@@ -74,7 +74,7 @@ export async function createIntermediateCA(keyPair: KeyPair, rootKeys: KeyPair, 
     subject: 'CN=Test Android Hardware Attestation Intermediate CA, OU=Android, O=Google Inc, C=US',
     issuer: parsedRootCert.subject,
     notBefore: new Date(),
-    notAfter: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000), // 5 years
+    notAfter: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000),
     signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
     publicKey: cryptoKeys.publicKey,
     signingKey: rootCryptoKeys.privateKey,
@@ -154,4 +154,38 @@ function createRealAndroidAttestationExtension(nonce: string): Buffer {
   ];
 
   return Buffer.from(parts.join(''), 'hex');
+}
+
+export async function createIOSAttestationCert(
+  keyPair: KeyPair,
+  issuerKeys: KeyPair,
+  issuerCert: string,
+  nonce: string,
+  authData: Buffer,
+): Promise<string> {
+  const { X509CertificateGenerator, Extension, X509Certificate } = await import('@peculiar/x509');
+  const cryptoKeys = await importECDSAKeyPair(keyPair);
+  const issuerCryptoKeys = await importECDSAKeyPair(issuerKeys);
+  const parsedIssuerCert = new X509Certificate(issuerCert);
+
+  const crypto = await import('node:crypto');
+  const clientDataHash = crypto.createHash('sha256').update(nonce).digest();
+  const composite = Buffer.concat([authData, clientDataHash]);
+  const nonceHash = crypto.createHash('sha256').update(composite).digest();
+
+  const credentialExt = new Extension('1.2.840.113635.100.8.2', false, new Uint8Array(nonceHash));
+
+  const cert = await X509CertificateGenerator.create({
+    serialNumber: '03',
+    subject: 'CN=Test iOS Attestation, OU=Apple, O=Apple Inc, C=US',
+    issuer: parsedIssuerCert.subject,
+    notBefore: new Date(),
+    notAfter: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
+    publicKey: cryptoKeys.publicKey,
+    signingKey: issuerCryptoKeys.privateKey,
+    extensions: [credentialExt],
+  });
+
+  return cert.toString('pem');
 }
