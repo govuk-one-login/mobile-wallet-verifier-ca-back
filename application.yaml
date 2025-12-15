@@ -53,33 +53,6 @@ Parameters:
       - 'true'
       - 'false'
 
-  BaseDomain:
-    Description: The root domain (e.g., account.gov.uk)
-    Type: String
-    Default: account.gov.uk
-
-  ServiceSubdomain:
-    Description: The service-specific subdomain (e.g., verifier-ca)
-    Type: String
-    Default: verifier-ca
-
-  ApiSubdomain:
-    Description: The API-specific subdomain (e.g., api, backend)
-    Type: String
-    Default: api
-
-  OriginPrefix:
-    Description: The prefix for the origin domain (e.g., origin)
-    Type: String
-    Default: origin
-
-  RegionalCertificateStack:
-    Description: |
-      The name of Regional ACM certificate stack in the same region as API Gateway.
-      Required when EnableCustomDomain is true.
-    Type: String
-    Default: regional-certificates
-
   CustomDomainBasePath:
     Description: |
       The base path for the API mapping (empty string for root, or a path like 'v1')
@@ -130,10 +103,6 @@ Conditions:
   CreateCustomDomain: !Equals
     - !Ref EnableCustomDomain
     - 'true'
-
-  IsProduction: !Equals
-    - !Ref Environment
-    - prod
 
   UseBasePath: !Not
     - !Equals
@@ -254,7 +223,7 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !Sub '${Environment}-nonce-store'
+                      Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
 
   NonceServiceFunction:
     Type: AWS::Serverless::Function
@@ -279,7 +248,7 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${Environment}-nonce-store'
+            Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
 
   NonceServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -327,7 +296,7 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !Sub '${Environment}-nonce-store'
+                      Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
@@ -352,7 +321,7 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${Environment}-nonce-store'
+            Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
           ALLOW_TEST_TOKENS: !If
             - IsDevEnvironment
             - 'true'
@@ -466,63 +435,13 @@ Resources:
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
 
-  # API Gateway Custom Domain Resources
-  # Two custom domains are created:
-  # 1. Origin domain (origin.api.verifier-ca.dev.account.gov.uk) - used by CloudFront as origin
-  # 2. Public domain (api.verifier-ca.dev.account.gov.uk) - used by clients via CloudFront
-  ApiGatewayCustomDomain:
-    Type: AWS::ApiGateway::DomainName
-    Condition: CreateCustomDomain
-    Properties:
-      DomainName: !If
-        - IsProduction
-        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-      RegionalCertificateArn: !ImportValue
-        Fn::Sub: '${RegionalCertificateStack}-CertificateARN'
-      SecurityPolicy: TLS_1_2
-      Tags:
-        - Key: Name
-          Value: !If
-            - IsProduction
-            - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-            - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
-        - Key: Environment
-          Value: !Ref Environment
-
-  # Public Custom Domain - for CloudFront to forward requests with viewer Host header
-  ApiGatewayPublicDomain:
-    Type: AWS::ApiGateway::DomainName
-    Condition: CreateCustomDomain
-    Properties:
-      DomainName: !If
-        - IsProduction
-        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-      RegionalCertificateArn: !ImportValue
-        Fn::Sub: '${RegionalCertificateStack}-CertificateARN'
-      SecurityPolicy: TLS_1_2
-      Tags:
-        - Key: Name
-          Value: !If
-            - IsProduction
-            - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-            - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
-        - Key: Environment
-          Value: !Ref Environment
-
   # Base Path Mapping for Origin Domain
   ApiGatewayBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateCustomDomain
     Properties:
-      DomainName: !Ref ApiGatewayCustomDomain
+      DomainName: !ImportValue
+        Fn::Sub: '${Environment}-ApiGatewayOriginDomain'
       RestApiId: !Ref CaBackendApi
       Stage: !Ref CaBackendApi.Stage
       BasePath: !If
@@ -530,12 +449,14 @@ Resources:
         - !Ref CustomDomainBasePath
         - !Ref AWS::NoValue
 
+
   # Base Path Mapping for Public Domain - maps the same API to the public domain
   ApiGatewayPublicBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Condition: CreateCustomDomain
     Properties:
-      DomainName: !Ref ApiGatewayPublicDomain
+      DomainName: !ImportValue
+        Fn::Sub: '${Environment}-ApiGatewayPublicDomain'
       RestApiId: !Ref CaBackendApi
       Stage: !Ref CaBackendApi.Stage
       BasePath: !If
@@ -574,63 +495,3 @@ Outputs:
     Value: !Ref Environment
     Export:
       Name: !Sub '${AWS::StackName}-api-stage'
-
-  # Custom Domain Outputs (conditional)
-  CustomDomainName:
-    Condition: CreateCustomDomain
-    Description: The custom domain name for API Gateway
-    Value: !Ref ApiGatewayCustomDomain
-    Export:
-      Name: !Sub '${AWS::StackName}-CustomDomainName'
-
-  RegionalDomainName:
-    Condition: CreateCustomDomain
-    Description: The regional domain name assigned by API Gateway (use for Route53 alias target)
-    Value: !GetAtt ApiGatewayCustomDomain.RegionalDomainName
-    Export:
-      Name: !Sub '${AWS::StackName}-RegionalDomainName'
-
-  RegionalHostedZoneId:
-    Condition: CreateCustomDomain
-    Description: The regional hosted zone ID for the custom domain (use for Route53 alias target)
-    Value: !GetAtt ApiGatewayCustomDomain.RegionalHostedZoneId
-    Export:
-      Name: !Sub '${AWS::StackName}-RegionalHostedZoneId'
-
-  OriginDomainForCloudFront:
-    Condition: CreateCustomDomain
-    Description: The full origin domain name that CloudFront should use
-    Value: !If
-      - IsProduction
-      - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-      - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
-    Export:
-      Name: !Sub '${AWS::StackName}-OriginDomain'
-
-  DomainSuffix:
-    Condition: CreateCustomDomain
-    Description: The domain suffix (e.g., verifier-ca.dev.account.gov.uk)
-    Value: !If
-      - IsProduction
-      - !Sub '${ServiceSubdomain}.${BaseDomain}'
-      - !Sub '${ServiceSubdomain}.${Environment}.${BaseDomain}'
-    Export:
-      Name: !Sub '${AWS::StackName}-DomainSuffix'
-
-  # Public domain outputs (for CloudFront integration)
-  PublicDomainName:
-    Condition: CreateCustomDomain
-    Description: The public custom domain name for API Gateway (used by CloudFront)
-    Value: !Ref ApiGatewayPublicDomain
-    Export:
-      Name: !Sub '${AWS::StackName}-PublicDomainName'
-
-  PublicDomainForCloudFront:
-    Condition: CreateCustomDomain
-    Description: The full public domain name that clients use via CloudFront
-    Value: !If
-      - IsProduction
-      - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-      - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
-    Export:
-      Name: !Sub '${AWS::StackName}-PublicDomain'

@@ -14,11 +14,54 @@ Parameters:
       - integration
       - prod
 
+  # API Gateway Custom Domain Parameters
+  EnableCustomDomain:
+    Description: Whether to create custom domains for API Gateway
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+  BaseDomain:
+    Description: The root domain (e.g., account.gov.uk)
+    Type: String
+    Default: account.gov.uk
+
+  ServiceSubdomain:
+    Description: The service-specific subdomain (e.g., verifier-ca)
+    Type: String
+    Default: verifier-ca
+
+  ApiSubdomain:
+    Description: The API-specific subdomain (e.g., api)
+    Type: String
+    Default: api
+
+  OriginPrefix:
+    Description: The prefix for the origin domain (e.g., origin)
+    Type: String
+    Default: origin
+
+  RegionalCertificateStack:
+    Description: The name of Regional ACM certificate stack
+    Type: String
+    Default: regional-certificates
+
+Conditions:
+  IsProduction: !Equals
+    - !Ref Environment
+    - prod
+
+  CreateCustomDomain: !Equals
+    - !Ref EnableCustomDomain
+    - 'true'
+
 Resources:
   NonceTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${Environment}-nonce-store'
+      TableName: !Sub '${Environment}-verifier-ca-nonce-store'
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: nonceValue
@@ -32,9 +75,86 @@ Resources:
       SSESpecification:
         SSEEnabled: true
 
+  # Shared API Gateway Custom Domains
+  # These are created once and shared by multiple application stacks via base path mappings
+  ApiGatewayOriginDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: CreateCustomDomain
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !ImportValue
+        Fn::Sub: '${RegionalCertificateStack}-CertificateARN'
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Name
+          Value: !If
+            - IsProduction
+            - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+            - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - Key: Environment
+          Value: !Ref Environment
+
+  ApiGatewayPublicDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: CreateCustomDomain
+    Properties:
+      DomainName: !If
+        - IsProduction
+        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !ImportValue
+        Fn::Sub: '${RegionalCertificateStack}-CertificateARN'
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Name
+          Value: !If
+            - IsProduction
+            - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+            - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - Key: Environment
+          Value: !Ref Environment
+
 Outputs:
   NonceTableName:
     Description: 'Name of the DynamoDB nonce table'
     Value: !Ref NonceTable
     Export:
-      Name: !Sub '${Environment}-nonce-store'
+      Name: !Sub '${Environment}-verifier-ca-nonce-store'
+
+  # Custom Domain Outputs for use by application stacks
+  OriginDomainName:
+    Condition: CreateCustomDomain
+    Description: The origin custom domain name (for base path mappings)
+    Value: !Ref ApiGatewayOriginDomain
+    Export:
+      Name: !Sub '${Environment}-ApiGatewayOriginDomain'
+
+  OriginDomainRegionalName:
+    Condition: CreateCustomDomain
+    Description: The regional domain name for Route53 alias
+    Value: !GetAtt ApiGatewayOriginDomain.RegionalDomainName
+    Export:
+      Name: !Sub '${Environment}-ApiGatewayOriginDomainRegionalName'
+
+  OriginDomainRegionalHostedZoneId:
+    Condition: CreateCustomDomain
+    Description: The regional hosted zone ID for Route53 alias
+    Value: !GetAtt ApiGatewayOriginDomain.RegionalHostedZoneId
+    Export:
+      Name: !Sub '${Environment}-ApiGatewayOriginDomainRegionalHostedZoneId'
+
+  PublicDomainName:
+    Condition: CreateCustomDomain
+    Description: The public custom domain name (for base path mappings)
+    Value: !Ref ApiGatewayPublicDomain
+    Export:
+      Name: !Sub '${Environment}-ApiGatewayPublicDomain'
