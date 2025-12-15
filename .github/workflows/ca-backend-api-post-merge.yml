@@ -38,6 +38,7 @@ jobs:
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: application.yaml
     secrets:
       ARTIFACT_BUCKET: ${{ secrets.BACKEND_DEV_ARTIFACT_BUCKET }}
       GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
@@ -48,6 +49,7 @@ jobs:
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: application.yaml
     secrets:
       ARTIFACT_BUCKET: ${{ secrets.BACKEND_BUILD_ARTIFACT_BUCKET }}
       GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_BUILD_GH_ACTIONS_ROLE_ARN }}
