@@ -449,7 +449,6 @@ Resources:
         - !Ref CustomDomainBasePath
         - !Ref AWS::NoValue
 
-
   # Base Path Mapping for Public Domain - maps the same API to the public domain
   ApiGatewayPublicBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
