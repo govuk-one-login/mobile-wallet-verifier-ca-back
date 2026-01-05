@@ -47,13 +47,13 @@ jobs:
       GH_ACTIONS_ROLE_ARN: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
       SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
 
-  upload-sam-artifact-build:
-    name: Build
-    uses: ./.github/workflows/job_upload-sam-artifact.yml
-    with:
-      WORKING_DIRECTORY: ./
-      TEMPLATE_NAME: base-application.yaml
-    secrets:
-      ARTIFACT_BUCKET: ${{ secrets.BASE_APP_BUILD_ARTIFACT_BUCKET }}
-      GH_ACTIONS_ROLE_ARN: ${{ secrets.BASE_APP_BUILD_GH_ACTIONS_ROLE_ARN }}
-      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
+#  upload-sam-artifact-build:
+#    name: Build
+#    uses: ./.github/workflows/job_upload-sam-artifact.yml
+#    with:
+#      WORKING_DIRECTORY: ./
+#      TEMPLATE_NAME: base-application.yaml
+#    secrets:
+#      ARTIFACT_BUCKET: ${{ secrets.BASE_APP_BUILD_ARTIFACT_BUCKET }}
+#      GH_ACTIONS_ROLE_ARN: ${{ secrets.BASE_APP_BUILD_GH_ACTIONS_ROLE_ARN }}
+#      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
