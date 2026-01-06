@@ -30,7 +30,6 @@ on:
         default: true
         type: boolean
 
-
 permissions:
   contents: read
   id-token: write
@@ -102,7 +101,7 @@ jobs:
 
   validate-base-app:
     name: Validate Base Application
-    needs: [ detect-changes]
+    needs: [detect-changes]
     if: needs.detect-changes.outputs.deploy_base == 'true'
     uses: ./.github/workflows/job_validate-base-application.yml
 
