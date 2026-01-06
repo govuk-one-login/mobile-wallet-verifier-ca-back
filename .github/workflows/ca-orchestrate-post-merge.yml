@@ -32,7 +32,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
   packages: read
 
 defaults:
@@ -41,6 +40,9 @@ defaults:
 
 jobs:
   detect-changes:
+    permissions:
+      id-token: write
+      contents: write
     name: Detect Changes
     runs-on: ubuntu-24.04
     outputs:
