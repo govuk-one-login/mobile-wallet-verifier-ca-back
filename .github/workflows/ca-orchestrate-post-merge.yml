@@ -133,6 +133,10 @@ jobs:
     if: |
       needs.detect-changes.outputs.deploy_base == 'true' &&
       needs.detect-changes.outputs.target_environment == 'dev'
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       WORKING_DIRECTORY: ./
@@ -149,6 +153,10 @@ jobs:
     if: |
       needs.detect-changes.outputs.deploy_base == 'true' &&
       needs.detect-changes.outputs.target_environment == 'build'
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       WORKING_DIRECTORY: ./
@@ -168,6 +176,10 @@ jobs:
       needs.detect-changes.outputs.deploy_app == 'true' &&
       needs.detect-changes.outputs.target_environment == 'dev' &&
       (needs.upload-base-app-sam-artifact-dev.result == 'success' || needs.upload-base-app-sam-artifact-dev.result == 'skipped')
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       WORKING_DIRECTORY: ./
@@ -187,6 +199,10 @@ jobs:
       needs.detect-changes.outputs.deploy_app == 'true' &&
       needs.detect-changes.outputs.target_environment == 'build' &&
       (needs.upload-base-app-sam-artifact-build.result == 'success' || needs.upload-base-app-sam-artifact-build.result == 'skipped')
+    permissions:
+      id-token: write
+      contents: read
+      packages: read
     uses: ./.github/workflows/job_upload-sam-artifact.yml
     with:
       WORKING_DIRECTORY: ./
