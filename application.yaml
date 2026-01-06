@@ -393,8 +393,8 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
-      AlarmDescription: !Sub |
-        Monitors errors for Nonce Service lambda version ${NonceServiceFunction.Version}.
+      AlarmDescription: |
+        Monitors errors for Nonce Service lambda.
         Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -407,7 +407,7 @@ Resources:
         - Name: FunctionName
           Value: !Ref NonceServiceFunction
         - Name: ExecutedVersion
-          Value: !GetAtt NonceServiceFunction.Version
+          Value: live
       AlarmActions:
         - !Ref WarningsChannel
       TreatMissingData: notBreaching
@@ -416,8 +416,8 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-errors'
-      AlarmDescription: !Sub |
-        Monitors errors for Issue Reader Certificate Service lambda version ${IssueReaderCertServiceFunction.Version}.
+      AlarmDescription: |
+        Monitors errors for Issue Reader Certificate Service lambda.
         Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
       MetricName: Errors
       Namespace: AWS/Lambda
@@ -430,7 +430,7 @@ Resources:
         - Name: FunctionName
           Value: !Ref IssueReaderCertServiceFunction
         - Name: ExecutedVersion
-          Value: !GetAtt IssueReaderCertServiceFunction.Version
+          Value: live
       AlarmActions:
         - !Ref WarningsChannel
       TreatMissingData: notBreaching
