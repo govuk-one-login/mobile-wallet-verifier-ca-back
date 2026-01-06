@@ -90,14 +90,6 @@ Mappings:
       production: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       staging: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
-    SlackChannels:
-      prod:
-        warnings: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-prod-warnings'
-        alerts: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-prod-alerts'
-      nonprod:
-        warnings: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-nonprod-warnings'
-        alerts: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-nonprod-alerts'
-
 Globals:
   Function:
     LoggingConfig:
