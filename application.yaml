@@ -476,6 +476,7 @@ Resources:
       WebACLArn:
         Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
+
 Outputs:
   ApiGatewayDomainName:
     Description: API Gateway regional domain name for CloudFront origin

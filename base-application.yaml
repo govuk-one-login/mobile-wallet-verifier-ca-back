@@ -14,6 +14,7 @@ Parameters:
       - integration
       - prod
 
+
   # API Gateway Custom Domain Parameters
   EnableCustomDomain:
     Description: Whether to create custom domains for API Gateway
