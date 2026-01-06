@@ -1,0 +1,197 @@
+name: CA Base & Backend orchestrate Post Merge
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'base-application.yaml'
+      - 'application.yaml'
+      - 'src/**'
+      - '.github/workflows/ca-orchestrate-post-merge.yml'
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - build
+      deploy_base_application:
+        description: 'Deploy base-application.yaml'
+        required: true
+        default: true
+        type: boolean
+      deploy_application:
+        description: 'Deploy application.yaml'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  packages: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect-changes:
+    permissions:
+      id-token: write
+      contents: write
+    name: Detect Changes
+    runs-on: ubuntu-24.04
+    outputs:
+      base_app_changed: ${{ steps.changes.outputs.base_app }}
+      app_changed: ${{ steps.changes.outputs.app }}
+      deploy_base: ${{ steps.decide.outputs.deploy_base }}
+      deploy_app: ${{ steps.decide.outputs.deploy_app }}
+      target_environment: ${{ steps.decide.outputs.target_environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          fetch-depth: 2
+
+      - name: Check for changes
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # For push events, compare with previous commit
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            BASE_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^base-application\.yaml$' || echo "")
+            APP_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^(application\.yaml|src/)' || echo "")
+          else
+            # For workflow_dispatch, use inputs
+            BASE_CHANGED=""
+            APP_CHANGED=""
+          fi
+
+          echo "base_app=$([[ -n "$BASE_CHANGED" ]] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+          echo "app=$([[ -n "$APP_CHANGED" ]] && echo 'true' || echo 'false')" >> "$GITHUB_OUTPUT"
+
+      - name: Decide what to deploy
+        id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_DEPLOY_BASE: ${{ inputs.deploy_base_application }}
+          INPUT_DEPLOY_APP: ${{ inputs.deploy_application }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          BASE_APP_CHANGED: ${{ steps.changes.outputs.base_app }}
+          APP_CHANGED: ${{ steps.changes.outputs.app }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "deploy_base=$INPUT_DEPLOY_BASE" >> "$GITHUB_OUTPUT"
+            echo "deploy_app=$INPUT_DEPLOY_APP" >> "$GITHUB_OUTPUT"
+            echo "target_environment=$INPUT_ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy_base=$BASE_APP_CHANGED" >> "$GITHUB_OUTPUT"
+            # Always deploy app if base changed (to pick up new exports)
+            if [[ "$BASE_APP_CHANGED" == "true" ]] || [[ "$APP_CHANGED" == "true" ]]; then
+              echo "deploy_app=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "deploy_app=false" >> "$GITHUB_OUTPUT"
+            fi
+            # Default to dev for push events
+            echo "target_environment=dev" >> "$GITHUB_OUTPUT"          
+          fi
+
+  validate-base-app:
+    name: Validate Base Application
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.deploy_base == 'true'
+    uses: ./.github/workflows/job_validate-base-application.yml
+
+  ci-checks:
+    name: Backend Pre-deployment Checks
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.deploy_app == 'true'
+    uses: ./.github/workflows/job_ci-checks.yml
+    with:
+      PRIVATE_PACKAGES_REQUIRED: true
+
+  run-test-suite:
+    name: Pre-deployment
+    uses: ./.github/workflows/job_test-suite.yml
+    with:
+      PRIVATE_PACKAGES_REQUIRED: true
+      PUBLISH_PACT_VERIFICATION_RESULTS: true
+      SONARQUBE_CONTINUE_ON_ERROR: true
+      WORKING_DIRECTORY: ./
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Deploy base app to dev environment
+  upload-base-app-sam-artifact-dev:
+    name: Upload Base Application to Dev
+    needs: [detect-changes, run-test-suite]
+    if: |
+      needs.detect-changes.outputs.deploy_base == 'true' &&
+      needs.detect-changes.outputs.target_environment == 'dev'
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: base-application.yaml
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BASE_APP_DEV_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
+
+  # Deploy base app to build environment
+  upload-base-app-sam-artifact-build:
+    name: Upload Base Application to Build
+    needs: [detect-changes, run-test-suite]
+    if: |
+      needs.detect-changes.outputs.deploy_base == 'true' &&
+      needs.detect-changes.outputs.target_environment == 'build'
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: base-application.yaml
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BASE_APP_BUILD_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BASE_APP_BUILD_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
+
+  # Deploy backend to dev environment
+  upload-backend-sam-artifact-dev:
+    name: Upload Backend to Dev
+    needs: [detect-changes, run-test-suite, upload-base-app-sam-artifact-dev]
+    # Run if backend needs deploying AND (base-app succeeded OR base was skipped)
+    if: |
+      always() &&
+      needs.detect-changes.outputs.deploy_app == 'true' &&
+      needs.detect-changes.outputs.target_environment == 'dev' &&
+      (needs.upload-base-app-sam-artifact-dev.result == 'success' || needs.upload-base-app-sam-artifact-dev.result == 'skipped')
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: application.yaml
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BACKEND_DEV_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.DEV_SIGNING_PROFILE_NAME }}
+
+  # Deploy backend to build environment
+  upload-backend-sam-artifact-build:
+    name: Upload Backend to Build
+    needs: [detect-changes, run-test-suite, upload-base-app-sam-artifact-build]
+    # Run if backend needs deploying AND (base-app succeeded OR base was skipped)
+    if: |
+      always() &&
+      needs.detect-changes.outputs.deploy_app == 'true' &&
+      needs.detect-changes.outputs.target_environment == 'build' &&
+      (needs.upload-base-app-sam-artifact-build.result == 'success' || needs.upload-base-app-sam-artifact-build.result == 'skipped')
+    uses: ./.github/workflows/job_upload-sam-artifact.yml
+    with:
+      WORKING_DIRECTORY: ./
+      TEMPLATE_NAME: application.yaml
+    secrets:
+      ARTIFACT_BUCKET: ${{ secrets.BACKEND_BUILD_ARTIFACT_BUCKET }}
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_BUILD_GH_ACTIONS_ROLE_ARN }}
+      SIGNING_PROFILE_NAME: ${{ secrets.BUILD_SIGNING_PROFILE_NAME }}
