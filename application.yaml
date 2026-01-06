@@ -70,6 +70,10 @@ Conditions:
     - !Ref Environment
     - dev
 
+  IsProductionEnvironment: !Equals
+    - !Ref Environment
+    - prod
+
 Mappings:
   EnvironmentVariables:
     dev:
@@ -85,6 +89,14 @@ Mappings:
       integration: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       production: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       staging: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+
+    SlackChannels:
+      prod:
+        warnings: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-prod-warnings'
+        alerts: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-prod-alerts'
+      nonprod:
+        warnings: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-nonprod-warnings'
+        alerts: 'arn:aws:sns:eu-west-2:${AWS::AccountId}:di-verifier-ca-nonprod-alerts'
 
 Globals:
   Function:
@@ -147,6 +159,16 @@ Globals:
       - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
 
 Resources:
+  # SNS Topics for Slack Integration
+  WarningsChannel:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !If
+        - IsProductionEnvironment
+        - di-verifier-ca-prod-warnings
+        - di-verifier-ca-nonprod-warnings
+      DisplayName: !Sub 'DI Verifier CA ${Environment} Warnings'
+
   NonceServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -374,6 +396,53 @@ Resources:
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
 
+  # CloudWatch Alarms for Canary Deployments
+  NonceServiceErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
+      AlarmDescription: !Sub |
+        Monitors errors for Nonce Service lambda version ${NonceServiceFunction.Version}.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NonceServiceFunction
+        - Name: ExecutedVersion
+          Value: !GetAtt NonceServiceFunction.Version
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
+  IssueReaderCertServiceErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-errors'
+      AlarmDescription: !Sub |
+        Monitors errors for Issue Reader Certificate Service lambda version ${IssueReaderCertServiceFunction.Version}.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref IssueReaderCertServiceFunction
+        - Name: ExecutedVersion
+          Value: !GetAtt IssueReaderCertServiceFunction.Version
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
   # CaBackendApiWebAclAssociation:
   #   Type: AWS::WAFv2::WebACLAssociation
   #   Properties:
@@ -401,3 +470,15 @@ Outputs:
     Value: !Ref Environment
     Export:
       Name: !Sub '${AWS::StackName}-api-stage'
+
+  NonceServiceErrorAlarmArn:
+    Description: ARN of the Nonce Service error alarm
+    Value: !GetAtt NonceServiceErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
+
+  IssueReaderCertServiceErrorAlarmArn:
+    Description: ARN of the Issue Reader Certificate Service error alarm
+    Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
