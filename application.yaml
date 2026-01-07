@@ -544,6 +544,53 @@ Resources:
         - !Ref WarningsChannel
       TreatMissingData: notBreaching
 
+  # API Gateway 4xx/5xx Alarms
+  ApiGateway4xxErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-4xx-errors'
+      AlarmDescription: |
+        Monitors 4xx client errors for API Gateway.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+      MetricName: 4XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub '${AWS::StackName}-${CaBackendApiParam}'
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
+  ApiGateway5xxErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-5xx-errors'
+      AlarmDescription: |
+        Monitors 5xx server errors for API Gateway.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub '${AWS::StackName}-${CaBackendApiParam}'
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
 Outputs:
   ApiGatewayDomainName:
     Description: API Gateway regional domain name for CloudFront origin
@@ -574,3 +621,15 @@ Outputs:
     Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
+
+  ApiGateway4xxErrorAlarmArn:
+    Description: ARN of the API Gateway 4xx error alarm
+    Value: !GetAtt ApiGateway4xxErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-api-gateway-4xx-error-alarm-arn'
+
+  ApiGateway5xxErrorAlarmArn:
+    Description: ARN of the API Gateway 5xx error alarm
+    Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-api-gateway-5xx-error-alarm-arn'
