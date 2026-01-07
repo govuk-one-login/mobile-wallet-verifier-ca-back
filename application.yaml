@@ -44,6 +44,31 @@ Parameters:
     Type: String
     Default: cloudfront-distribution
 
+  # API Gateway Custom Domain Parameters
+  EnableCustomDomain:
+    Description: Whether to create a custom domain for API Gateway
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+  CustomDomainBasePath:
+    Description: |
+      The base path for the API mapping (empty string for root, or a path like 'v1')
+    Type: String
+    Default: ''
+
+  EnableWafAssociation:
+    Description: |
+      Whether to associate the Cloaking WAF WebACL with the API Gateway stage.
+      The Cloaking WAF blocks ALL requests that don't come from CloudFront.
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
 Conditions:
   EgressLogsToSplunkUsingCsls: !Or
     - !Equals
@@ -61,10 +86,14 @@ Conditions:
       - !Ref PermissionsBoundary
       - none
 
-  UseCodeSigning: !Not
+  UseCodeSigning: !And
+    - !Not
+      - !Equals
+        - !Ref CodeSigningConfigArn
+        - none
     - !Equals
-      - !Ref CodeSigningConfigArn
-      - none
+      - !Ref Environment
+      - prod
 
   IsDevEnvironment: !Equals
     - !Ref Environment
@@ -73,6 +102,22 @@ Conditions:
   IsProductionEnvironment: !Equals
     - !Ref Environment
     - prod
+
+  # Custom domain conditions
+  CreateCustomDomain: !Equals
+    - !Ref EnableCustomDomain
+    - 'true'
+
+  UseBasePath: !Not
+    - !Equals
+      - !Ref CustomDomainBasePath
+      - ''
+
+  AssociateWebACL: !And
+    - !Condition CreateCustomDomain
+    - !Equals
+      - !Ref EnableWafAssociation
+      - 'true'
 
 Mappings:
   EnvironmentVariables:
@@ -83,6 +128,18 @@ Mappings:
     build:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+
+    staging:
+      LambdaLogLevel: INFO
+      DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+
+    integration:
+      LambdaLogLevel: INFO
+      DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+
+    prod:
+      LambdaLogLevel: INFO
+      DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
@@ -114,41 +171,43 @@ Globals:
       - UseCodeSigning
       - !Ref CodeSigningConfigArn
       - !Ref AWS::NoValue
-    Environment:
-      Variables:
-        DT_CONNECTION_AUTH_TOKEN: !Sub
-          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}'
-          - SecretArn: !FindInMap
-              - EnvironmentVariables
-              - !Ref Environment
-              - DynatraceSecretArn
-        DT_CONNECTION_BASE_URL: !Sub
-          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}'
-          - SecretArn: !FindInMap
-              - EnvironmentVariables
-              - !Ref Environment
-              - DynatraceSecretArn
-        DT_CLUSTER_ID: !Sub
-          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}'
-          - SecretArn: !FindInMap
-              - EnvironmentVariables
-              - !Ref Environment
-              - DynatraceSecretArn
-        DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
-          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}'
-          - SecretArn: !FindInMap
-              - EnvironmentVariables
-              - !Ref Environment
-              - DynatraceSecretArn
-        DT_TENANT: !Sub
-          - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}'
-          - SecretArn: !FindInMap
-              - EnvironmentVariables
-              - !Ref Environment
-              - DynatraceSecretArn
-        DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: 'true'
-    Layers:
-      - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
+    # TEMPORARY FIX: Dynatrace layer commented out due to code signing conflict
+    # TODO: Re-enable once layer is signed or code signing config is updated
+    # Environment:
+    #   Variables:
+    #     DT_CONNECTION_AUTH_TOKEN: !Sub
+    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}'
+    #       - SecretArn: !FindInMap
+    #           - EnvironmentVariables
+    #           - !Ref Environment
+    #           - DynatraceSecretArn
+    #     DT_CONNECTION_BASE_URL: !Sub
+    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}'
+    #       - SecretArn: !FindInMap
+    #           - EnvironmentVariables
+    #           - !Ref Environment
+    #           - DynatraceSecretArn
+    #     DT_CLUSTER_ID: !Sub
+    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}'
+    #       - SecretArn: !FindInMap
+    #           - EnvironmentVariables
+    #           - !Ref Environment
+    #           - DynatraceSecretArn
+    #     DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
+    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}'
+    #       - SecretArn: !FindInMap
+    #           - EnvironmentVariables
+    #           - !Ref Environment
+    #           - DynatraceSecretArn
+    #     DT_TENANT: !Sub
+    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}'
+    #       - SecretArn: !FindInMap
+    #           - EnvironmentVariables
+    #           - !Ref Environment
+    #           - DynatraceSecretArn
+    #     DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: 'true'
+    # Layers:
+    #   - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
 
 Resources:
   # SNS Topics for Slack Integration
@@ -165,6 +224,10 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub '${AWS::StackName}-${Environment}-nonce-service-role'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -186,7 +249,7 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !Sub '${Environment}-nonce-store'
+                      Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
 
   NonceServiceFunction:
     Type: AWS::Serverless::Function
@@ -211,7 +274,7 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${Environment}-nonce-store'
+            Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
 
   NonceServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -234,6 +297,10 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-role'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -255,7 +322,7 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !Sub '${Environment}-nonce-store'
+                      Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
@@ -280,11 +347,12 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${Environment}-nonce-store'
+            Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
           ALLOW_TEST_TOKENS: !If
             - IsDevEnvironment
             - 'true'
             - 'false'
+          EXPECTED_ANDROID_PACKAGE_NAME: 'org.multipaz.identityreader'
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -359,6 +427,11 @@ Resources:
   ApiGatewayCloudWatchLogsRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub '${AWS::StackName}-${Environment}-api-gateway-logs-role'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -387,6 +460,47 @@ Resources:
     Type: AWS::ApiGateway::Account
     Properties:
       CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchLogsRole.Arn
+
+  # Base Path Mapping for Origin Domain
+  ApiGatewayBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: CreateCustomDomain
+    Properties:
+      DomainName: !ImportValue
+        Fn::Sub: '${Environment}-ApiGatewayOriginDomain'
+      RestApiId: !Ref CaBackendApi
+      Stage: !Ref CaBackendApi.Stage
+      BasePath: !If
+        - UseBasePath
+        - !Ref CustomDomainBasePath
+        - !Ref AWS::NoValue
+
+  # Base Path Mapping for Public Domain - maps the same API to the public domain
+  ApiGatewayPublicBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: CreateCustomDomain
+    Properties:
+      DomainName: !ImportValue
+        Fn::Sub: '${Environment}-ApiGatewayPublicDomain'
+      RestApiId: !Ref CaBackendApi
+      Stage: !Ref CaBackendApi.Stage
+      BasePath: !If
+        - UseBasePath
+        - !Ref CustomDomainBasePath
+        - !Ref AWS::NoValue
+
+  # WAF WebACL Association - Protects API Gateway with origin cloaking rules
+  # Ensures traffic only comes through CloudFront
+  ApiGatewayWebACLAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: AssociateWebACL
+    DependsOn: ApiGatewayBasePathMapping
+    Properties:
+      ResourceArn: !Sub
+        - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
+        - ApiStage: !Ref CaBackendApi.Stage
+      WebACLArn:
+        Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
   # CloudWatch Alarms for Canary Deployments
   NonceServiceErrorAlarm:
@@ -434,15 +548,6 @@ Resources:
       AlarmActions:
         - !Ref WarningsChannel
       TreatMissingData: notBreaching
-
-  # CaBackendApiWebAclAssociation:
-  #   Type: AWS::WAFv2::WebACLAssociation
-  #   Properties:
-  #     ResourceArn: !Sub
-  #       - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
-  #       - ApiStage: !Ref CaBackendApi.Stage
-  #     WebACLArn:
-  #       Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
 Outputs:
   ApiGatewayDomainName:

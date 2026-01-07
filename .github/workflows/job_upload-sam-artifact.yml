@@ -81,4 +81,4 @@ jobs:
         with:
           artifact-bucket-name: ${{ secrets.ARTIFACT_BUCKET }}
           signing-profile-name: ${{ secrets.SIGNING_PROFILE_NAME }}
-          template-file: application.yaml
+          template-file: ${{ inputs.TEMPLATE_NAME }}

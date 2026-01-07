@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 import { Logger } from '@aws-lambda-powertools/logger';
-import { KeyManager } from './mock-utils/key-manager.ts';
-import { AndroidDeviceSimulator } from './mock-utils/android-mock.ts';
-import { DEVICE_KEYS_SECRET } from '../../../scripts/setup-android-infrastructure.ts';
+import { KeyManager } from './mock-utils/key-manager';
+import { AndroidDeviceSimulator } from './mock-utils/android-mock';
+import { DEVICE_KEYS_SECRET } from '../../../scripts/setup-android-infrastructure';
 
 const logger = new Logger();
 
@@ -14,7 +14,7 @@ interface MockRequest {
   platform: string;
 }
 
-export const handler = async (): Promise<MockRequest> => {
+export const handler = async (inputNonce?: string): Promise<MockRequest> => {
   logger.info('Generating mock issue cert payload');
 
   const keyManager = new KeyManager();
@@ -25,7 +25,7 @@ export const handler = async (): Promise<MockRequest> => {
   }
 
   const deviceSimulator = new AndroidDeviceSimulator();
-  const nonce = randomUUID().toLowerCase();
+  const nonce = inputNonce || randomUUID().toLowerCase();
 
   const payload = await deviceSimulator.generateMockRequest(nonce);
 
@@ -37,7 +37,8 @@ export const handler = async (): Promise<MockRequest> => {
 
 // Execute when run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  handler()
+  const nonce = process.argv[2]; // Get nonce from command line argument
+  handler(nonce)
     .then((result) => {
       console.log('✅ Mock certificate generator invoked successfully');
       console.log('Generated mock request:');
