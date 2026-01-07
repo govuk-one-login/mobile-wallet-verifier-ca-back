@@ -73,9 +73,6 @@ Conditions:
   EgressLogsToSplunkUsingCsls: !Or
     - !Equals
       - !Ref Environment
-      - staging
-    - !Equals
-      - !Ref Environment
       - integration
     - !Equals
       - !Ref Environment
@@ -167,8 +164,6 @@ Globals:
       - UseCodeSigning
       - !Ref CodeSigningConfigArn
       - !Ref AWS::NoValue
-    # TEMPORARY FIX: Dynatrace layer commented out due to code signing conflict
-    # TODO: Re-enable once layer is signed or code signing config is updated
     # Environment:
     #   Variables:
     #     DT_CONNECTION_AUTH_TOKEN: !Sub
