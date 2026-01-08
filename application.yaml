@@ -76,7 +76,7 @@ Conditions:
       - integration
     - !Equals
       - !Ref Environment
-      - production
+      - prod
 
   UsePermissionsBoundary: !Not
     - !Equals
@@ -92,13 +92,9 @@ Conditions:
     - !Ref Environment
     - dev
 
-  IsProductionEnvironment: !Or
-    - !Equals
-      - !Ref Environment
-      - prod
-    - !Equals
-      - !Ref Environment
-      - production
+  IsProductionEnvironment: !Equals
+    - !Ref Environment
+    - prod
 
   # Custom domain conditions
   CreateCustomDomain: !Equals
@@ -141,7 +137,7 @@ Mappings:
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       integration: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
-      production: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      prod: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       staging: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
 Globals:
