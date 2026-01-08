@@ -54,7 +54,7 @@ export function loadCloudFormationTemplate(templatePath: string): CloudFormation
   return load(templateContent, { schema: cfnSchema }) as CloudFormationTemplate;
 }
 
-export const ENVIRONMENT_VALUES = ['dev', 'build', 'staging', 'integration', 'prod'];
+export const ENVIRONMENT_VALUES = ['dev', 'build', 'staging', 'integration', 'production'];
 
 // Common test helpers
 export function testTemplateStructure(template: CloudFormationTemplate) {
