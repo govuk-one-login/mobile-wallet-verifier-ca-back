@@ -92,9 +92,13 @@ Conditions:
     - !Ref Environment
     - dev
 
-  IsProductionEnvironment: !Equals
-    - !Ref Environment
-    - prod
+  IsProductionEnvironment: !Or
+    - !Equals
+      - !Ref Environment
+      - prod
+    - !Equals
+      - !Ref Environment
+      - production
 
   # Custom domain conditions
   CreateCustomDomain: !Equals
