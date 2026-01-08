@@ -12,7 +12,7 @@ Parameters:
       - build
       - staging
       - integration
-      - production
+      - prod
 
   CodeSigningConfigArn:
     Description: |
@@ -76,7 +76,7 @@ Conditions:
       - integration
     - !Equals
       - !Ref Environment
-      - production
+      - prod
 
   UsePermissionsBoundary: !Not
     - !Equals
@@ -94,7 +94,7 @@ Conditions:
 
   IsProductionEnvironment: !Equals
     - !Ref Environment
-    - production
+    - prod
 
   # Custom domain conditions
   CreateCustomDomain: !Equals
@@ -130,14 +130,14 @@ Mappings:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
 
-    production:
+    prod:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       integration: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
-      production: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
+      prod: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
       staging: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
 
 Globals:
