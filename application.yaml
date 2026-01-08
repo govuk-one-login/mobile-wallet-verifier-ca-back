@@ -83,14 +83,10 @@ Conditions:
       - !Ref PermissionsBoundary
       - none
 
-  UseCodeSigning: !And
-    - !Not
-      - !Equals
-        - !Ref CodeSigningConfigArn
-        - none
+  UseCodeSigning: !Not
     - !Equals
-      - !Ref Environment
-      - prod
+      - !Ref CodeSigningConfigArn
+      - none
 
   IsDevEnvironment: !Equals
     - !Ref Environment
