@@ -12,7 +12,7 @@ Parameters:
       - build
       - staging
       - integration
-      - prod
+      - production
 
   CodeSigningConfigArn:
     Description: |
@@ -92,13 +92,9 @@ Conditions:
     - !Ref Environment
     - dev
 
-  IsProductionEnvironment: !Or
-    - !Equals
-      - !Ref Environment
-      - prod
-    - !Equals
-      - !Ref Environment
-      - production
+  IsProductionEnvironment: !Equals
+    - !Ref Environment
+    - production
 
   # Custom domain conditions
   CreateCustomDomain: !Equals
@@ -134,7 +130,7 @@ Mappings:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
 
-    prod:
+    production:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
 
