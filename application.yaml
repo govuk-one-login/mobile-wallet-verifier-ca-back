@@ -500,7 +500,7 @@ Resources:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
       AlarmDescription: |
         Monitors errors for Nonce Service lambda.
-        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
       MetricName: Errors
       Namespace: AWS/Lambda
       Statistic: Sum
@@ -523,7 +523,7 @@ Resources:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-errors'
       AlarmDescription: |
         Monitors errors for Issue Reader Certificate Service lambda.
-        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
       MetricName: Errors
       Namespace: AWS/Lambda
       Statistic: Sum
@@ -547,7 +547,7 @@ Resources:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-4xx-errors'
       AlarmDescription: |
         Monitors 4xx client errors for API Gateway.
-        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
       MetricName: 4XXError
       Namespace: AWS/ApiGateway
       Statistic: Sum
@@ -570,7 +570,7 @@ Resources:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-5xx-errors'
       AlarmDescription: |
         Monitors 5xx server errors for API Gateway.
-        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+-+Alarm+Runbook+Warnings
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
       MetricName: 5XXError
       Namespace: AWS/ApiGateway
       Statistic: Sum
