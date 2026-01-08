@@ -92,6 +92,10 @@ Conditions:
     - !Ref Environment
     - dev
 
+  IsProductionEnvironment: !Equals
+    - !Ref Environment
+    - prod
+
   # Custom domain conditions
   CreateCustomDomain: !Equals
     - !Ref EnableCustomDomain
@@ -197,6 +201,17 @@ Globals:
     #   - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
 
 Resources:
+  # SNS Topics for Slack Integration
+  WarningsChannel:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !If
+        - IsProductionEnvironment
+        - di-verifier-ca-prod-warnings
+        - di-verifier-ca-nonprod-warnings
+      DisplayName: !Sub 'DI Verifier CA ${Environment} Warnings'
+      KmsMasterKeyId: alias/aws/sns
+
   NonceServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -479,6 +494,100 @@ Resources:
       WebACLArn:
         Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
+  # CloudWatch Alarms for Canary Deployments
+  NonceServiceErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
+      AlarmDescription: |
+        Monitors errors for Nonce Service lambda.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NonceServiceFunction
+        - Name: ExecutedVersion
+          Value: live
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
+  IssueReaderCertServiceErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-errors'
+      AlarmDescription: |
+        Monitors errors for Issue Reader Certificate Service lambda.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref IssueReaderCertServiceFunction
+        - Name: ExecutedVersion
+          Value: live
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
+  # API Gateway 4xx/5xx Alarms
+  ApiGateway4xxErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-4xx-errors'
+      AlarmDescription: |
+        Monitors 4xx client errors for API Gateway.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
+      MetricName: 4XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub '${AWS::StackName}-${CaBackendApiParam}'
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
+  ApiGateway5xxErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-5xx-errors'
+      AlarmDescription: |
+        Monitors 5xx server errors for API Gateway.
+        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Sub '${AWS::StackName}-${CaBackendApiParam}'
+        - Name: Stage
+          Value: !Ref Environment
+      AlarmActions:
+        - !Ref WarningsChannel
+      TreatMissingData: notBreaching
+
 Outputs:
   ApiGatewayDomainName:
     Description: API Gateway regional domain name for CloudFront origin
@@ -497,3 +606,27 @@ Outputs:
     Value: !Ref Environment
     Export:
       Name: !Sub '${AWS::StackName}-api-stage'
+
+  NonceServiceErrorAlarmArn:
+    Description: ARN of the Nonce Service error alarm
+    Value: !GetAtt NonceServiceErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
+
+  IssueReaderCertServiceErrorAlarmArn:
+    Description: ARN of the Issue Reader Certificate Service error alarm
+    Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
+
+  ApiGateway4xxErrorAlarmArn:
+    Description: ARN of the API Gateway 4xx error alarm
+    Value: !GetAtt ApiGateway4xxErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-api-gateway-4xx-error-alarm-arn'
+
+  ApiGateway5xxErrorAlarmArn:
+    Description: ARN of the API Gateway 5xx error alarm
+    Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-api-gateway-5xx-error-alarm-arn'
