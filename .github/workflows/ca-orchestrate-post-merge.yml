@@ -97,8 +97,8 @@ jobs:
             else
               echo "deploy_app=false" >> "$GITHUB_OUTPUT"
             fi
-            # Default to dev for push events
-            echo "target_environment=dev" >> "$GITHUB_OUTPUT"          
+            # Default to both dev and build for push events (merges to main)
+            echo "target_environment=all" >> "$GITHUB_OUTPUT"          
           fi
 
   validate-base-app:
@@ -129,10 +129,13 @@ jobs:
   # Deploy base app to dev environment
   upload-base-app-sam-artifact-dev:
     name: Upload Base Application to Dev
-    needs: [detect-changes, run-test-suite]
+    needs: [detect-changes, validate-base-app, run-test-suite]
     if: |
+      always() &&
       needs.detect-changes.outputs.deploy_base == 'true' &&
-      needs.detect-changes.outputs.target_environment == 'dev'
+      (needs.detect-changes.outputs.target_environment == 'dev' || needs.detect-changes.outputs.target_environment == 'all' ) &&
+      (needs.validate-base-app.result == 'success' || needs.validate-base-app.result == 'skipped') &&
+      needs.run-test-suite.result == 'success'
     permissions:
       id-token: write
       contents: read
@@ -149,10 +152,13 @@ jobs:
   # Deploy base app to build environment
   upload-base-app-sam-artifact-build:
     name: Upload Base Application to Build
-    needs: [detect-changes, run-test-suite]
+    needs: [detect-changes, validate-base-app, run-test-suite]
     if: |
+      always() &&
       needs.detect-changes.outputs.deploy_base == 'true' &&
-      needs.detect-changes.outputs.target_environment == 'build'
+      (needs.detect-changes.outputs.target_environment == 'build' || needs.detect-changes.outputs.target_environment == 'all') &&
+      (needs.validate-base-app.result == 'success' || needs.validate-base-app.result == 'skipped') &&
+      needs.run-test-suite.result == 'success'
     permissions:
       id-token: write
       contents: read
@@ -174,7 +180,8 @@ jobs:
     if: |
       always() &&
       needs.detect-changes.outputs.deploy_app == 'true' &&
-      needs.detect-changes.outputs.target_environment == 'dev' &&
+      (needs.detect-changes.outputs.target_environment == 'dev' || needs.detect-changes.outputs.target_environment == 'all') &&
+      needs.run-test-suite.result == 'success' &&
       (needs.upload-base-app-sam-artifact-dev.result == 'success' || needs.upload-base-app-sam-artifact-dev.result == 'skipped')
     permissions:
       id-token: write
@@ -197,7 +204,8 @@ jobs:
     if: |
       always() &&
       needs.detect-changes.outputs.deploy_app == 'true' &&
-      needs.detect-changes.outputs.target_environment == 'build' &&
+      (needs.detect-changes.outputs.target_environment == 'build' || needs.detect-changes.outputs.target_environment == 'all') &&
+      needs.run-test-suite.result == 'success' &&
       (needs.upload-base-app-sam-artifact-build.result == 'success' || needs.upload-base-app-sam-artifact-build.result == 'skipped')
     permissions:
       id-token: write
