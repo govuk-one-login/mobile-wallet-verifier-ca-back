@@ -52,7 +52,7 @@ describe('Base Application Infrastructure', () => {
 
     it('should have correct table name pattern', () => {
       const properties = nonceTable.Properties as Record<string, unknown>;
-      expect(properties.TableName).toEqual({ 'Fn::Sub': '${Environment}-verifier-ca-nonce-store' });
+      expect(properties.TableName).toEqual({ 'Fn::Sub': '${AWS::StackName}-verifier-ca-nonce-store' });
     });
 
     it('should use pay-per-request billing', () => {
@@ -100,7 +100,7 @@ describe('Base Application Infrastructure', () => {
       expect(tableOutput.Description).toBe('Name of the DynamoDB nonce table');
       expect(tableOutput.Value).toEqual({ Ref: 'NonceTable' });
       const exportInfo = tableOutput.Export as Record<string, unknown>;
-      expect(exportInfo.Name).toEqual({ 'Fn::Sub': '${Environment}-verifier-ca-nonce-store' });
+      expect(exportInfo.Name).toEqual({ 'Fn::Sub': '${AWS::StackName}-verifier-ca-nonce-store' });
     });
 
     it('should have all required outputs', () => {

@@ -1,0 +1,113 @@
+name: Feature Branch Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cleanup-feature-branch:
+    name: Cleanup Feature Branch Stacks
+    # Only run if deploy-feature label was present (indicating stacks were deployed)
+    if: contains(github.event.pull_request.labels.*.name, 'deploy-feature')
+    runs-on: ubuntu-24.04
+    environment: dev
+    env:
+      AWS_REGION: eu-west-2
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      STACK_IDENTIFIER: pr-${{ github.event.pull_request.number }}
+    steps:
+      - name: Authenticate with AWS
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
+          role-session-name: feature-branch-cleanup-${{ env.PR_NUMBER }}
+
+      - name: Check if stacks exist
+        id: check-stacks
+        run: |
+          APP_STACK_EXISTS="false"
+          BASE_STACK_EXISTS="false"
+
+          # Check if application stack exists
+          if aws cloudformation describe-stacks \
+            --stack-name "ca-back-$STACK_IDENTIFIER" \
+            --region "$AWS_REGION" &>/dev/null; then
+            APP_STACK_EXISTS="true"
+            echo "Application stack ca-back-$STACK_IDENTIFIER exists"
+          else
+            echo "Application stack ca-back-$STACK_IDENTIFIER does not exist"
+          fi
+
+          # Check if base application stack exists
+          if aws cloudformation describe-stacks \
+            --stack-name "ca-base-$STACK_IDENTIFIER" \
+            --region "$AWS_REGION" &>/dev/null; then
+            BASE_STACK_EXISTS="true"
+            echo "Base application stack ca-base-$STACK_IDENTIFIER exists"
+          else
+            echo "Base application stack ca-base-$STACK_IDENTIFIER does not exist"
+          fi
+
+          echo "app_stack_exists=$APP_STACK_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "base_stack_exists=$BASE_STACK_EXISTS" >> "$GITHUB_OUTPUT"
+
+      - name: Delete Application Stack
+        if: steps.check-stacks.outputs.app_stack_exists == 'true'
+        run: |
+          echo "Deleting application stack: ca-back-$STACK_IDENTIFIER"
+
+          aws cloudformation delete-stack \
+            --stack-name "ca-back-$STACK_IDENTIFIER" \
+            --region "$AWS_REGION"
+
+          echo "Waiting for application stack deletion to complete..."
+          aws cloudformation wait stack-delete-complete \
+            --stack-name "ca-back-$STACK_IDENTIFIER" \
+            --region "$AWS_REGION"
+
+          echo "Application stack deleted successfully"
+
+      - name: Delete Base Application Stack
+        if: steps.check-stacks.outputs.base_stack_exists == 'true'
+        run: |
+          echo "Deleting base application stack: ca-base-$STACK_IDENTIFIER"
+
+          aws cloudformation delete-stack \
+            --stack-name "ca-base-$STACK_IDENTIFIER" \
+            --region "$AWS_REGION"
+
+          echo "Waiting for base application stack deletion to complete..."
+          aws cloudformation wait stack-delete-complete \
+            --stack-name "ca-base-$STACK_IDENTIFIER" \
+            --region "$AWS_REGION"
+
+          echo "Base application stack deleted successfully"
+
+      - name: Generate Cleanup Summary
+        run: |
+          echo "### Feature Branch Cleanup Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Stack | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "${{ steps.check-stacks.outputs.app_stack_exists }}" == "true" ]]; then
+            echo "| \`ca-back-$STACK_IDENTIFIER\` | Deleted |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| \`ca-back-$STACK_IDENTIFIER\` | Not found (already deleted) |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [[ "${{ steps.check-stacks.outputs.base_stack_exists }}" == "true" ]]; then
+            echo "| \`ca-base-$STACK_IDENTIFIER\` | Deleted |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| \`ca-base-$STACK_IDENTIFIER\` | Not found (already deleted) |" >> "$GITHUB_STEP_SUMMARY"
+          fi
