@@ -247,10 +247,14 @@ Resources:
         Minify: true
         Sourcemap: false
         Target: es2022
+        EntryPoints:
+          - src/lambdas/nonce-service/handler.ts
+        External:
+          - '@aws-sdk/*'
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
-      CodeUri: dist/
-      Handler: nonce-service/handler.handler
+      CodeUri: ./
+      Handler: handler.handler
       Role: !GetAtt NonceServiceRole.Arn
       VpcConfig:
         SecurityGroupIds:
@@ -320,10 +324,14 @@ Resources:
         Minify: true
         Sourcemap: false
         Target: es2022
+        EntryPoints:
+          - src/lambdas/issue-reader-cert-service/handler.ts
+        External:
+          - '@aws-sdk/*'
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
-      CodeUri: dist/
-      Handler: issue-reader-cert-service/handler.handler
+      CodeUri: ./
+      Handler: handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
       VpcConfig:
         SecurityGroupIds:

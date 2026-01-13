@@ -64,7 +64,7 @@ describe('Application Infrastructure', () => {
 
     it('should have correct handler', () => {
       const properties = nonceFunction.Properties as Record<string, unknown>;
-      expect(properties.Handler).toBe('src/lambdas/nonce-service/handler.handler');
+      expect(properties.Handler).toBe('handler.handler');
     });
 
     it('should have VPC configuration', () => {
