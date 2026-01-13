@@ -70,13 +70,9 @@ Parameters:
       - 'false'
 
 Conditions:
-  EgressLogsToSplunkUsingCsls: !Or
-    - !Equals
-      - !Ref Environment
-      - integration
-    - !Equals
-      - !Ref Environment
-      - prod
+  EgressLogsToSplunkUsingCsls: !Equals
+    - !Ref Environment
+    - prod
 
   UsePermissionsBoundary: !Not
     - !Equals
