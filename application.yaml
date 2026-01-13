@@ -249,8 +249,8 @@ Resources:
         Target: es2022
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
-      CodeUri: ./
-      Handler: src/lambdas/nonce-service/handler.handler
+      CodeUri: dist/
+      Handler: nonce-service/handler.handler
       Role: !GetAtt NonceServiceRole.Arn
       VpcConfig:
         SecurityGroupIds:
@@ -322,8 +322,8 @@ Resources:
         Target: es2022
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
-      CodeUri: ./
-      Handler: src/lambdas/issue-reader-cert-service/handler.handler
+      CodeUri: dist/
+      Handler: issue-reader-cert-service/handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
       VpcConfig:
         SecurityGroupIds:
