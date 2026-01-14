@@ -61,7 +61,7 @@ Resources:
   NonceTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${Environment}-verifier-ca-nonce-store'
+      TableName: !Sub '${AWS::StackName}-verifier-ca-nonce-store'
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: nonceValue
@@ -128,7 +128,7 @@ Outputs:
     Description: 'Name of the DynamoDB nonce table'
     Value: !Ref NonceTable
     Export:
-      Name: !Sub '${Environment}-verifier-ca-nonce-store'
+      Name: !Sub '${AWS::StackName}-verifier-ca-nonce-store'
 
   # Custom Domain Outputs for use by application stacks
   OriginDomainName:
@@ -136,25 +136,25 @@ Outputs:
     Description: The origin custom domain name (for base path mappings)
     Value: !Ref ApiGatewayOriginDomain
     Export:
-      Name: !Sub '${Environment}-ApiGatewayOriginDomain'
+      Name: !Sub '${AWS::StackName}-ApiGatewayOriginDomain'
 
   OriginDomainRegionalName:
     Condition: CreateCustomDomain
     Description: The regional domain name for Route53 alias
     Value: !GetAtt ApiGatewayOriginDomain.RegionalDomainName
     Export:
-      Name: !Sub '${Environment}-ApiGatewayOriginDomainRegionalName'
+      Name: !Sub '${AWS::StackName}-ApiGatewayOriginDomainRegionalName'
 
   OriginDomainRegionalHostedZoneId:
     Condition: CreateCustomDomain
     Description: The regional hosted zone ID for Route53 alias
     Value: !GetAtt ApiGatewayOriginDomain.RegionalHostedZoneId
     Export:
-      Name: !Sub '${Environment}-ApiGatewayOriginDomainRegionalHostedZoneId'
+      Name: !Sub '${AWS::StackName}-ApiGatewayOriginDomainRegionalHostedZoneId'
 
   PublicDomainName:
     Condition: CreateCustomDomain
     Description: The public custom domain name (for base path mappings)
     Value: !Ref ApiGatewayPublicDomain
     Export:
-      Name: !Sub '${Environment}-ApiGatewayPublicDomain'
+      Name: !Sub '${AWS::StackName}-ApiGatewayPublicDomain'

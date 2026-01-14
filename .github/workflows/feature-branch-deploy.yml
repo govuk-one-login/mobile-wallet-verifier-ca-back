@@ -1,0 +1,145 @@
+name: Feature Branch Deploy
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+  packages: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy-feature-branch:
+    name: Deploy Feature Branch
+    if: github.event.label.name == 'deploy-feature'
+    runs-on: ubuntu-24.04
+    environment: dev
+    env:
+      SAM_CLI_TELEMETRY: 0
+      AWS_REGION: eu-west-2
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      STACK_IDENTIFIER: pr-${{ github.event.pull_request.number }}
+      # Check if enable-monitoring label is present (add it BEFORE deploy-feature to enable)
+      ENABLE_MONITORING: ${{ contains(github.event.pull_request.labels.*.name, 'enable-monitoring') }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          ref: ${{ github.ref }}
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          cache: npm
+          cache-dependency-path: package-lock.json
+          node-version-file: .nvmrc
+
+      - name: Configure Authentication for Private Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "engine-strict=true" > .npmrc
+          echo "@govuk-one-login:registry=https://npm.pkg.github.com/" >> .npmrc
+          echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
+
+      - name: Install Dependencies
+        run: npm clean-install
+
+      - name: Setup AWS SAM CLI
+        uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04
+
+      - name: Authenticate with AWS
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
+          role-session-name: feature-branch-deploy-${{ env.PR_NUMBER }}
+
+      - name: SAM Validate Templates
+        run: |
+          sam validate --lint --template base-application.yaml
+          sam validate --lint --template application.yaml
+
+      - name: Deploy Base Application Stack
+        run: |
+          echo "Building base-application.yaml..."
+          sam build --template base-application.yaml
+
+          echo "Deploying base application stack: ca-base-$STACK_IDENTIFIER"
+          sam deploy \
+            --template-file .aws-sam/build/template.yaml \
+            --stack-name "ca-base-$STACK_IDENTIFIER" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+            --parameter-overrides \
+              Environment=dev \
+              EnableCustomDomain=false \
+            --no-fail-on-empty-changeset \
+            --region "$AWS_REGION" \
+            --tags \
+              Environment=dev \
+              ManagedBy=GitHub-Actions \
+              Project=Mobile-Wallet-Verifier-CA \
+              FeatureBranch=true \
+              PullRequest="$PR_NUMBER"
+
+      - name: Deploy Application Stack
+        run: |
+          echo "Building application.yaml..."
+          sam build --template application.yaml
+
+          # Determine monitoring settings based on enable-monitoring label
+          if [[ "$ENABLE_MONITORING" == "true" ]]; then
+            echo "Monitoring ENABLED (enable-monitoring label detected)"
+            MONITORING_PARAMS="EnableMonitoring=true"
+          else
+            echo "Monitoring DISABLED (no enable-monitoring label)"
+            MONITORING_PARAMS="EnableMonitoring=false"
+          fi
+
+          echo "Deploying application stack: ca-back-$STACK_IDENTIFIER"
+          sam deploy \
+            --template-file .aws-sam/build/template.yaml \
+            --stack-name "ca-back-$STACK_IDENTIFIER" \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+            --parameter-overrides \
+              Environment=dev \
+              BaseAppStack="ca-base-$STACK_IDENTIFIER" \
+              EnableCustomDomain=false \
+              EnableWafAssociation=false \
+              CodeSigningConfigArn=none \
+              PermissionsBoundary=none \
+              $MONITORING_PARAMS \
+            --no-fail-on-empty-changeset \
+            --region "$AWS_REGION" \
+            --tags \
+              Environment=dev \
+              ManagedBy=GitHub-Actions \
+              Project=Mobile-Wallet-Verifier-CA \
+              FeatureBranch=true \
+              PullRequest="$PR_NUMBER"
+
+      - name: Get Stack Outputs
+        id: outputs
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name "ca-back-$STACK_IDENTIFIER" \
+            --query 'Stacks[0].Outputs[?OutputKey==`ApiGatewayDomainName`].OutputValue' \
+            --output text \
+            --region "$AWS_REGION")
+
+          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+          echo "### Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Property | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|----------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Base Stack | \`ca-base-$STACK_IDENTIFIER\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| App Stack | \`ca-back-$STACK_IDENTIFIER\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| API URL | $API_URL |" >> "$GITHUB_STEP_SUMMARY"

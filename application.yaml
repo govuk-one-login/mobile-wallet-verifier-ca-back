@@ -14,6 +14,13 @@ Parameters:
       - integration
       - prod
 
+  BaseAppStack:
+    Description: |
+      Name of the base-application stack (for CloudFormation imports).
+      When empty, uses Environment-based default naming convention.
+    Type: String
+    Default: ''
+
   CodeSigningConfigArn:
     Description: |
       The ARN of the Code Signing Config to use, provided by the deployment pipeline
@@ -69,6 +76,16 @@ Parameters:
       - 'true'
       - 'false'
 
+  EnableMonitoring:
+    Description: |
+      Whether to create CloudWatch alarms and SNS topics for monitoring.
+      Set to 'false' for feature branch deployments to avoid SNS topic name conflicts.
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+
 Conditions:
   EgressLogsToSplunkUsingCsls: !Equals
     - !Ref Environment
@@ -88,9 +105,14 @@ Conditions:
     - !Ref Environment
     - dev
 
-  IsProductionEnvironment: !Equals
-    - !Ref Environment
-    - prod
+  HasBaseAppStack: !Not
+    - !Equals
+      - !Ref BaseAppStack
+      - ''
+
+  CreateMonitoringResources: !Equals
+    - !Ref EnableMonitoring
+    - 'true'
 
   # Custom domain conditions
   CreateCustomDomain: !Equals
@@ -197,15 +219,12 @@ Globals:
     #   - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
 
 Resources:
-  # SNS Topics for Slack Integration
   WarningsChannel:
     Type: AWS::SNS::Topic
+    Condition: CreateMonitoringResources
     Properties:
-      TopicName: !If
-        - IsProductionEnvironment
-        - di-verifier-ca-prod-warnings
-        - di-verifier-ca-nonprod-warnings
-      DisplayName: !Sub 'DI Verifier CA ${Environment} Warnings'
+      TopicName: !Sub '${AWS::StackName}-warnings'
+      DisplayName: !Sub '${AWS::StackName} Warnings'
       KmsMasterKeyId: alias/aws/sns
 
   NonceServiceRole:
@@ -237,7 +256,10 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
+                      Fn::ImportValue: !If
+                        - HasBaseAppStack
+                        - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
+                        - !Sub '${Environment}-verifier-ca-nonce-store'
 
   NonceServiceFunction:
     Type: AWS::Serverless::Function
@@ -262,7 +284,10 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
+            Fn::ImportValue: !If
+              - HasBaseAppStack
+              - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
+              - !Sub '${Environment}-verifier-ca-nonce-store'
 
   NonceServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -310,7 +335,10 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
+                      Fn::ImportValue: !If
+                        - HasBaseAppStack
+                        - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
+                        - !Sub '${Environment}-verifier-ca-nonce-store'
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
@@ -335,7 +363,10 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${Environment}-verifier-ca-nonce-store'
+            Fn::ImportValue: !If
+              - HasBaseAppStack
+              - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
+              - !Sub '${Environment}-verifier-ca-nonce-store'
           ALLOW_TEST_TOKENS: !If
             - IsDevEnvironment
             - 'true'
@@ -493,6 +524,7 @@ Resources:
   # CloudWatch Alarms for Canary Deployments
   NonceServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateMonitoringResources
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
       AlarmDescription: |
@@ -516,6 +548,7 @@ Resources:
 
   IssueReaderCertServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateMonitoringResources
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-errors'
       AlarmDescription: |
@@ -540,6 +573,7 @@ Resources:
   # API Gateway 4xx/5xx Alarms
   ApiGateway4xxErrorAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateMonitoringResources
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-4xx-errors'
       AlarmDescription: |
@@ -563,6 +597,7 @@ Resources:
 
   ApiGateway5xxErrorAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: CreateMonitoringResources
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-5xx-errors'
       AlarmDescription: |
@@ -604,24 +639,28 @@ Outputs:
       Name: !Sub '${AWS::StackName}-api-stage'
 
   NonceServiceErrorAlarmArn:
+    Condition: CreateMonitoringResources
     Description: ARN of the Nonce Service error alarm
     Value: !GetAtt NonceServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
 
   IssueReaderCertServiceErrorAlarmArn:
+    Condition: CreateMonitoringResources
     Description: ARN of the Issue Reader Certificate Service error alarm
     Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
 
   ApiGateway4xxErrorAlarmArn:
+    Condition: CreateMonitoringResources
     Description: ARN of the API Gateway 4xx error alarm
     Value: !GetAtt ApiGateway4xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-4xx-error-alarm-arn'
 
   ApiGateway5xxErrorAlarmArn:
+    Condition: CreateMonitoringResources
     Description: ARN of the API Gateway 5xx error alarm
     Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
     Export:
