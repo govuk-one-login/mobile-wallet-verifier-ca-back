@@ -19,7 +19,7 @@ Parameters:
       Name of the base-application stack (for CloudFormation imports).
       When empty, uses Environment-based default naming convention.
     Type: String
-    Default: ''
+    Default: 'ca-base-dev'
 
   CodeSigningConfigArn:
     Description: |
