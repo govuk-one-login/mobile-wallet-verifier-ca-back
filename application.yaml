@@ -20,8 +20,6 @@ Parameters:
       This parameter is required - e.g., 'ca-base-dev' or 'ca-base-pr-123'.
     Type: String
     Default: 'ca-base-dev'
-    MinLength: 1
-    ConstraintDescription: BaseAppStack is required. Provide the name of your base-application stack.
 
   CodeSigningConfigArn:
     Description: |
@@ -471,7 +469,7 @@ Resources:
     Condition: CreateCustomDomain
     Properties:
       DomainName: !ImportValue
-        Fn::Sub: '${Environment}-ApiGatewayOriginDomain'
+        Fn::Sub: '${BaseAppStack}-ApiGatewayOriginDomain'
       RestApiId: !Ref CaBackendApi
       Stage: !Ref CaBackendApi.Stage
       BasePath: !If
@@ -485,7 +483,7 @@ Resources:
     Condition: CreateCustomDomain
     Properties:
       DomainName: !ImportValue
-        Fn::Sub: '${Environment}-ApiGatewayPublicDomain'
+        Fn::Sub: '${BaseAppStack}-ApiGatewayPublicDomain'
       RestApiId: !Ref CaBackendApi
       Stage: !Ref CaBackendApi.Stage
       BasePath: !If
