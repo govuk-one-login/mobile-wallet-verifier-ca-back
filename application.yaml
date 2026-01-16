@@ -684,24 +684,28 @@ Outputs:
 
   NonceServiceErrorAlarmArn:
     Description: ARN of the Nonce Service error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt NonceServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
 
   IssueReaderCertServiceErrorAlarmArn:
     Description: ARN of the Issue Reader Certificate Service error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
 
   ApiGateway4xxErrorAlarmArn:
     Description: ARN of the API Gateway 4xx error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt ApiGateway4xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-4xx-error-alarm-arn'
 
   ApiGateway5xxErrorAlarmArn:
     Description: ARN of the API Gateway 5xx error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-5xx-error-alarm-arn'
