@@ -17,9 +17,9 @@ Parameters:
   BaseAppStack:
     Description: |
       Name of the base-application stack (for CloudFormation imports).
-      This parameter is required - e.g., 'ca-base-dev' or 'ca-base-pr-123'.
+      Defaults to 'ca-base' or 'ca-base-pr-{pr-number}'.
     Type: String
-    Default: 'ca-base-dev'
+    Default: 'ca-base'
 
   CodeSigningConfigArn:
     Description: |
