@@ -17,9 +17,9 @@ Parameters:
   BaseAppStack:
     Description: |
       Name of the base-application stack (for CloudFormation imports).
-      When empty, uses Environment-based default naming convention.
+      Defaults to 'ca-base' or 'ca-base-pr-{pr-number}'.
     Type: String
-    Default: 'ca-base-dev'
+    Default: 'ca-base'
 
   CodeSigningConfigArn:
     Description: |
@@ -104,11 +104,6 @@ Conditions:
   IsDevEnvironment: !Equals
     - !Ref Environment
     - dev
-
-  HasBaseAppStack: !Not
-    - !Equals
-      - !Ref BaseAppStack
-      - ''
 
   CreateMonitoringResources: !Equals
     - !Ref EnableMonitoring
@@ -256,10 +251,7 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !If
-                        - HasBaseAppStack
-                        - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
-                        - !Sub '${Environment}-verifier-ca-nonce-store'
+                      Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
 
   NonceServiceFunction:
     Type: AWS::Serverless::Function
@@ -284,10 +276,7 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !If
-              - HasBaseAppStack
-              - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
-              - !Sub '${Environment}-verifier-ca-nonce-store'
+            Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
 
   NonceServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -335,10 +324,7 @@ Resources:
                 Resource: !Sub
                   - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
                   - TableName:
-                      Fn::ImportValue: !If
-                        - HasBaseAppStack
-                        - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
-                        - !Sub '${Environment}-verifier-ca-nonce-store'
+                      Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
@@ -363,10 +349,7 @@ Resources:
       Environment:
         Variables:
           NONCE_TABLE_NAME:
-            Fn::ImportValue: !If
-              - HasBaseAppStack
-              - !Sub '${BaseAppStack}-verifier-ca-nonce-store'
-              - !Sub '${Environment}-verifier-ca-nonce-store'
+            Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
           ALLOW_TEST_TOKENS: !If
             - IsDevEnvironment
             - 'true'
@@ -486,7 +469,7 @@ Resources:
     Condition: CreateCustomDomain
     Properties:
       DomainName: !ImportValue
-        Fn::Sub: '${Environment}-ApiGatewayOriginDomain'
+        Fn::Sub: '${BaseAppStack}-ApiGatewayOriginDomain'
       RestApiId: !Ref CaBackendApi
       Stage: !Ref CaBackendApi.Stage
       BasePath: !If
@@ -500,7 +483,7 @@ Resources:
     Condition: CreateCustomDomain
     Properties:
       DomainName: !ImportValue
-        Fn::Sub: '${Environment}-ApiGatewayPublicDomain'
+        Fn::Sub: '${BaseAppStack}-ApiGatewayPublicDomain'
       RestApiId: !Ref CaBackendApi
       Stage: !Ref CaBackendApi.Stage
       BasePath: !If
