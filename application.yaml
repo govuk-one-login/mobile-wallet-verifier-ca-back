@@ -103,13 +103,21 @@ Conditions:
       - !Ref PermissionsBoundary
       - none
 
-  # Canary Deployment condition
-  UseCanaryDeployment: !And
-    - !Condition DeployAlarms
-    - !Not
-      - !Equals
-        - !Ref LambdaDeploymentPreference
-        - AllAtOnce
+  # Deployment preference conditions
+  IsLowerEnvironment: !Or
+    - !Equals [!Ref Environment, dev]
+    - !Equals [!Ref Environment, build]
+    - !Equals [!Ref Environment, staging]
+
+  IsDefaultDevStack: !And
+    - !Equals [!Ref Environment, dev]
+    - !Equals [!Ref BaseAppStack, 'ca-base']
+
+  EnableDeploymentPreference: !Or
+    - !Condition IsDefaultDevStack
+    - !And
+      - !Condition IsLowerEnvironment
+      - !Not [!Equals [!Ref Environment, dev]]
 
   UseCodeSigning: !Not
     - !Equals
@@ -343,15 +351,11 @@ Resources:
         Target: es2022
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
-      DeploymentPreference:
-        Alarms: !If
-          - UseCanaryDeployment
-          - - NonceServiceErrorAlarm
-            - ApiGateway4xxErrorAlarm
-            - ApiGateway5xxErrorAlarm
-          - - AWS::NoValue
-        Enabled: true
-        Type: !Ref LambdaDeploymentPreference
+      DeploymentPreference: !If
+        - EnableDeploymentPreference
+        - Enabled: true
+          Type: AllAtOnce
+        - !Ref AWS::NoValue
       CodeUri: ./
       Handler: src/lambdas/nonce-service/handler.handler
       Role: !GetAtt NonceServiceRole.Arn
@@ -425,6 +429,11 @@ Resources:
         Target: es2022
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
+      DeploymentPreference: !If
+        - EnableDeploymentPreference
+        - Enabled: true
+          Type: AllAtOnce
+        - !Ref AWS::NoValue
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
