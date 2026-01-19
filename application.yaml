@@ -86,6 +86,13 @@ Parameters:
       - 'true'
       - 'false'
 
+  LambdaDeploymentPreference:
+    Description: |
+      Specifies the configuration to enable gradual Lambda deployments. Value can be 'AllAtOnce', a default deployment config, or name of custom DeploymentConfig.
+    Type: String
+    Default: AllAtOnce
+
+
 Conditions:
   EgressLogsToSplunkUsingCsls: !Equals
     - !Ref Environment
@@ -95,6 +102,13 @@ Conditions:
     - !Equals
       - !Ref PermissionsBoundary
       - none
+
+  UseCanaryDeployment: !And
+    - !Condition DeployAlarms
+    - !Not
+      - !Equals
+        - !Ref LambdaDeploymentPreference
+        - AllAtOnce
 
   UseCodeSigning: !Not
     - !Equals
