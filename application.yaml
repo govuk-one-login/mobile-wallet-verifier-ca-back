@@ -214,13 +214,57 @@ Globals:
     #   - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
 
 Resources:
+  # Customer-managed KMS key for SNS encryption with CloudWatch permissions
+  WarningsChannelKMSKey:
+    Type: AWS::KMS::Key
+    Condition: CreateMonitoringResources
+    Properties:
+      Description: KMS key for SNS topic encryption with CloudWatch access
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: Allow CloudWatch to use the key
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: '*'
+
   WarningsChannel:
     Type: AWS::SNS::Topic
     Condition: CreateMonitoringResources
     Properties:
       TopicName: !Sub '${AWS::StackName}-warnings'
       DisplayName: !Sub '${AWS::StackName} Warnings'
-      KmsMasterKeyId: alias/aws/sns
+      KmsMasterKeyId: !Ref WarningsChannelKMSKey
+
+  WarningsChannelPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: CreateMonitoringResources
+    Properties:
+      Topics:
+        - !Ref WarningsChannel
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudWatchAlarmsToPublish
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref WarningsChannel
+            Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref 'AWS::AccountId'
 
   NonceServiceRole:
     Type: AWS::IAM::Role
@@ -524,7 +568,7 @@ Resources:
         - Name: FunctionName
           Value: !Ref NonceServiceFunction
         - Name: ExecutedVersion
-          Value: live
+          Value: !Ref NonceServiceFunction.Version
       AlarmActions:
         - !Ref WarningsChannel
       TreatMissingData: notBreaching
@@ -548,7 +592,7 @@ Resources:
         - Name: FunctionName
           Value: !Ref IssueReaderCertServiceFunction
         - Name: ExecutedVersion
-          Value: live
+          Value: !Ref IssueReaderCertServiceFunction.Version
       AlarmActions:
         - !Ref WarningsChannel
       TreatMissingData: notBreaching
@@ -622,29 +666,41 @@ Outputs:
       Name: !Sub '${AWS::StackName}-api-stage'
 
   NonceServiceErrorAlarmArn:
-    Condition: CreateMonitoringResources
     Description: ARN of the Nonce Service error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt NonceServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
 
   IssueReaderCertServiceErrorAlarmArn:
-    Condition: CreateMonitoringResources
     Description: ARN of the Issue Reader Certificate Service error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
 
   ApiGateway4xxErrorAlarmArn:
-    Condition: CreateMonitoringResources
     Description: ARN of the API Gateway 4xx error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt ApiGateway4xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-4xx-error-alarm-arn'
 
   ApiGateway5xxErrorAlarmArn:
-    Condition: CreateMonitoringResources
     Description: ARN of the API Gateway 5xx error alarm
+    Condition: CreateMonitoringResources
     Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-5xx-error-alarm-arn'
+
+  NonceServiceFunctionVersion:
+    Description: Version of the Nonce Service Lambda function
+    Value: !Ref NonceServiceFunction.Version
+    Export:
+      Name: !Sub '${AWS::StackName}-nonce-service-function-version'
+
+  IssueReaderCertServiceFunctionVersion:
+    Description: Version of the Issue Reader Certificate Service Lambda function
+    Value: !Ref IssueReaderCertServiceFunction.Version
+    Export:
+      Name: !Sub '${AWS::StackName}-issue-reader-cert-service-function-version'
