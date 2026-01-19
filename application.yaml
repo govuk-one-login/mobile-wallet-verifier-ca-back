@@ -103,6 +103,7 @@ Conditions:
       - !Ref PermissionsBoundary
       - none
 
+  # Canary Deployment condition
   UseCanaryDeployment: !And
     - !Condition DeployAlarms
     - !Not
@@ -321,6 +322,15 @@ Resources:
         Target: es2022
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
+      DeploymentPreference:
+        Alarms: !If
+          - UseCanaryDeployment
+          - - NonceServiceErrorAlarm
+            - ApiGateway4xxErrorAlarm
+            - ApiGateway5xxErrorAlarm
+          - - AWS::NoValue
+        Enabled: true
+        Type: !Ref LambdaDeploymentPreference
       CodeUri: ./
       Handler: src/lambdas/nonce-service/handler.handler
       Role: !GetAtt NonceServiceRole.Arn
