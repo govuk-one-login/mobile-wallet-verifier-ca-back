@@ -109,6 +109,10 @@ Conditions:
     - !Equals [!Ref Environment, build]
     - !Equals [!Ref Environment, staging]
 
+  IsIntegrationOrProd: !Or
+    - !Equals [!Ref Environment, integration]
+    - !Equals [!Ref Environment, prod]
+
   IsDefaultDevStack: !And
     - !Equals [!Ref Environment, dev]
     - !Equals [!Ref BaseAppStack, 'ca-base']
@@ -351,11 +355,15 @@ Resources:
         Target: es2022
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
-      DeploymentPreference: !If
-        - EnableDeploymentPreference
-        - Enabled: true
-          Type: AllAtOnce
-        - !Ref AWS::NoValue
+      DeploymentPreference:
+        Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
+        Alarms: !If
+          - IsIntegrationOrProd
+          - - !Ref NonceServiceErrorAlarm
+            - !Ref ApiGateway4xxErrorAlarm
+            - !Ref ApiGateway5xxErrorAlarm
+          - []
+        Role: !GetAtt CodeDeployServiceRole.Arn
       CodeUri: ./
       Handler: src/lambdas/nonce-service/handler.handler
       Role: !GetAtt NonceServiceRole.Arn
@@ -429,11 +437,13 @@ Resources:
         Target: es2022
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
-      DeploymentPreference: !If
-        - EnableDeploymentPreference
-        - Enabled: true
-          Type: AllAtOnce
-        - !Ref AWS::NoValue
+      DeploymentPreference:
+        Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
+        Alarms:
+          - !Ref IssueReaderCertServiceErrorAlarm
+          - !Ref ApiGateway4xxErrorAlarm
+          - !Ref ApiGateway5xxErrorAlarm
+        Role: !GetAtt CodeDeployServiceRole.Arn
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
