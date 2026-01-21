@@ -116,10 +116,6 @@ Conditions:
     - !Ref Environment
     - dev
 
-  CreateMonitoringResources: !Equals
-    - !Ref EnableMonitoring
-    - 'true'
-
   # Custom domain conditions
   CreateCustomDomain: !Equals
     - !Ref EnableCustomDomain
