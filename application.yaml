@@ -92,7 +92,6 @@ Parameters:
     Type: String
     Default: AllAtOnce
 
-
 Conditions:
   EgressLogsToSplunkUsingCsls: !Equals
     - !Ref Environment
@@ -297,7 +296,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
           - Action:
               - sts:AssumeRole
@@ -307,12 +306,7 @@ Resources:
                 - codedeploy.amazonaws.com
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
-      PermissionsBoundary:
-        !If [
-          UsePermissionsBoundary,
-          !Ref PermissionsBoundary,
-          !Ref AWS::NoValue,
-      ]
+      PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
 
   NonceServiceRole:
     Type: AWS::IAM::Role
