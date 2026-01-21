@@ -103,11 +103,6 @@ Conditions:
       - none
 
   # Deployment preference conditions
-  IsLowerEnvironment: !Or
-    - !Equals [!Ref Environment, dev]
-    - !Equals [!Ref Environment, build]
-    - !Equals [!Ref Environment, staging]
-
   IsIntegrationOrProd: !Or
     - !Equals [!Ref Environment, integration]
     - !Equals [!Ref Environment, prod]
@@ -233,7 +228,7 @@ Resources:
   # Customer-managed KMS key for SNS encryption with CloudWatch permissions
   WarningsChannelKMSKey:
     Type: AWS::KMS::Key
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Properties:
       Description: KMS key for SNS topic encryption with CloudWatch access
       KeyPolicy:
@@ -256,7 +251,7 @@ Resources:
 
   WarningsChannel:
     Type: AWS::SNS::Topic
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Properties:
       TopicName: !Sub '${AWS::StackName}-warnings'
       DisplayName: !Sub '${AWS::StackName} Warnings'
@@ -264,7 +259,7 @@ Resources:
 
   WarningsChannelPolicy:
     Type: AWS::SNS::TopicPolicy
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Properties:
       Topics:
         - !Ref WarningsChannel
