@@ -112,16 +112,6 @@ Conditions:
     - !Equals [!Ref Environment, integration]
     - !Equals [!Ref Environment, prod]
 
-  IsDefaultDevStack: !And
-    - !Equals [!Ref Environment, dev]
-    - !Equals [!Ref BaseAppStack, 'ca-base']
-
-  EnableDeploymentPreference: !Or
-    - !Condition IsDefaultDevStack
-    - !And
-      - !Condition IsLowerEnvironment
-      - !Not [!Equals [!Ref Environment, dev]]
-
   UseCodeSigning: !Not
     - !Equals
       - !Ref CodeSigningConfigArn
@@ -613,7 +603,7 @@ Resources:
   # CloudWatch Alarms for Canary Deployments
   NonceServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
       AlarmDescription: |
@@ -637,7 +627,7 @@ Resources:
 
   IssueReaderCertServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-errors'
       AlarmDescription: |
@@ -662,7 +652,7 @@ Resources:
   # API Gateway 4xx/5xx Alarms
   ApiGateway4xxErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-4xx-errors'
       AlarmDescription: |
@@ -686,7 +676,7 @@ Resources:
 
   ApiGateway5xxErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-5xx-errors'
       AlarmDescription: |
@@ -729,28 +719,28 @@ Outputs:
 
   NonceServiceErrorAlarmArn:
     Description: ARN of the Nonce Service error alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Value: !GetAtt NonceServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
 
   IssueReaderCertServiceErrorAlarmArn:
     Description: ARN of the Issue Reader Certificate Service error alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
 
   ApiGateway4xxErrorAlarmArn:
     Description: ARN of the API Gateway 4xx error alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Value: !GetAtt ApiGateway4xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-4xx-error-alarm-arn'
 
   ApiGateway5xxErrorAlarmArn:
     Description: ARN of the API Gateway 5xx error alarm
-    Condition: CreateMonitoringResources
+    Condition: IsIntegrationOrProd
     Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-5xx-error-alarm-arn'
