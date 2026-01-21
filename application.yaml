@@ -439,10 +439,12 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
       DeploymentPreference:
         Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
-        Alarms:
-          - !Ref IssueReaderCertServiceErrorAlarm
-          - !Ref ApiGateway4xxErrorAlarm
-          - !Ref ApiGateway5xxErrorAlarm
+        Alarms: !If
+          - IsIntegrationOrProd
+          - - !Ref IssueReaderCertServiceErrorAlarm
+            - !Ref ApiGateway4xxErrorAlarm
+            - !Ref ApiGateway5xxErrorAlarm
+          - []
         Role: !GetAtt CodeDeployServiceRole.Arn
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
