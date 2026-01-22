@@ -195,7 +195,7 @@ Globals:
     DeploymentPreference:
       Enabled: !If [IsIntegrationOrProd, true, false]
       Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
-      Role: !If [IsIntegrationOrProd, !GetAtt CodeDeployServiceRole.Arn, !Ref AWS::NoValue]
+      Role: !GetAtt CodeDeployServiceRole.Arn
 
     # Environment:
     #   Variables:
