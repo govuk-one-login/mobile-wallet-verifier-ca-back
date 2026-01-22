@@ -192,6 +192,11 @@ Globals:
       - UseCodeSigning
       - !Ref CodeSigningConfigArn
       - !Ref AWS::NoValue
+    DeploymentPreference:
+      Enabled: !If [IsIntegrationOrProd, true, false]
+      Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
+      Role: !If [IsIntegrationOrProd, !GetAtt CodeDeployServiceRole.Arn, !Ref AWS::NoValue]
+
     # Environment:
     #   Variables:
     #     DT_CONNECTION_AUTH_TOKEN: !Sub
@@ -339,15 +344,12 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
       DeploymentPreference:
-        Enabled: !If [IsIntegrationOrProd, true, false]
-        Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
         Alarms: !If
           - CreateAlarmsAndMonitoring
           - - !Ref NonceServiceErrorAlarm
             - !Ref ApiGateway4xxErrorAlarm
             - !Ref ApiGateway5xxErrorAlarm
           - []
-        Role: !GetAtt CodeDeployServiceRole.Arn
       CodeUri: ./
       Handler: src/lambdas/nonce-service/handler.handler
       Role: !GetAtt NonceServiceRole.Arn
@@ -422,15 +424,12 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
       DeploymentPreference:
-        Enabled: !If [IsIntegrationOrProd, true, false]
-        Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
         Alarms: !If
           - CreateAlarmsAndMonitoring
           - - !Ref IssueReaderCertServiceErrorAlarm
             - !Ref ApiGateway4xxErrorAlarm
             - !Ref ApiGateway5xxErrorAlarm
           - []
-        Role: !GetAtt CodeDeployServiceRole.Arn
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
