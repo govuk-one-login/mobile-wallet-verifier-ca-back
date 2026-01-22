@@ -116,6 +116,14 @@ Conditions:
     - !Ref Environment
     - dev
 
+  CreateMonitoringResources: !Equals
+    - !Ref EnableMonitoring
+    - 'true'
+
+  CreateAlarmsAndMonitoring: !And
+    - !Condition IsIntegrationOrProd
+    - !Condition CreateMonitoringResources
+
   # Custom domain conditions
   CreateCustomDomain: !Equals
     - !Ref EnableCustomDomain
@@ -224,7 +232,7 @@ Resources:
   # Customer-managed KMS key for SNS encryption with CloudWatch permissions
   WarningsChannelKMSKey:
     Type: AWS::KMS::Key
-    Condition: IsIntegrationOrProd
+    Condition: CreateMonitoringResources
     Properties:
       Description: KMS key for SNS topic encryption with CloudWatch access
       KeyPolicy:
@@ -247,7 +255,7 @@ Resources:
 
   WarningsChannel:
     Type: AWS::SNS::Topic
-    Condition: IsIntegrationOrProd
+    Condition: CreateMonitoringResources
     Properties:
       TopicName: !Sub '${AWS::StackName}-warnings'
       DisplayName: !Sub '${AWS::StackName} Warnings'
@@ -255,7 +263,7 @@ Resources:
 
   WarningsChannelPolicy:
     Type: AWS::SNS::TopicPolicy
-    Condition: IsIntegrationOrProd
+    Condition: CreateMonitoringResources
     Properties:
       Topics:
         - !Ref WarningsChannel
@@ -334,7 +342,7 @@ Resources:
         Enabled: !If [IsIntegrationOrProd, true, false]
         Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
         Alarms: !If
-          - IsIntegrationOrProd
+          - CreateAlarmsAndMonitoring
           - - !Ref NonceServiceErrorAlarm
             - !Ref ApiGateway4xxErrorAlarm
             - !Ref ApiGateway5xxErrorAlarm
@@ -417,7 +425,7 @@ Resources:
         Enabled: !If [IsIntegrationOrProd, true, false]
         Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
         Alarms: !If
-          - IsIntegrationOrProd
+          - CreateAlarmsAndMonitoring
           - - !Ref IssueReaderCertServiceErrorAlarm
             - !Ref ApiGateway4xxErrorAlarm
             - !Ref ApiGateway5xxErrorAlarm
@@ -594,7 +602,7 @@ Resources:
   # CloudWatch Alarms for Canary Deployments
   NonceServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateAlarmsAndMonitoring
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
       AlarmDescription: |
@@ -618,7 +626,7 @@ Resources:
 
   IssueReaderCertServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateAlarmsAndMonitoring
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service-errors'
       AlarmDescription: |
@@ -643,7 +651,7 @@ Resources:
   # API Gateway 4xx/5xx Alarms
   ApiGateway4xxErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateMonitoringResources
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-4xx-errors'
       AlarmDescription: |
@@ -667,7 +675,7 @@ Resources:
 
   ApiGateway5xxErrorAlarm:
     Type: AWS::CloudWatch::Alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateMonitoringResources
     Properties:
       AlarmName: !Sub '${AWS::StackName}-${Environment}-api-gateway-5xx-errors'
       AlarmDescription: |
@@ -710,28 +718,28 @@ Outputs:
 
   NonceServiceErrorAlarmArn:
     Description: ARN of the Nonce Service error alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateAlarmsAndMonitoring
     Value: !GetAtt NonceServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
 
   IssueReaderCertServiceErrorAlarmArn:
     Description: ARN of the Issue Reader Certificate Service error alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateAlarmsAndMonitoring
     Value: !GetAtt IssueReaderCertServiceErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-error-alarm-arn'
 
   ApiGateway4xxErrorAlarmArn:
     Description: ARN of the API Gateway 4xx error alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateMonitoringResources
     Value: !GetAtt ApiGateway4xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-4xx-error-alarm-arn'
 
   ApiGateway5xxErrorAlarmArn:
     Description: ARN of the API Gateway 5xx error alarm
-    Condition: IsIntegrationOrProd
+    Condition: CreateMonitoringResources
     Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-5xx-error-alarm-arn'
