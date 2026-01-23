@@ -347,8 +347,6 @@ Resources:
         Alarms: !If
           - CreateAlarmsAndMonitoring
           - - !Ref NonceServiceErrorAlarm
-            - !Ref ApiGateway4xxErrorAlarm
-            - !Ref ApiGateway5xxErrorAlarm
           - []
       CodeUri: ./
       Handler: src/lambdas/nonce-service/handler.handler
@@ -427,8 +425,6 @@ Resources:
         Alarms: !If
           - CreateAlarmsAndMonitoring
           - - !Ref IssueReaderCertServiceErrorAlarm
-            - !Ref ApiGateway4xxErrorAlarm
-            - !Ref ApiGateway5xxErrorAlarm
           - []
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
