@@ -194,7 +194,7 @@ Globals:
       - !Ref AWS::NoValue
     DeploymentPreference:
       Enabled: !If [IsIntegrationOrProd, true, false]
-      Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, AllAtOnce]
+      Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
       Role: !GetAtt CodeDeployServiceRole.Arn
 
     # Environment:
