@@ -194,7 +194,7 @@ Globals:
       - !Ref AWS::NoValue
     DeploymentPreference:
       Enabled: !If [IsIntegrationOrProd, true, false]
-      Type: !If [IsIntegrationOrProd, Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
+      Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
       Role: !GetAtt CodeDeployServiceRole.Arn
 
     # Environment:
@@ -301,6 +301,18 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRoleForLambda
       PermissionsBoundary: !If [UsePermissionsBoundary, !Ref PermissionsBoundary, !Ref AWS::NoValue]
+
+  # Custom Deployment Config
+  Linear20PercentEvery1Minute:
+    Type: AWS::CodeDeploy::DeploymentConfig
+    Properties:
+      ComputePlatform: Lambda
+      DeploymentConfigName: !Sub ${AWS::StackName}-Linear20PercentEvery1Minute
+      TrafficRoutingConfig:
+        TimeBasedLinear:
+          LinearInterval: 1
+          LinearPercentage: 20
+        Type: TimeBasedLinear
 
   NonceServiceRole:
     Type: AWS::IAM::Role
