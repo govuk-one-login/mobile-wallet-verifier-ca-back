@@ -46,39 +46,32 @@ describe('Application Infrastructure', () => {
   });
 
   describe('Lambda Function', () => {
-    let nonceFunction: Record<string, unknown>;
+    let issueReaderCertFunction: Record<string, unknown>;
 
     beforeAll(() => {
-      nonceFunction = template.Resources.NonceServiceFunction as Record<string, unknown>;
+      issueReaderCertFunction = template.Resources.IssueReaderCertServiceFunction as Record<string, unknown>;
     });
 
     it('should exist and be of correct type', () => {
-      expect(nonceFunction).toBeDefined();
-      expect(nonceFunction.Type).toBe('AWS::Serverless::Function');
+      expect(issueReaderCertFunction).toBeDefined();
+      expect(issueReaderCertFunction.Type).toBe('AWS::Serverless::Function');
     });
 
     it('should have correct function name pattern', () => {
-      const properties = nonceFunction.Properties as Record<string, unknown>;
-      expect(properties.FunctionName).toEqual({ 'Fn::Sub': '${AWS::StackName}-${Environment}-nonce-service' });
+      const properties = issueReaderCertFunction.Properties as Record<string, unknown>;
+      expect(properties.FunctionName).toEqual({ 'Fn::Sub': '${AWS::StackName}-${Environment}-issue-reader-cert-service' });
     });
 
     it('should have correct handler', () => {
-      const properties = nonceFunction.Properties as Record<string, unknown>;
-      expect(properties.Handler).toBe('src/lambdas/nonce-service/handler.handler');
+      const properties = issueReaderCertFunction.Properties as Record<string, unknown>;
+      expect(properties.Handler).toBe('src/lambdas/issue-reader-cert-service/handler.handler');
     });
 
     it('should have VPC configuration', () => {
-      const properties = nonceFunction.Properties as Record<string, unknown>;
+      const properties = issueReaderCertFunction.Properties as Record<string, unknown>;
       const vpcConfig = properties.VpcConfig as Record<string, unknown>;
       expect(vpcConfig.SecurityGroupIds).toBeDefined();
       expect(vpcConfig.SubnetIds).toBeDefined();
-    });
-
-    it('should have environment variables', () => {
-      const properties = nonceFunction.Properties as Record<string, unknown>;
-      const environment = properties.Environment as Record<string, unknown>;
-      const variables = environment.Variables as Record<string, unknown>;
-      expect(variables.NONCE_TABLE_NAME).toBeDefined();
     });
   });
 
@@ -86,7 +79,7 @@ describe('Application Infrastructure', () => {
     let role: Record<string, unknown>;
 
     beforeAll(() => {
-      role = template.Resources.NonceServiceRole as Record<string, unknown>;
+      role = template.Resources.IssueReaderCertServiceRole as Record<string, unknown>;
     });
 
     it('should exist and be of correct type', () => {
@@ -102,16 +95,6 @@ describe('Application Infrastructure', () => {
       >[];
       expect((statements[0].Principal as Record<string, unknown>).Service).toBe('lambda.amazonaws.com');
       expect(statements[0].Action).toBe('sts:AssumeRole');
-    });
-
-    it('should have DynamoDB permissions', () => {
-      const properties = role.Properties as Record<string, unknown>;
-      const policies = properties.Policies as Record<string, unknown>[];
-      const dynamoPolicy = policies.find((p: Record<string, unknown>) => p.PolicyName === 'DynamoDBAccess');
-      expect(dynamoPolicy).toBeDefined();
-      const policyDoc = (dynamoPolicy as Record<string, unknown>).PolicyDocument as Record<string, unknown>;
-      const statements = policyDoc.Statement as Record<string, unknown>[];
-      expect(statements[0].Action).toContain('dynamodb:PutItem');
     });
   });
 
