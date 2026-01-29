@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       SAM_CLI_TELEMETRY: 0
+      HUSKY: 0
     defaults:
       run:
         shell: bash
