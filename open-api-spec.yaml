@@ -1,143 +1,48 @@
 openapi: 3.0.3
 info:
-  title: DVS CA Backend API
+  title: Gov Checker CA Backend – Reader Certificate API
   version: '1.0.0'
   description: |
-    - Nonce Service: Public endpoint that issues cryptographically secure, single-use nonces for replay protection or
-    challenge-response workflows
-    - Issue Reader Certificate Service: Issues short-lived reader certificates bound to device + app + hardware key
-    integrity on iOS (App Attest) and Android (Play Integrity + Key Attestation)
+    Issues short-lived reader certificates (valid for ~24 hours) for Verifier Apps.
+    v1 uses the programme-standard app integrity pattern:
+    - The app obtains a Firebase App Check token
+    - The token is validated by /client-attestation
+    - /client-attestation returns a client attestation JWT bound to the app's public key
+    - The app sends that JWT to this API along with a CSR
 
 servers:
   - url: https://api.example.com
 
 paths:
-  /nonce:
-    post:
-      summary: Mint a fresh nonce
-      description: >
-        Creates and returns a cryptographically secure 256-bit nonce, Base64URL-encoded (no padding).
-        Each nonce is stored server-side with a 5-minute TTL and may be consumed exactly once by downstream
-        endpoints that require it.
-      operationId: createNonce
-      security: []
-      requestBody:
-        required: false
-        description: Optional, reserved for future fields (e.g., audience/purpose).
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-      x-amazon-apigateway-integration:
-        type: aws_proxy
-        httpMethod: POST
-        uri:
-          Fn::Sub: 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NonceServiceFunction.Arn}:live/invocations'
-        passthroughBehavior: when_no_match
-      responses:
-        '201':
-          description: Nonce created.
-          headers:
-            Location:
-              description: Opaque URI for the created nonce resource (not necessarily retrievable).
-              schema:
-                type: string
-                example: '/nonce/_opaque_id_'
-            Cache-Control:
-              description: 'Response must not be cached by clients or intermediaries.'
-              schema:
-                type: string
-                example: 'no-store'
-            Date:
-              description: RFC 7231 date of the response.
-              schema:
-                type: string
-            X-Request-Id:
-              description: Correlation ID for tracing and debugging.
-              schema:
-                type: string
-                example: 'req_01J9ZQ2M7F5N4WPM1V7F3G1H7N'
-            Access-Control-Allow-Origin:
-              description: CORS origin permitted (set by gateway or edge).
-              schema:
-                type: string
-                example: '*'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NonceResponse'
-              examples:
-                example:
-                  value:
-                    nonce: 'q3i2aI4A2d2qU2C9m1vF1b3JYyG3n0o7cJc9Kc4E8fQ'
-                    expiresAt: '2025-10-23T12:34:56Z'
-        '500':
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-
   /issue-reader-cert:
     post:
       summary: Issue short-lived reader certificate
       description: |
-        Issues a short-lived X.509 reader certificate bound to a hardware-backed key
-        and an integrity signal from the platform.
-        - **iOS**: Uses Apple App Attest assertion + attestation.
-        - **Android**: Uses Google Key Attestation (x5c chain) + Play Integrity token.
-        The request is strongly tied to a nonce obtained from `/nonce`, and
-        the CSR’s public key must match the platform attestation’s public key.
+        Issues a short-lived X.509 reader certificate.
+        The CSR’s public key must match the public key bound into the client attestation JWT.
       operationId: issueReaderCert
-      security:
-        - bearerAuth: []
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/IssueReaderCertIOSRequest'
-                - $ref: '#/components/schemas/IssueReaderCertAndroidRequest'
-              discriminator:
-                propertyName: platform
-                mapping:
-                  ios: '#/components/schemas/IssueReaderCertIOSRequest'
-                  android: '#/components/schemas/IssueReaderCertAndroidRequest'
+              $ref: '#/components/schemas/IssueReaderCertRequest'
             examples:
-              ios:
-                summary: iOS App Attest request
+              ios_example:
                 value:
-                  platform: ios
-                  nonce: 'Z3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw'
                   csrPem: |
                     -----BEGIN CERTIFICATE REQUEST-----
                     MIIC...
                     -----END CERTIFICATE REQUEST-----
-                  appAttest:
-                    keyId: 'Xzy1AbCdEfGhIjKlMnOp'
-                    attestationObject: 'o2NmbXRkYXR0ZXN0YXR0...'
-                    clientDataJSON: 'eyJjaGFsbGVuZ2UiOiAiZ3VP...'
-              android:
-                summary: Android Play Integrity + Key Attestation request
+                  clientAttestationJwt: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ..."
+              android_example:
                 value:
-                  platform: android
-                  nonce: 'Z3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw'
                   csrPem: |
                     -----BEGIN CERTIFICATE REQUEST-----
                     MIIC...
                     -----END CERTIFICATE REQUEST-----
-                  keyAttestationChain:
-                    - 'MIIF2zCCA8OgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCB...'
-                    - 'MIIFaTCCA1GgAwIBAgIBBDANBgkqhkiG9w0BAQsFADCB...'
-                  playIntegrityToken: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...'
-      x-amazon-apigateway-integration:
-        type: aws_proxy
-        httpMethod: POST
-        uri:
-          Fn::Sub: 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IssueReaderCertServiceFunction.Arn}:live/invocations'
-        passthroughBehavior: when_no_match
+                  clientAttestationJwt: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ..."
       responses:
         '200':
           description: Reader certificate issued successfully
@@ -145,77 +50,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IssueReaderCertResponse'
-              example:
-                readerId: 'reader-7fd98a2c-2f7a-4a5a-8c7e-3fc735f41e8f'
-                certChain:
-                  leaf: |
-                    -----BEGIN CERTIFICATE-----
-                    MIID...
-                    -----END CERTIFICATE-----
-                  intermediate: |
-                    -----BEGIN CERTIFICATE-----
-                    MIIF...
-                    -----END CERTIFICATE-----
-                profile: 'Reader'
-                notBefore: '2025-01-15T14:01:00Z'
-                notAfter: '2025-01-15T14:06:00Z'
         '400':
           description: Invalid request (bad CSR, missing fields, invalid JSON)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                code: 'bad_request'
-                message: 'CSR is not a valid PKCS#10 structure'
-                details:
-                  field: 'csrPem'
-        '401':
-          description: Authentication failed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Integrity / attestation failed or policy rejected the request
+          description: Client attestation failed or policy rejected the request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                nonce_mismatch:
-                  summary: Nonce in attestation doesn't match provided nonce
+                attestation_invalid:
+                  summary: Client attestation JWT invalid
                   value:
-                    code: 'nonce_mismatch'
-                    message: 'Attestation challenge does not match nonce'
-                app_not_recognized:
-                  summary: Play Integrity appRecognitionVerdict not PLAY_RECOGNIZED
+                    code: "attestation_invalid"
+                    message: "Client attestation JWT is invalid or expired"
+                key_binding_mismatch:
+                  summary: CSR public key does not match attestation binding
                   value:
-                    code: 'app_not_recognized'
-                    message: 'App integrity verdict is not PLAY_RECOGNIZED'
-                boot_state_unverified:
-                  summary: Device boot state not verified
-                  value:
-                    code: 'unverified_boot_state'
-                    message: 'verifiedBootState must be VERIFIED'
-        '409':
-          description: Nonce already used (replay) or conflicting device state
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                code: 'nonce_replayed'
-                message: 'Nonce has already been consumed'
+                    code: "key_binding_mismatch"
+                    message: "CSR public key does not match client attestation binding"
         '429':
           description: Too many requests / rate limited
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                code: 'rate_limited'
-                message: 'Too many certificate requests for this device'
         '500':
           description: Internal server error issuing certificate
           content:
@@ -224,186 +87,23 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
   schemas:
-    NonceString:
-      type: string
-      description: >
-        Base64URL-encoded (RFC 4648 §5) representation of a 256-bit (32-byte) nonce.
-        Must use the URL-safe alphabet and contain **no padding** (`=` characters).
-        For 32 bytes, the encoded length is exactly 43 characters.
-      pattern: '^[A-Za-z0-9_-]{43}$'
-      example: q3i2aI4A2d2qU2C9m1vF1b3JYyG3n0o7cJc9Kc4E8fQ
-
-    NonceResponse:
+    IssueReaderCertRequest:
       type: object
       required:
-        - nonce
-        - expiresAt
-      properties:
-        nonce:
-          $ref: '#/components/schemas/NonceString'
-        expiresAt:
-          type: string
-          format: date-time
-          description: RFC 3339 UTC timestamp indicating when the nonce will expire (5 minutes after generation).
-          example: '2025-10-23T12:34:56Z'
-
-    Problem:
-      type: object
-      description: RFC 7807 Problem Details object.
-      required:
-        - type
-        - title
-        - status
-      properties:
-        type:
-          type: string
-          format: uri
-          example: 'https://api.example.com/problems/internal-error'
-        title:
-          type: string
-          example: 'Internal Server Error'
-        status:
-          type: integer
-          example: 500
-        detail:
-          type: string
-          example: 'An unexpected error occurred while generating the nonce.'
-        instance:
-          type: string
-          format: uri
-          example: 'https://api.example.com/trace/req_01J9ZQ2M7F5N4WPM1V7F3G1H7N'
-        code:
-          type: string
-          description: Machine-readable error code.
-        meta:
-          type: object
-          additionalProperties: true
-
-    # =========================
-    # Common
-    # =========================
-
-    IssueReaderCertBase:
-      type: object
-      required:
-        - platform
-        - nonce
         - csrPem
+        - clientAttestationJwt
       properties:
-        platform:
-          type: string
-          description: Platform identifier (discriminator).
-          enum: [ios, android]
-        nonce:
-          type: string
-          description: >
-            Nonce previously minted by `/nonce`. Must be the same value used as
-            attestation challenge / integrity nonce. Recommended Base64URL‐encoded.
-          example: Z3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw
         csrPem:
           type: string
           description: |
             PKCS#10 Certificate Signing Request in PEM encoding.
-            The CSR public key must match the key attested by the platform
-            (App Attest key on iOS, hardware key attestation on Android).
-          example: |
-            -----BEGIN CERTIFICATE REQUEST-----
-            MIIC...
-            -----END CERTIFICATE REQUEST-----
-
-    # =========================
-    # iOS – App Attest
-    # =========================
-
-    IssueReaderCertIOSRequest:
-      allOf:
-        - $ref: '#/components/schemas/IssueReaderCertBase'
-        - type: object
-          required:
-            - platform
-            - nonce
-            - csrPem
-            - appAttest
-          properties:
-            platform:
-              type: string
-              enum: [ios]
-            appAttest:
-              type: object
-              description: App Attest evidence used for app + key integrity.
-              required:
-                - keyId
-                - attestationObject
-                - clientDataJSON
-              properties:
-                keyId:
-                  type: string
-                  description: >
-                    App Attest key ID as returned by `generateKey()` on device.
-                  example: Xzy1AbCdEfGhIjKlMnOp
-                attestationObject:
-                  type: string
-                  description: >
-                    Raw App Attest attestation object (CBOR) returned from
-                    `attestKey()`, Base64URL‐encoded.
-                  example: o2NmbXRkYXR0ZXN0YXR0...
-                clientDataJSON:
-                  type: string
-                  description: >
-                    JSON used to bind the nonce/CSR hash, as per App Attest:
-                    typically Base64URL‐encoded JSON with the challenge derived
-                    from the CSR/nonce.
-                  example: eyJjaGFsbGVuZ2UiOiAiZ3VPeG5iY3lFbUtMZ2d0a1ZtT0pnZw...
-
-    # =========================
-    # Android – Play Integrity + Key Attestation
-    # =========================
-
-    IssueReaderCertAndroidRequest:
-      allOf:
-        - $ref: '#/components/schemas/IssueReaderCertBase'
-        - type: object
-          required:
-            - platform
-            - nonce
-            - csrPem
-            - keyAttestationChain
-            - playIntegrityToken
-          properties:
-            platform:
-              type: string
-              enum: [android]
-            keyAttestationChain:
-              type: array
-              description: >
-                Android hardware key attestation certificate chain (x5c). Each
-                element is a Base64‐encoded DER X.509 certificate:
-                - [0] = leaf attestation cert
-                - [1..n-2] = Google intermediates
-                - [n-1] = (optional) Google root, or root is pinned server-side.
-              minItems: 1
-              items:
-                type: string
-                example: MIIF2zCCA8OgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCB...
-            playIntegrityToken:
-              type: string
-              description: >
-                Play Integrity API response token (signed JWT) containing
-                appRecognitionVerdict, deviceIntegrity, requestDetails.nonce,
-                and app identity fields.
-              example: eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...
-
-    # =========================
-    # Response
-    # =========================
-
+            The CSR public key must match the public key bound into the client attestation JWT.
+        clientAttestationJwt:
+          type: string
+          description: |
+            Backend-issued client attestation JWT (from `/client-attestation`),
+            bound to the Verifier App public key.
     IssueReaderCertResponse:
       type: object
       required:
@@ -415,71 +115,32 @@ components:
       properties:
         readerId:
           type: string
-          description: Logical identifier for the reader key/certificate record.
-          example: reader-7fd98a2c-2f7a-4a5a-8c7e-3fc735f41e8f
         certChain:
           type: object
-          description: >
-            Issued short-lived reader certificate chain. All PEM-encoded.
-          required:
-            - leaf
+          required: [leaf, intermediate]
           properties:
             leaf:
               type: string
-              description: Leaf reader certificate (PEM).
-              example: |
-                -----BEGIN CERTIFICATE-----
-                MIID...
-                -----END CERTIFICATE-----
+              description: Leaf reader certificate (PEM encoded)
             intermediate:
               type: string
-              description: >
-                Intermediate CA certificate (PEM). Can be omitted if the
-                deployment uses an already-trusted CA without intermediates.
-              example: |
-                -----BEGIN CERTIFICATE-----
-                MIIF...
-                -----END CERTIFICATE-----
+              description: Intermediary CA certificate (PEM encoded)
         profile:
           type: string
-          description: Issuance profile name (e.g., "Reader").
-          example: Reader
         notBefore:
           type: string
           format: date-time
-          description: Start of certificate validity window (UTC).
         notAfter:
           type: string
           format: date-time
-          description: End of certificate validity window (UTC).
-
-    # =========================
-    # Error
-    # =========================
     ErrorResponse:
       type: object
-      required:
-        - code
-        - message
+      required: [code, message]
       properties:
         code:
           type: string
-          description: Machine-readable error code.
-          example: nonce_replayed
         message:
           type: string
-          description: Human-readable error message.
-          example: Nonce has already been consumed
         details:
           type: object
-          description: Optional error details (field, policy, etc.).
-
-security: []
-
-tags:
-  - name: Nonces
-    description: Public minting of short-lived, single-use nonces.
-
-  - name: IssueReaderCert
-    description: Issues a short-lived X.509 reader certificate bound to a hardware-backed key
-      and an integrity signal from the platform.
+          additionalProperties: true
