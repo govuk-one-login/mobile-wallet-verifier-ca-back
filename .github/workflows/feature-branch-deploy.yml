@@ -29,14 +29,14 @@ jobs:
       ENABLE_MONITORING: ${{ contains(github.event.pull_request.labels.*.name, 'enable-monitoring') }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           ref: ${{ github.ref }}
           submodules: true
           fetch-depth: 0
 
       - name: Setup NodeJS
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
         with:
           cache: npm
           cache-dependency-path: package-lock.json
@@ -54,10 +54,10 @@ jobs:
         run: npm clean-install
 
       - name: Setup AWS SAM CLI
-        uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04
+        uses: aws-actions/setup-sam@c2a20b1822cc4a6bc594ff7f1dbb658758e383c3
 
       - name: Authenticate with AWS
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
