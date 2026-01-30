@@ -35,14 +35,14 @@ paths:
                     -----BEGIN CERTIFICATE REQUEST-----
                     MIIC...
                     -----END CERTIFICATE REQUEST-----
-                  clientAttestationJwt: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ..."
+                  clientAttestationJwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...'
               android_example:
                 value:
                   csrPem: |
                     -----BEGIN CERTIFICATE REQUEST-----
                     MIIC...
                     -----END CERTIFICATE REQUEST-----
-                  clientAttestationJwt: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ..."
+                  clientAttestationJwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...'
       responses:
         '200':
           description: Reader certificate issued successfully
@@ -66,13 +66,13 @@ paths:
                 attestation_invalid:
                   summary: Client attestation JWT invalid
                   value:
-                    code: "attestation_invalid"
-                    message: "Client attestation JWT is invalid or expired"
+                    code: 'attestation_invalid'
+                    message: 'Client attestation JWT is invalid or expired'
                 key_binding_mismatch:
                   summary: CSR public key does not match attestation binding
                   value:
-                    code: "key_binding_mismatch"
-                    message: "CSR public key does not match client attestation binding"
+                    code: 'key_binding_mismatch'
+                    message: 'CSR public key does not match client attestation binding'
         '429':
           description: Too many requests / rate limited
           content:
