@@ -3,37 +3,13 @@ import type { IssueReaderCertRequest, IssueReaderCertResponse, ErrorResponse, At
 
 describe('Types Module', () => {
   describe('IssueReaderCertRequest', () => {
-    it('should accept valid iOS request structure', () => {
-      const iosRequest: IssueReaderCertRequest = {
-        platform: 'ios',
-        nonce: 'test-nonce',
-        csrPem: '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----',
-        appAttest: {
-          keyId: 'test-key-id',
-          attestationObject: 'test-attestation',
-          clientDataJSON: 'test-client-data',
-        },
-      };
-
-      expect(iosRequest.platform).toBe('ios');
-      expect(iosRequest.appAttest).toBeDefined();
-      expect(iosRequest.keyAttestationChain).toBeUndefined();
-      expect(iosRequest.playIntegrityToken).toBeUndefined();
-    });
-
     it('should accept valid Android request structure', () => {
-      const androidRequest: IssueReaderCertRequest = {
-        platform: 'android',
-        nonce: 'test-nonce',
+      const request: IssueReaderCertRequest = {
         csrPem: '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----',
-        keyAttestationChain: ['cert1', 'cert2'],
-        playIntegrityToken: 'test-token',
+        clientAttestationJwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...',
       };
 
-      expect(androidRequest.platform).toBe('android');
-      expect(androidRequest.keyAttestationChain).toBeDefined();
-      expect(androidRequest.playIntegrityToken).toBeDefined();
-      expect(androidRequest.appAttest).toBeUndefined();
+      expect(request.clientAttestationJwt).toBe('eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...');
     });
   });
 
