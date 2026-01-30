@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { verifyAndroidAttestation } from './android-attestation';
+import { verifyFirebaseAttestation } from './firebase-attestation.ts';
 
 vi.mock('@aws-lambda-powertools/logger', () => ({
   Logger: class MockLogger {
@@ -117,7 +117,7 @@ describe('Android Attestation Module', () => {
         keymasterSecurityLevel: 1,
       });
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
       // The test is currently failing at attestation extension validation
       // Let's check what the actual result is
       if (result.valid === false) {
@@ -137,7 +137,7 @@ describe('Android Attestation Module', () => {
         message: 'Play Integrity token verification failed',
       });
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.code).toBe('invalid_play_integrity');
@@ -152,7 +152,7 @@ describe('Android Attestation Module', () => {
 
       const emptyChainRequest = { ...mockRequest, keyAttestationChain: [] };
 
-      const result = await verifyAndroidAttestation(emptyChainRequest);
+      const result = await verifyFirebaseAttestation(emptyChainRequest);
 
       expect(result.valid).toBe(false);
       expect(result.message).toContain('attestation extension');
@@ -167,7 +167,7 @@ describe('Android Attestation Module', () => {
 
       const shortChainRequest = { ...mockRequest, keyAttestationChain: ['dGVzdA=='] };
 
-      const result = await verifyAndroidAttestation(shortChainRequest);
+      const result = await verifyFirebaseAttestation(shortChainRequest);
 
       expect(result.valid).toBe(false);
       // Short chain will fail on certificate validation
@@ -184,7 +184,7 @@ describe('Android Attestation Module', () => {
         message: 'Play Integrity nonce does not match request nonce',
       });
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.code).toBe('nonce_mismatch');
@@ -233,7 +233,7 @@ describe('Android Attestation Module', () => {
         return this;
       } as unknown as typeof BasicConstraintsExtension);
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.message).toContain('Expected exactly 1 attestation extension');
@@ -249,7 +249,7 @@ describe('Android Attestation Module', () => {
         message: 'JWT header missing kid (key ID)',
       });
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.code).toBe('invalid_play_integrity');
@@ -269,7 +269,7 @@ describe('Android Attestation Module', () => {
         throw new TypeError('Certificate parsing error');
       });
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.message).toContain('Certificate');
@@ -279,7 +279,7 @@ describe('Android Attestation Module', () => {
       const { validatePlayIntegritySignature } = await import('./play-integrity-validator');
       vi.mocked(validatePlayIntegritySignature).mockRejectedValue(new Error('Internal error'));
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.code).toBe('invalid_play_integrity');
@@ -306,7 +306,7 @@ describe('Android Attestation Module', () => {
         return this;
       } as unknown as typeof X509Certificate);
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.message).toContain('has multiple Basic Constraints extensions');
@@ -335,7 +335,7 @@ describe('Android Attestation Module', () => {
         return this;
       } as unknown as typeof X509Certificate);
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.message).toContain('missing Basic Constraints extension');
@@ -376,7 +376,7 @@ describe('Android Attestation Module', () => {
         status: 500,
       } as unknown as Response);
 
-      const result = await verifyAndroidAttestation(mockRequest);
+      const result = await verifyFirebaseAttestation(mockRequest);
 
       expect(result.valid).toBe(false);
       expect(result.message).toBe('Failed to fetch trusted root certificates from Google API');
@@ -423,7 +423,7 @@ describe('Android Attestation Module', () => {
         .mockResolvedValue({ entries: { root1: '-----BEGIN CERTIFICATE-----invalid-----END CERTIFICATE-----' } }),
     } as unknown as Response);
 
-    const result = await verifyAndroidAttestation(mockRequest);
+    const result = await verifyFirebaseAttestation(mockRequest);
 
     expect(result.valid).toBe(false);
     expect(result.message).toContain('Certificate chain does not link to trusted Google root');
@@ -468,7 +468,7 @@ describe('Android Attestation Module', () => {
         .mockResolvedValue({ entries: { root1: '-----BEGIN CERTIFICATE-----test-----END CERTIFICATE-----' } }),
     } as unknown as Response);
 
-    const result = await verifyAndroidAttestation(mockRequest);
+    const result = await verifyFirebaseAttestation(mockRequest);
 
     expect(result.valid).toBe(false);
     expect(result.message).toContain('Certificate chain does not link to trusted Google root');
@@ -493,7 +493,7 @@ describe('Android Attestation Module', () => {
       return this;
     } as unknown as typeof X509Certificate);
 
-    const result = await verifyAndroidAttestation(mockRequest);
+    const result = await verifyFirebaseAttestation(mockRequest);
 
     expect(result.valid).toBe(false);
     expect(result.message).toContain('certificate not valid at current time');
@@ -522,7 +522,7 @@ describe('Android Attestation Module', () => {
       return this;
     } as unknown as typeof X509Certificate);
 
-    const result = await verifyAndroidAttestation({ ...mockRequest, keyAttestationChain: ['cert1', 'cert2', 'cert3'] });
+    const result = await verifyFirebaseAttestation({ ...mockRequest, keyAttestationChain: ['cert1', 'cert2', 'cert3'] });
 
     expect(result.valid).toBe(false);
     expect(result.message).toContain('Intermediate certificate not valid at current time');

@@ -59,7 +59,9 @@ describe('Application Infrastructure', () => {
 
     it('should have correct function name pattern', () => {
       const properties = issueReaderCertFunction.Properties as Record<string, unknown>;
-      expect(properties.FunctionName).toEqual({ 'Fn::Sub': '${AWS::StackName}-${Environment}-issue-reader-cert-service' });
+      expect(properties.FunctionName).toEqual({
+        'Fn::Sub': '${AWS::StackName}-${Environment}-issue-reader-cert-service',
+      });
     });
 
     it('should have correct handler', () => {

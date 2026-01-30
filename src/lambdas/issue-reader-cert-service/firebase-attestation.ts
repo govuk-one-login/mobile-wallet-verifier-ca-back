@@ -55,10 +55,8 @@ export async function verifyAndroidAttestation(request: IssueReaderCertRequest):
 
   try {
     const validations = [
-      () => verifyPlayIntegrityToken(request.playIntegrityToken!, request.nonce), // Verify Play Integrity token signature and payload
-      () => validateCertificates(request.keyAttestationChain!), // Validate certificate chain properties
-      () => verifyAttestationChallenge(request.keyAttestationChain!, request.nonce), // Verify attestation challenge matches nonce
-      () => validateCSRAndPublicKey(request.csrPem, request.keyAttestationChain!), // Validate CSR and ensure it matches attested key
+      () => verifyPlayIntegrityToken(request.playIntegrityToken!), // Verify Play Integrity token signature and payload
+      // () => validateCSRAndPublicKey(request.csrPem, request.keyAttestationChain!), // Validate CSR and ensure it matches attested key
     ];
 
     for (const validation of validations) {
@@ -83,13 +81,13 @@ export async function verifyAndroidAttestation(request: IssueReaderCertRequest):
 /**
  * Verifies Play Integrity token (signature, nonce, and payload validation)
  */
-async function verifyPlayIntegrityToken(token: string, expectedNonce: string): Promise<AttestationResult> {
+async function verifyPlayIntegrityToken(token: string): Promise<AttestationResult> {
   try {
     const signatureResult = await validatePlayIntegritySignature(token);
     if (!signatureResult.valid) return signatureResult;
 
     const payload = jose.decodeJwt(token);
-    return validatePlayIntegrityPayload(payload, expectedNonce);
+    return validatePlayIntegrityPayload(payload);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -323,14 +321,17 @@ async function verifyAttestationChallenge(x5c: string[], expectedNonce: string):
  * Validates CSR content and verifies it matches the attested Android device public key
  * Extracts the public key from the leaf certificate in the attestation chain
  */
-async function validateCSRAndPublicKey(csrPem: string, attestationChain: string[]): Promise<AttestationResult> {
-  try {
-    const leafCert = new X509Certificate(Buffer.from(attestationChain[0], 'base64'));
-    return await validateCSRContent(csrPem, leafCert.publicKey);
-  } catch (error) {
-    logger.error('Error validating CSR against Android attestation', {
-      error: error instanceof Error ? error.message : error,
-    });
-    return { valid: false, code: 'invalid_csr', message: 'Failed to validate CSR against Android attestation chain' };
-  }
-}
+
+// will be worked in CSR ticket
+
+// async function validateCSRAndPublicKey(csrPem: string, attestationChain: string[]): Promise<AttestationResult> {
+//   try {
+//     const leafCert = new X509Certificate(Buffer.from(attestationChain[0], 'base64'));
+//     return await validateCSRContent(csrPem, leafCert.publicKey);
+//   } catch (error) {
+//     logger.error('Error validating CSR against Android attestation', {
+//       error: error instanceof Error ? error.message : error,
+//     });
+//     return { valid: false, code: 'invalid_csr', message: 'Failed to validate CSR against Android attestation chain' };
+//   }
+// }
