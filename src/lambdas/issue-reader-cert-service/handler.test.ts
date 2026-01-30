@@ -40,10 +40,9 @@ vi.mock('./ios-attestation', () => ({
   verifyIOSAttestation: vi.fn(),
 }));
 
-import * as dynamoModule from '@aws-sdk/client-dynamodb';
 import { handler } from './handler';
 
-const mockSend = (dynamoModule as unknown as { __mockSend: ReturnType<typeof vi.fn> }).__mockSend;
+// Remove unused dynamoModule import
 
 const mockContext: Context = {
   awsRequestId: 'test-request-id',

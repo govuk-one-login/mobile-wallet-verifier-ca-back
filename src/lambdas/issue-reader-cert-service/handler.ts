@@ -1,8 +1,8 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
 import { Logger } from '@aws-lambda-powertools/logger';
 import { randomUUID } from 'node:crypto';
-import { IssueReaderCertRequest, IssueReaderCertResponse } from './types';
-import { validateRequest, createErrorResponse } from './validation';
+import { IssueReaderCertResponse } from './types';
+import { createErrorResponse } from './validation';
 
 const logger = new Logger();
 

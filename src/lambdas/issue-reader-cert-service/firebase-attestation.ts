@@ -2,10 +2,9 @@ import { Logger } from '@aws-lambda-powertools/logger';
 import { X509Certificate, BasicConstraintsExtension } from '@peculiar/x509';
 import { KeyDescription, SecurityLevel } from '@peculiar/asn1-android';
 import { AsnConvert } from '@peculiar/asn1-schema';
-import * as jose from 'jose';
-import { IssueReaderCertRequest, AttestationResult } from './types';
-import { validatePlayIntegritySignature, validatePlayIntegrityPayload } from './play-integrity-validator';
-import { validateCSRContent } from './validation';
+import { AttestationResult } from './types';
+//import { validatePlayIntegritySignature, validatePlayIntegrityPayload } from './play-integrity-validator';
+
 import { ANDROID_ATTESTATION_CONFIG } from '../../../common/const';
 
 let certificateCache: { certificates: string[]; expiry: number } | null = null;
@@ -50,64 +49,65 @@ const logger = new Logger();
  * @param request - The certificate request containing Android attestation data
  * @returns Attestation verification result
  */
-export async function verifyAndroidAttestation(request: IssueReaderCertRequest): Promise<AttestationResult> {
-  logger.info('Verifying Android attestation', { chainLength: request.keyAttestationChain?.length });
-
-  try {
-    const validations = [
-      () => verifyPlayIntegrityToken(request.playIntegrityToken!), // Verify Play Integrity token signature and payload
-      // () => validateCSRAndPublicKey(request.csrPem, request.keyAttestationChain!), // Validate CSR and ensure it matches attested key
-    ];
-
-    for (const validation of validations) {
-      const result = await validation();
-
-      if (!result.valid) {
-        console.log(result.message);
-        return result;
-      }
-    }
-
-    logger.info('Android attestation verification successful');
-    return { valid: true };
-  } catch (error) {
-    logger.error('Error during Android attestation verification', {
-      error: error instanceof Error ? error.message : error,
-    });
-    return { valid: false, code: 'attestation_error', message: 'Internal error during attestation verification' };
-  }
-}
+// export async function verifyFirebaseAttestation(request: IssueReaderCertRequest): Promise<AttestationResult> {
+//   //logger.info('Verifying Android attestation', { chainLength: request.keyAttestationChain?.length });
+//
+//   try {
+//     const validations = [
+//       () => verifyPlayIntegrityToken(request.clientAttestationJwt!), // Verify Play Integrity token signature and payload
+//       // () => validateCSRAndPublicKey(request.csrPem, request.keyAttestationChain!), // Validate CSR and ensure it matches attested key
+//     ];
+//
+//     for (const validation of validations) {
+//       const result = await validation();
+//
+//       if (!result.valid) {
+//         console.log(result.message);
+//         return result;
+//       }
+//     }
+//
+//     logger.info('Android attestation verification successful');
+//     return { valid: true };
+//   } catch (error) {
+//     logger.error('Error during Android attestation verification', {
+//       error: error instanceof Error ? error.message : error,
+//     });
+//     return { valid: false, code: 'attestation_error', message: 'Internal error during attestation verification' };
+//   }
+// }
 
 /**
  * Verifies Play Integrity token (signature, nonce, and payload validation)
  */
-async function verifyPlayIntegrityToken(token: string): Promise<AttestationResult> {
-  try {
-    const signatureResult = await validatePlayIntegritySignature(token);
-    if (!signatureResult.valid) return signatureResult;
-
-    const payload = jose.decodeJwt(token);
-    return validatePlayIntegrityPayload(payload);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // Handle specific Play Integrity error codes
-    if (errorMessage.includes('INTEGRITY_TOKEN_PROVIDER_INVALID')) {
-      return {
-        valid: false,
-        code: 'integrity_token_provider_invalid',
-        message: 'Play Integrity API is not available on this device',
-      };
-    }
-
-    logger.error('Error verifying Play Integrity token', { error: errorMessage });
-    return { valid: false, code: 'invalid_play_integrity', message: 'Play Integrity token verification failed' };
-  }
-}
+// async function verifyPlayIntegrityToken(token: string): Promise<AttestationResult> {
+//   try {
+//     const signatureResult = await validatePlayIntegritySignature(token);
+//     if (!signatureResult.valid) return signatureResult;
+//
+//     const payload = jose.decodeJwt(token);
+//     return validatePlayIntegrityPayload(payload);
+//   } catch (error) {
+//     const errorMessage = error instanceof Error ? error.message : String(error);
+//
+//     // Handle specific Play Integrity error codes
+//     if (errorMessage.includes('INTEGRITY_TOKEN_PROVIDER_INVALID')) {
+//       return {
+//         valid: false,
+//         code: 'integrity_token_provider_invalid',
+//         message: 'Play Integrity API is not available on this device',
+//       };
+//     }
+//
+//     logger.error('Error verifying Play Integrity token', { error: errorMessage });
+//     return { valid: false, code: 'invalid_play_integrity', message: 'Play Integrity token verification failed' };
+//   }
+// }
 
 /**
  * Validates all certificate properties (All certs in Android chain are valid and poperly formed)
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function validateCertificates(x5c: string[]): Promise<AttestationResult> {
   try {
     const certificates = parseCertificates(x5c);
@@ -273,6 +273,7 @@ function validateCertificateValidity(certificates: X509Certificate[]): Attestati
 /**
  * Verifies Key attestation challenge and validates leaf certificate
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function verifyAttestationChallenge(x5c: string[], expectedNonce: string): Promise<AttestationResult> {
   try {
     const leafCert = new X509Certificate(Buffer.from(x5c[0], 'base64'));
