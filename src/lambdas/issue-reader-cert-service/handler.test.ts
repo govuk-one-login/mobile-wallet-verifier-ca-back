@@ -42,8 +42,6 @@ vi.mock('./ios-attestation', () => ({
 
 import { handler } from './handler';
 
-// Remove unused dynamoModule import
-
 const mockContext: Context = {
   awsRequestId: 'test-request-id',
 } as Context;
