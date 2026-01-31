@@ -15,13 +15,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
-    // const request: IssueReaderCertRequest = JSON.parse(event.body || '{}');
-    //
-    // // Validate request - TO BE DONE LATER
-    // const validationError = await validateRequest(request);
-    // if (validationError) {
-    //   return validationError;
-    // }
 
     // Issue certificate
     const certificate = await issueCertificate();
