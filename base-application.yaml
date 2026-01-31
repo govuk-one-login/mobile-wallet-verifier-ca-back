@@ -58,23 +58,6 @@ Conditions:
     - 'true'
 
 Resources:
-  NonceTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub '${AWS::StackName}-verifier-ca-nonce-store'
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: nonceValue
-          AttributeType: S
-      KeySchema:
-        - AttributeName: nonceValue
-          KeyType: HASH
-      TimeToLiveSpecification:
-        AttributeName: timeToLive
-        Enabled: true
-      SSESpecification:
-        SSEEnabled: true
-
   # Shared API Gateway Custom Domains
   # These are created once and shared by multiple application stacks via base path mappings
   ApiGatewayOriginDomain:
@@ -124,12 +107,6 @@ Resources:
           Value: !Ref Environment
 
 Outputs:
-  NonceTableName:
-    Description: 'Name of the DynamoDB nonce table'
-    Value: !Ref NonceTable
-    Export:
-      Name: !Sub '${AWS::StackName}-verifier-ca-nonce-store'
-
   # Custom Domain Outputs for use by application stacks
   OriginDomainName:
     Condition: CreateCustomDomain

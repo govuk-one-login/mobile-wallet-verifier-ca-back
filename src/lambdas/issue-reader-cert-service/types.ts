@@ -1,14 +1,6 @@
 export interface IssueReaderCertRequest {
-  platform: 'ios' | 'android';
-  nonce: string;
   csrPem: string;
-  appAttest?: {
-    keyId: string;
-    attestationObject: string;
-    clientDataJSON: string;
-  };
-  keyAttestationChain?: string[];
-  playIntegrityToken?: string;
+  clientAttestationJwt: string;
 }
 
 export interface IssueReaderCertResponse {
