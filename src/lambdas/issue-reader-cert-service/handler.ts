@@ -15,7 +15,6 @@ export const handler = async (event: APIGatewayProxyEvent, context: Context): Pr
   }
 
   try {
-
     // Issue certificate
     const certificate = await issueCertificate();
 
