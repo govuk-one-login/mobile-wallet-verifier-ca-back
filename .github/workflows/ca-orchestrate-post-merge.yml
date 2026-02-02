@@ -7,18 +7,12 @@ on:
       - 'base-application.yaml'
       - 'application.yaml'
       - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/ca-orchestrate-post-merge.yml'
 
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - build
       deploy_base_application:
         description: 'Deploy base-application.yaml'
         required: true
@@ -66,7 +60,7 @@ jobs:
           # For push events, compare with previous commit
           if [[ "$EVENT_NAME" == "push" ]]; then
             BASE_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^base-application\.yaml$' || echo "")
-            APP_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^(application\.yaml|src/)' || echo "")
+            APP_CHANGED=$(git diff --name-only HEAD~1 HEAD)
           else
             # For workflow_dispatch, use inputs
             BASE_CHANGED=""
@@ -82,14 +76,14 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_DEPLOY_BASE: ${{ inputs.deploy_base_application }}
           INPUT_DEPLOY_APP: ${{ inputs.deploy_application }}
-          INPUT_ENVIRONMENT: ${{ inputs.environment }}
           BASE_APP_CHANGED: ${{ steps.changes.outputs.base_app }}
           APP_CHANGED: ${{ steps.changes.outputs.app }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             echo "deploy_base=$INPUT_DEPLOY_BASE" >> "$GITHUB_OUTPUT"
             echo "deploy_app=$INPUT_DEPLOY_APP" >> "$GITHUB_OUTPUT"
-            echo "target_environment=$INPUT_ENVIRONMENT" >> "$GITHUB_OUTPUT"
+            # workflow_dispatch only deploys to dev
+            echo "target_environment=dev" >> "$GITHUB_OUTPUT"
           else
             echo "deploy_base=$BASE_APP_CHANGED" >> "$GITHUB_OUTPUT"
             # Always deploy app if base changed (to pick up new exports)
@@ -98,7 +92,7 @@ jobs:
             else
               echo "deploy_app=false" >> "$GITHUB_OUTPUT"
             fi
-            # Default to both dev and build for push events (merges to main)
+            # push events deploy to both dev and build
             echo "target_environment=all" >> "$GITHUB_OUTPUT"          
           fi
 
