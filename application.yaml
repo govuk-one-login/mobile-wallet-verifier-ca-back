@@ -314,84 +314,6 @@ Resources:
           LinearPercentage: 20
         Type: TimeBasedLinear
 
-  NonceServiceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub '${AWS::StackName}-${Environment}-nonce-service-role'
-      PermissionsBoundary: !If
-        - UsePermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-      Policies:
-        - PolicyName: DynamoDBAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:PutItem
-                  - dynamodb:GetItem
-                Resource: !Sub
-                  - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
-                  - TableName:
-                      Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
-
-  NonceServiceFunction:
-    Type: AWS::Serverless::Function
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Sourcemap: false
-        Target: es2022
-    Properties:
-      FunctionName: !Sub '${AWS::StackName}-${Environment}-nonce-service'
-      DeploymentPreference:
-        Alarms: !If
-          - CreateAlarmsAndMonitoring
-          - - !Ref NonceServiceErrorAlarm
-          - []
-      CodeUri: ./
-      Handler: src/lambdas/nonce-service/handler.handler
-      Role: !GetAtt NonceServiceRole.Arn
-      VpcConfig:
-        SecurityGroupIds:
-          - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
-        SubnetIds:
-          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdA
-          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdB
-          - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdC
-      Environment:
-        Variables:
-          NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
-
-  NonceServiceFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-nonce-service
-      RetentionInDays: 30
-
-  NonceServiceFunctionSubscriptionFilter:
-    Type: AWS::Logs::SubscriptionFilter
-    Properties:
-      DestinationArn: !FindInMap
-        - EnvironmentVariables
-        - CslsEgress
-        - !Ref Environment
-      FilterPattern: ''
-      LogGroupName: !Ref NonceServiceFunctionLogGroup
-    Condition: EgressLogsToSplunkUsingCsls
-
   IssueReaderCertServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -409,19 +331,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
-      Policies:
-        - PolicyName: DynamoDBAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:GetItem
-                  - dynamodb:DeleteItem
-                Resource: !Sub
-                  - 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}'
-                  - TableName:
-                      Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
@@ -450,8 +359,6 @@ Resources:
           - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdC
       Environment:
         Variables:
-          NONCE_TABLE_NAME:
-            Fn::ImportValue: !Sub '${BaseAppStack}-verifier-ca-nonce-store'
           ALLOW_TEST_TOKENS: !If
             - IsDevEnvironment
             - 'true'
@@ -519,14 +426,6 @@ Resources:
     Properties:
       LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-${CaBackendApiParam}-access-logs
       RetentionInDays: 30
-
-  NonceServicePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref NonceServiceFunction.Alias
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/*/*'
 
   ApiGatewayCloudWatchLogsRole:
     Type: AWS::IAM::Role
@@ -606,31 +505,7 @@ Resources:
       WebACLArn:
         Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
 
-  # CloudWatch Alarms for Canary Deployments
-  NonceServiceErrorAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: CreateAlarmsAndMonitoring
-    Properties:
-      AlarmName: !Sub '${AWS::StackName}-${Environment}-nonce-service-errors'
-      AlarmDescription: |
-        Monitors errors for Nonce Service lambda.
-        Runbook: https://govukverify.atlassian.net/wiki/spaces/DCMAW/pages/6024003653/CA+Backend+Alarm+Runbook+Warnings
-      MetricName: Errors
-      Namespace: AWS/Lambda
-      Statistic: Sum
-      Period: 300
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      Dimensions:
-        - Name: FunctionName
-          Value: !Ref NonceServiceFunction
-        - Name: ExecutedVersion
-          Value: !Ref NonceServiceFunction.Version
-      AlarmActions:
-        - !Ref WarningsChannel
-      TreatMissingData: notBreaching
-
+  # CloudWatch Alarms for Canary Deployment
   IssueReaderCertServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: CreateAlarmsAndMonitoring
@@ -723,13 +598,6 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-api-stage'
 
-  NonceServiceErrorAlarmArn:
-    Description: ARN of the Nonce Service error alarm
-    Condition: CreateAlarmsAndMonitoring
-    Value: !GetAtt NonceServiceErrorAlarm.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}-nonce-service-error-alarm-arn'
-
   IssueReaderCertServiceErrorAlarmArn:
     Description: ARN of the Issue Reader Certificate Service error alarm
     Condition: CreateAlarmsAndMonitoring
@@ -750,12 +618,6 @@ Outputs:
     Value: !GetAtt ApiGateway5xxErrorAlarm.Arn
     Export:
       Name: !Sub '${AWS::StackName}-api-gateway-5xx-error-alarm-arn'
-
-  NonceServiceFunctionVersion:
-    Description: Version of the Nonce Service Lambda function
-    Value: !Ref NonceServiceFunction.Version
-    Export:
-      Name: !Sub '${AWS::StackName}-nonce-service-function-version'
 
   IssueReaderCertServiceFunctionVersion:
     Description: Version of the Issue Reader Certificate Service Lambda function
