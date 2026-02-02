@@ -60,7 +60,7 @@ jobs:
           # For push events, compare with previous commit
           if [[ "$EVENT_NAME" == "push" ]]; then
             BASE_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^base-application\.yaml$' || echo "")
-            APP_CHANGED=$(git diff --name-only HEAD~1 HEAD | grep -E '^(application\.yaml|src/)' || echo "")
+            APP_CHANGED=$(git diff --name-only HEAD~1 HEAD)
           else
             # For workflow_dispatch, use inputs
             BASE_CHANGED=""
@@ -76,7 +76,6 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           INPUT_DEPLOY_BASE: ${{ inputs.deploy_base_application }}
           INPUT_DEPLOY_APP: ${{ inputs.deploy_application }}
-          INPUT_ENVIRONMENT: ${{ inputs.environment }}
           BASE_APP_CHANGED: ${{ steps.changes.outputs.base_app }}
           APP_CHANGED: ${{ steps.changes.outputs.app }}
         run: |
