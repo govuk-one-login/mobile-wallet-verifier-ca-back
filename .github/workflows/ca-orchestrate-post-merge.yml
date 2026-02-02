@@ -7,18 +7,12 @@ on:
       - 'base-application.yaml'
       - 'application.yaml'
       - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/ca-orchestrate-post-merge.yml'
 
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Target environment'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - build
       deploy_base_application:
         description: 'Deploy base-application.yaml'
         required: true
@@ -89,7 +83,8 @@ jobs:
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             echo "deploy_base=$INPUT_DEPLOY_BASE" >> "$GITHUB_OUTPUT"
             echo "deploy_app=$INPUT_DEPLOY_APP" >> "$GITHUB_OUTPUT"
-            echo "target_environment=$INPUT_ENVIRONMENT" >> "$GITHUB_OUTPUT"
+            # workflow_dispatch only deploys to dev
+            echo "target_environment=dev" >> "$GITHUB_OUTPUT"
           else
             echo "deploy_base=$BASE_APP_CHANGED" >> "$GITHUB_OUTPUT"
             # Always deploy app if base changed (to pick up new exports)
@@ -98,7 +93,7 @@ jobs:
             else
               echo "deploy_app=false" >> "$GITHUB_OUTPUT"
             fi
-            # Default to both dev and build for push events (merges to main)
+            # push events deploy to both dev and build
             echo "target_environment=all" >> "$GITHUB_OUTPUT"          
           fi
 
