@@ -50,7 +50,7 @@ jobs:
         uses: aws-actions/setup-sam@c2a20b1822cc4a6bc594ff7f1dbb658758e383c3 # v2
 
       - name: Authenticate with AWS
-        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
         with:
           aws-region: ${{ inputs.AWS_REGION }}
           role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
