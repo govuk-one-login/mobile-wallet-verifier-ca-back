@@ -19,8 +19,8 @@
   "license": "MIT",
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.30.2",
-    "@aws-sdk/client-dynamodb": "^3.980.0",
-    "@aws-sdk/client-secrets-manager": "^3.980.0",
+    "@aws-sdk/client-dynamodb": "^3.983.0",
+    "@aws-sdk/client-secrets-manager": "^3.983.0",
     "@peculiar/asn1-android": "^2.3.8",
     "@peculiar/asn1-schema": "^2.3.8",
     "@peculiar/webcrypto": "1.5.0",
