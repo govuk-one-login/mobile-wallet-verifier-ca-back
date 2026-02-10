@@ -4,7 +4,9 @@
     {
       "quality-gates": [
         {
-          "check-types": ["code style and linting"],
+          "check-types": [
+            "code style and linting"
+          ],
           "config": {
             "file": ".github/workflows/ca-backend-api-pull-request.yml",
             "name": "CI checks",
@@ -14,7 +16,12 @@
           "provider": "GitHub"
         },
         {
-          "check-types": ["code quality", "unit", "unit test coverage", "vulnerability detection"],
+          "check-types": [
+            "code quality",
+            "unit",
+            "unit test coverage",
+            "vulnerability detection"
+          ],
           "config": {
             "file": ".github/workflows/ca-backend-api-pull-request.yml",
             "name": "Run test suite",
@@ -24,7 +31,9 @@
           "provider": "GitHub"
         },
         {
-          "check-types": ["code style and linting"],
+          "check-types": [
+            "code style and linting"
+          ],
           "config": {
             "file": ".github/workflows/base-application-pull-request.yml",
             "name": "Validate Template",
