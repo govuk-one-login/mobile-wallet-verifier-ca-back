@@ -47,7 +47,7 @@ Pre merge checks are documented in our quality gates [manifest](quality-gate.man
 
 ### Install dependencies
 
-```
+```bash
 npm install
 ```
 
