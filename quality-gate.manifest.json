@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/govuk-one-login/quality-gates/refs/tags/v0.1.0/schemas/schema.json",
+  "services": [
+    {
+      "quality-gates": [
+        {
+          "check-types": ["code style and linting"],
+          "config": {
+            "file": ".github/workflows/ca-backend-api-pull-request.yml",
+            "name": "CI checks",
+            "path": "jobs.ci-checks"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": ["unit", "vulnerability detection"],
+          "config": {
+            "file": ".github/workflows/ca-backend-api-pull-request.yml",
+            "name": "Run test suite",
+            "path": "jobs.run-test-suite"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        },
+        {
+          "check-types": ["code style and linting"],
+          "config": {
+            "file": ".github/workflows/base-application-pull-request.yml",
+            "name": "Validate Template",
+            "path": "jobs.validate"
+          },
+          "phase": "pre-merge",
+          "provider": "GitHub"
+        }
+      ],
+      "service-tag": "mobile-wallet-verifier-ca-back"
+    }
+  ]
+}
