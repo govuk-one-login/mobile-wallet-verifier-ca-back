@@ -14,7 +14,7 @@
           "provider": "GitHub"
         },
         {
-          "check-types": ["unit", "vulnerability detection"],
+          "check-types": ["code quality", "unit", "vulnerability detection"],
           "config": {
             "file": ".github/workflows/ca-backend-api-pull-request.yml",
             "name": "Run test suite",
