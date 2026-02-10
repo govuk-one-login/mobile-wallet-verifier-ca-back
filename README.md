@@ -39,6 +39,10 @@ This project uses **ECMAScript Modules (ESM)** as the module system:
 - [esbuild](https://esbuild.github.io/) for fast TypeScript compilation and bundling
 - [Vitest](https://vitest.dev/) for testing with native ESM support
 
+## Quality Gates
+
+Pre merge checks are documented in our quality gates [manifest](quality-gate.manifest.json) to align with the One Login quality gates schema. This is used to track which automated checks run before merging.
+
 ## Quickstart
 
 ### Install dependencies
