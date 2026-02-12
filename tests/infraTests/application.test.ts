@@ -49,7 +49,8 @@ describe('Application Infrastructure', () => {
     let issueReaderCertFunction: Record<string, unknown>;
 
     beforeAll(() => {
-      issueReaderCertFunction = template.Resources.IssueReaderCertServiceFunction as Record<string, unknown>;
+      issueReaderCertFunction = template.Resources
+        .IssueReaderCertServiceFunction as Record<string, unknown>;
     });
 
     it('should exist and be of correct type', () => {
@@ -58,19 +59,30 @@ describe('Application Infrastructure', () => {
     });
 
     it('should have correct function name pattern', () => {
-      const properties = issueReaderCertFunction.Properties as Record<string, unknown>;
+      const properties = issueReaderCertFunction.Properties as Record<
+        string,
+        unknown
+      >;
       expect(properties.FunctionName).toEqual({
         'Fn::Sub': '${AWS::StackName}-${Environment}-issue-reader-cert-service',
       });
     });
 
     it('should have correct handler', () => {
-      const properties = issueReaderCertFunction.Properties as Record<string, unknown>;
-      expect(properties.Handler).toBe('src/lambdas/issue-reader-cert-service/handler.handler');
+      const properties = issueReaderCertFunction.Properties as Record<
+        string,
+        unknown
+      >;
+      expect(properties.Handler).toBe(
+        'src/lambdas/issue-reader-cert-service/handler.handler',
+      );
     });
 
     it('should have VPC configuration', () => {
-      const properties = issueReaderCertFunction.Properties as Record<string, unknown>;
+      const properties = issueReaderCertFunction.Properties as Record<
+        string,
+        unknown
+      >;
       const vpcConfig = properties.VpcConfig as Record<string, unknown>;
       expect(vpcConfig.SecurityGroupIds).toBeDefined();
       expect(vpcConfig.SubnetIds).toBeDefined();
@@ -81,7 +93,10 @@ describe('Application Infrastructure', () => {
     let role: Record<string, unknown>;
 
     beforeAll(() => {
-      role = template.Resources.IssueReaderCertServiceRole as Record<string, unknown>;
+      role = template.Resources.IssueReaderCertServiceRole as Record<
+        string,
+        unknown
+      >;
     });
 
     it('should exist and be of correct type', () => {
@@ -91,11 +106,12 @@ describe('Application Infrastructure', () => {
 
     it('should have Lambda assume role policy', () => {
       const assumeRolePolicy = role.Properties as Record<string, unknown>;
-      const statements = (assumeRolePolicy.AssumeRolePolicyDocument as Record<string, unknown>).Statement as Record<
-        string,
-        unknown
-      >[];
-      expect((statements[0].Principal as Record<string, unknown>).Service).toBe('lambda.amazonaws.com');
+      const statements = (
+        assumeRolePolicy.AssumeRolePolicyDocument as Record<string, unknown>
+      ).Statement as Record<string, unknown>[];
+      expect((statements[0].Principal as Record<string, unknown>).Service).toBe(
+        'lambda.amazonaws.com',
+      );
       expect(statements[0].Action).toBe('sts:AssumeRole');
     });
   });
@@ -125,19 +141,33 @@ describe('Application Infrastructure', () => {
 
   describe('Outputs', () => {
     it('should export API Gateway domain name', () => {
-      const apiOutput = template.Outputs.ApiGatewayDomainName as Record<string, unknown>;
-      expect(apiOutput.Description).toBe('API Gateway regional domain name for CloudFront origin');
+      const apiOutput = template.Outputs.ApiGatewayDomainName as Record<
+        string,
+        unknown
+      >;
+      expect(apiOutput.Description).toBe(
+        'API Gateway regional domain name for CloudFront origin',
+      );
       expect(apiOutput.Value).toBeDefined();
     });
 
     it('should export API Gateway ID', () => {
-      const apiIdOutput = template.Outputs.ApiGatewayId as Record<string, unknown>;
+      const apiIdOutput = template.Outputs.ApiGatewayId as Record<
+        string,
+        unknown
+      >;
       expect(apiIdOutput.Description).toBe('API Gateway ID');
       expect(apiIdOutput.Value).toEqual({ Ref: 'CaBackendApi' });
     });
 
     it('should have all required outputs', () => {
-      expect(() => testRequiredOutputs(template, ['ApiGatewayDomainName', 'ApiGatewayId', 'ApiStage'])).not.toThrow();
+      expect(() =>
+        testRequiredOutputs(template, [
+          'ApiGatewayDomainName',
+          'ApiGatewayId',
+          'ApiStage',
+        ]),
+      ).not.toThrow();
     });
   });
 });

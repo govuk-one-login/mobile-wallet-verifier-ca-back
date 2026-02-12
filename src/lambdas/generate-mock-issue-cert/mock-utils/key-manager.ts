@@ -1,4 +1,8 @@
-import { SecretsManagerClient, GetSecretValueCommand, CreateSecretCommand } from '@aws-sdk/client-secrets-manager';
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+  CreateSecretCommand,
+} from '@aws-sdk/client-secrets-manager';
 
 export interface KeyPair {
   privateKeyPem: string;
@@ -27,7 +31,10 @@ export class KeyManager {
         return data.keyPair || data;
       }
     } catch (error) {
-      if (error instanceof Error && error.name !== 'ResourceNotFoundException') {
+      if (
+        error instanceof Error &&
+        error.name !== 'ResourceNotFoundException'
+      ) {
         throw error;
       }
     }
@@ -39,7 +46,8 @@ export class KeyManager {
       new CreateSecretCommand({
         Name: secretName,
         SecretString: JSON.stringify({ keyPair }),
-        Description: 'ECDSA key pair for CSR generation and Play Integrity token signing',
+        Description:
+          'ECDSA key pair for CSR generation and Play Integrity token signing',
       }),
     );
   }
@@ -63,7 +71,10 @@ export class KeyManager {
         return JSON.parse(response.SecretString);
       }
     } catch (error) {
-      if (error instanceof Error && error.name !== 'ResourceNotFoundException') {
+      if (
+        error instanceof Error &&
+        error.name !== 'ResourceNotFoundException'
+      ) {
         throw error;
       }
     }
