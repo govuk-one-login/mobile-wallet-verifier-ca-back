@@ -1,7 +1,10 @@
 #!/usr/bin/env tsx
 
 import { KeyManager } from '../src/lambdas/generate-mock-issue-cert/mock-utils/key-manager.ts';
-import { generateECDSAKeyPair, createRootCA } from '../src/lambdas/generate-mock-issue-cert/mock-utils/crypto-utils.ts';
+import {
+  generateECDSAKeyPair,
+  createRootCA,
+} from '../src/lambdas/generate-mock-issue-cert/mock-utils/crypto-utils.ts';
 
 export const DEVICE_KEYS_SECRET = 'android-device-keys-9';
 export const PLAY_INTEGRITY_KEYS_SECRET = 'android-play-integrity-keys-9';
@@ -30,7 +33,10 @@ async function main() {
     // Generate Play Integrity keys
     console.log('Generating Play Integrity keys...');
     const playIntegrityKeys = generateECDSAKeyPair('prime256v1');
-    await keyManager.storeKeyPair(PLAY_INTEGRITY_KEYS_SECRET, playIntegrityKeys);
+    await keyManager.storeKeyPair(
+      PLAY_INTEGRITY_KEYS_SECRET,
+      playIntegrityKeys,
+    );
 
     // Generate Root CA
     console.log('Generating Android Root CA...');
