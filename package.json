@@ -11,8 +11,8 @@
     "mock:cert": "tsx src/lambdas/generate-mock-issue-cert/handler.ts",
     "setup:android": "tsx scripts/setup-android-infrastructure.ts",
     "lint": "eslint .",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write '**/*.{ts,md}'",
+    "format:check": "prettier --check '**/*.{ts,md}'",
     "infra:format:check": "rain fmt --verify application.yaml",
     "infra:format": "rain fmt --write application.yaml"
   },
