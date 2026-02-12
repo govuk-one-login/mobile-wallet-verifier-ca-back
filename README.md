@@ -25,7 +25,7 @@ Issues short-lived X.509 reader certificates (24-hours validity) after verifying
 
 ## Pre-requisites
 
-- [Node.js](https://nodejs.org/en) version 22 or higher (use the provided `.nvmrc` file with [nvm](https://github.com/nvm-sh/nvm) for easy version management)
+- [Node.js](https://nodejs.org/en) version 22 (use the provided `.nvmrc` file with [nvm](https://github.com/nvm-sh/nvm) for easy version management)
 - [AWS SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html) for deployment
 - AWS CLI configured with appropriate credentials for Secrets Manager access
 - [Husky](https://typicode.github.io/husky/get-started.html) - For pre-push validations
@@ -39,11 +39,15 @@ This project uses **ECMAScript Modules (ESM)** as the module system:
 - [esbuild](https://esbuild.github.io/) for fast TypeScript compilation and bundling
 - [Vitest](https://vitest.dev/) for testing with native ESM support
 
+## Quality Gates
+
+Pre merge checks are documented in our quality gates [manifest](quality-gate.manifest.json) to align with the One Login quality gates schema. This is used to track which automated checks run before merging.
+
 ## Quickstart
 
 ### Install dependencies
 
-```
+```bash
 npm install
 ```
 
