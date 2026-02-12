@@ -1,11 +1,11 @@
-import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
-import { vi, describe, it, beforeEach, expect } from 'vitest';
+import type { APIGatewayProxyEvent, Context } from "aws-lambda";
+import { vi, describe, it, beforeEach, expect } from "vitest";
 
-vi.mock('node:crypto', () => ({
-  randomUUID: vi.fn(() => 'test-uuid-123'),
+vi.mock("node:crypto", () => ({
+  randomUUID: vi.fn(() => "test-uuid-123"),
 }));
 
-vi.mock('@aws-lambda-powertools/logger', () => ({
+vi.mock("@aws-lambda-powertools/logger", () => ({
   Logger: class {
     info = vi.fn();
     warn = vi.fn();
@@ -13,7 +13,7 @@ vi.mock('@aws-lambda-powertools/logger', () => ({
   },
 }));
 
-vi.mock('@aws-sdk/client-dynamodb', () => {
+vi.mock("@aws-sdk/client-dynamodb", () => {
   const mockSend = vi.fn();
   return {
     DynamoDBClient: class {
@@ -32,23 +32,23 @@ vi.mock('@aws-sdk/client-dynamodb', () => {
   };
 });
 
-vi.mock('./android-attestation', () => ({
+vi.mock("./android-attestation", () => ({
   verifyAndroidAttestation: vi.fn(),
 }));
 
-vi.mock('./ios-attestation', () => ({
+vi.mock("./ios-attestation", () => ({
   verifyIOSAttestation: vi.fn(),
 }));
 
-import { handler } from './handler';
+import { handler } from "./handler";
 
 const mockContext: Context = {
-  awsRequestId: 'test-request-id',
+  awsRequestId: "test-request-id",
 } as Context;
 
 const createMockEvent = (
-  httpMethod = 'POST',
-  path = '/issue-reader-cert',
+  httpMethod = "POST",
+  path = "/issue-reader-cert",
   body: string | null = null,
 ): APIGatewayProxyEvent =>
   ({
@@ -60,31 +60,31 @@ const createMockEvent = (
 
 const validRequest = {
   csrPem:
-    '-----BEGIN CERTIFICATE REQUEST-----\nMIHyMIGaAgEAMDgxCzAJBgNVBAYTAlVLMQwwCgYDVQQKEwNHRFMxGzAZBgNVBAMT\nEkFuZHJvaWQgRGV2aWNlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDlt\n4vSyJY/RnL8bC5bHhhfxDZ3m69UBx/IADlbZhZ4nzImHuzVJsck2LsPefb91g6hc\nhq81PZei3c7qN2rfJIqgADAKBggqhkjOPQQDAgNHADBEAiBB/OcSic76VdMJuaZZ\nDb7APgiSkx8KMGbrqo4PgDy25AIgJH+tVfzC4B8R0ZNCuTpEJlJx9DVW0I1X24dI\nKnLJRN8=\n-----END CERTIFICATE REQUEST-----',
-  clientAttestationJwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...',
+    "-----BEGIN CERTIFICATE REQUEST-----\nMIHyMIGaAgEAMDgxCzAJBgNVBAYTAlVLMQwwCgYDVQQKEwNHRFMxGzAZBgNVBAMT\nEkFuZHJvaWQgRGV2aWNlIEtleTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABDlt\n4vSyJY/RnL8bC5bHhhfxDZ3m69UBx/IADlbZhZ4nzImHuzVJsck2LsPefb91g6hc\nhq81PZei3c7qN2rfJIqgADAKBggqhkjOPQQDAgNHADBEAiBB/OcSic76VdMJuaZZ\nDb7APgiSkx8KMGbrqo4PgDy25AIgJH+tVfzC4B8R0ZNCuTpEJlJx9DVW0I1X24dI\nKnLJRN8=\n-----END CERTIFICATE REQUEST-----",
+  clientAttestationJwt: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...",
 };
 
-describe('Issue Reader Cert Handler', () => {
+describe("Issue Reader Cert Handler", () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     //const { verifyFirebaseAttestation } = await import('./firebase-attestation.ts');
     //vi.mocked(verifyFirebaseAttestation).mockResolvedValue({ valid: true });
   });
 
-  describe('HTTP Method and Path Validation', () => {
-    it('should return 404 for non-POST methods', async () => {
-      const result = await handler(createMockEvent('GET'), mockContext);
+  describe("HTTP Method and Path Validation", () => {
+    it("should return 404 for non-POST methods", async () => {
+      const result = await handler(createMockEvent("GET"), mockContext);
       expect(result.statusCode).toBe(404);
-      expect(JSON.parse(result.body).code).toBe('not_found');
+      expect(JSON.parse(result.body).code).toBe("not_found");
     });
 
-    it('should return 404 for invalid path', async () => {
+    it("should return 404 for invalid path", async () => {
       const result = await handler(
-        createMockEvent('POST', '/invalid'),
+        createMockEvent("POST", "/invalid"),
         mockContext,
       );
       expect(result.statusCode).toBe(404);
-      expect(JSON.parse(result.body).code).toBe('not_found');
+      expect(JSON.parse(result.body).code).toBe("not_found");
     });
   });
 
@@ -121,24 +121,24 @@ describe('Issue Reader Cert Handler', () => {
   //   });
   // });
 
-  describe('Response Headers', () => {
-    it('should include correct headers in success response', async () => {
+  describe("Response Headers", () => {
+    it("should include correct headers in success response", async () => {
       const result = await handler(
         createMockEvent(
-          'POST',
-          '/issue-reader-cert',
+          "POST",
+          "/issue-reader-cert",
           JSON.stringify(validRequest),
         ),
         mockContext,
       );
 
-      expect(result.headers?.['Content-Type']).toBe('application/json');
+      expect(result.headers?.["Content-Type"]).toBe("application/json");
     });
 
-    it('should include correct headers in error response', async () => {
-      const result = await handler(createMockEvent('GET'), mockContext);
+    it("should include correct headers in error response", async () => {
+      const result = await handler(createMockEvent("GET"), mockContext);
 
-      expect(result.headers?.['Content-Type']).toBe('application/json');
+      expect(result.headers?.["Content-Type"]).toBe("application/json");
     });
   });
 });

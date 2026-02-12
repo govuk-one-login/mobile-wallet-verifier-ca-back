@@ -2,13 +2,13 @@ import {
   generateCSR,
   createIntermediateCA,
   createLeafCertWithAttestation,
-} from './certificate-generator.ts';
+} from "./certificate-generator.ts";
 import {
   PlayIntegritySigner,
   PlayIntegrityPayload,
-} from './play-integrity-signer.ts';
-import { AndroidKeyProvider } from './android-key-provider.ts';
-import { PLAY_INTEGRITY_KEYS_SECRET } from '../../../../scripts/setup-android-infrastructure.ts';
+} from "./play-integrity-signer.ts";
+import { AndroidKeyProvider } from "./android-key-provider.ts";
+import { PLAY_INTEGRITY_KEYS_SECRET } from "../../../../scripts/setup-android-infrastructure.ts";
 
 export interface AndroidDeviceSimulation {
   deviceKeyPair: { privateKeyPem: string; publicKeyPem: string };
@@ -39,9 +39,9 @@ export class AndroidDeviceSimulator {
       privateKeyPem: deviceKeys.privateKeyPem,
       publicKeyPem: deviceKeys.publicKeyPem,
       subject: {
-        countryName: 'UK',
-        organizationName: 'GDS',
-        commonName: 'Android Device Key',
+        countryName: "UK",
+        organizationName: "GDS",
+        commonName: "Android Device Key",
       },
     });
 
@@ -65,21 +65,21 @@ export class AndroidDeviceSimulator {
   private async signPlayIntegrityToken(nonce: string): Promise<string> {
     const payload: PlayIntegrityPayload = {
       requestDetails: {
-        requestPackageName: 'org.multipaz.identityreader',
+        requestPackageName: "org.multipaz.identityreader",
         timestampMillis: Date.now().toString(),
         nonce,
       },
       appIntegrity: {
-        appRecognitionVerdict: 'PLAY_RECOGNIZED',
-        packageName: 'org.multipaz.identityreader',
-        certificateSha256Digest: ['abc123'],
-        versionCode: '1',
+        appRecognitionVerdict: "PLAY_RECOGNIZED",
+        packageName: "org.multipaz.identityreader",
+        certificateSha256Digest: ["abc123"],
+        versionCode: "1",
       },
       deviceIntegrity: {
-        deviceRecognitionVerdict: ['MEETS_DEVICE_INTEGRITY'],
+        deviceRecognitionVerdict: ["MEETS_DEVICE_INTEGRITY"],
       },
       accountDetails: {
-        appLicensingVerdict: 'LICENSED',
+        appLicensingVerdict: "LICENSED",
       },
     };
 
@@ -111,13 +111,13 @@ export class AndroidDeviceSimulator {
     );
 
     // Convert PEM to DER format and then base64 (as Android apps typically send)
-    const { X509Certificate } = await import('@peculiar/x509');
+    const { X509Certificate } = await import("@peculiar/x509");
     const leafDer = new X509Certificate(leafCert).rawData;
     const intermediateDer = new X509Certificate(intermediateCert).rawData;
 
     return [
-      Buffer.from(leafDer).toString('base64'),
-      Buffer.from(intermediateDer).toString('base64'),
+      Buffer.from(leafDer).toString("base64"),
+      Buffer.from(intermediateDer).toString("base64"),
     ];
   }
 }

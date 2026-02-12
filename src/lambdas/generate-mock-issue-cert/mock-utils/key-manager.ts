@@ -2,7 +2,7 @@ import {
   SecretsManagerClient,
   GetSecretValueCommand,
   CreateSecretCommand,
-} from '@aws-sdk/client-secrets-manager';
+} from "@aws-sdk/client-secrets-manager";
 
 export interface KeyPair {
   privateKeyPem: string;
@@ -17,7 +17,7 @@ export interface StoredCA {
 export class KeyManager {
   private client: SecretsManagerClient;
 
-  constructor(region = 'eu-west-2') {
+  constructor(region = "eu-west-2") {
     this.client = new SecretsManagerClient({ region });
   }
 
@@ -33,7 +33,7 @@ export class KeyManager {
     } catch (error) {
       if (
         error instanceof Error &&
-        error.name !== 'ResourceNotFoundException'
+        error.name !== "ResourceNotFoundException"
       ) {
         throw error;
       }
@@ -47,7 +47,7 @@ export class KeyManager {
         Name: secretName,
         SecretString: JSON.stringify({ keyPair }),
         Description:
-          'ECDSA key pair for CSR generation and Play Integrity token signing',
+          "ECDSA key pair for CSR generation and Play Integrity token signing",
       }),
     );
   }
@@ -57,7 +57,7 @@ export class KeyManager {
       new CreateSecretCommand({
         Name: secretName,
         SecretString: JSON.stringify(ca),
-        Description: 'Root CA certificate and key pair',
+        Description: "Root CA certificate and key pair",
       }),
     );
   }
@@ -73,7 +73,7 @@ export class KeyManager {
     } catch (error) {
       if (
         error instanceof Error &&
-        error.name !== 'ResourceNotFoundException'
+        error.name !== "ResourceNotFoundException"
       ) {
         throw error;
       }

@@ -1,19 +1,19 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    environment: 'node',
+    environment: "node",
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      provider: "v8",
+      reporter: ["text", "json", "html", "lcov"],
       exclude: [
-        'node_modules/**',
-        '**/*.test.ts',
-        'vitest.config.ts',
-        'eslint.config.ts',
-        'tests/**',
-        'scripts/**',
-        'src/lambdas/generate-mock-issue-cert/**',
+        "node_modules/**",
+        "**/*.test.ts",
+        "vitest.config.ts",
+        "eslint.config.ts",
+        "tests/**",
+        "scripts/**",
+        "src/lambdas/generate-mock-issue-cert/**",
       ],
     },
   },
