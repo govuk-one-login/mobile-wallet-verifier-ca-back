@@ -28,7 +28,10 @@ export class PlayIntegritySigner {
     this.keyManager = new KeyManager(region);
   }
 
-  async signToken(payload: PlayIntegrityPayload, secretName: string): Promise<string> {
+  async signToken(
+    payload: PlayIntegrityPayload,
+    secretName: string,
+  ): Promise<string> {
     const keyPair = await this.keyManager.getKeyPair(secretName);
     if (!keyPair) {
       throw new Error(`Key pair not found: ${secretName}`);
@@ -40,8 +43,12 @@ export class PlayIntegritySigner {
       kid: secretName,
     };
 
-    const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const encodedHeader = Buffer.from(JSON.stringify(header)).toString(
+      'base64url',
+    );
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
 
     const data = `${encodedHeader}.${encodedPayload}`;
 

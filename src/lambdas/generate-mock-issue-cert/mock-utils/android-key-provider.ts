@@ -10,7 +10,10 @@ export class AndroidKeyProvider {
 
   private async getKeyPairOrThrow(secretName: string, keyType: string) {
     const keys = await this.keyManager.getKeyPair(secretName);
-    if (!keys) throw new Error(`${keyType} not found. Run setup-android-infrastructure.ts first.`);
+    if (!keys)
+      throw new Error(
+        `${keyType} not found. Run setup-android-infrastructure.ts first.`,
+      );
     return keys;
   }
 
@@ -20,11 +23,17 @@ export class AndroidKeyProvider {
 
   async getRootCA() {
     const ca = await this.keyManager.getCA(ROOT_CA_SECRET);
-    if (!ca) throw new Error('Root CA not found. Run setup-android-infrastructure.ts first.');
+    if (!ca)
+      throw new Error(
+        'Root CA not found. Run setup-android-infrastructure.ts first.',
+      );
     return ca;
   }
 
   async getIntermediateCAKeys() {
-    return this.getKeyPairOrThrow(INTERMEDIATE_CA_SECRET, 'Intermediate CA keys');
+    return this.getKeyPairOrThrow(
+      INTERMEDIATE_CA_SECRET,
+      'Intermediate CA keys',
+    );
   }
 }

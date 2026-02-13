@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { validateRequest, createErrorResponse, validateReaderCertSubject, validateCSRContent } from './validation';
+import {
+  validateRequest,
+  createErrorResponse,
+  validateReaderCertSubject,
+  validateCSRContent,
+} from './validation';
 
 const validIOSRequest = {
   platform: 'ios' as const,
@@ -46,11 +51,16 @@ describe('Validation Module', () => {
 
       expect(result).not.toBeNull();
       expect(result?.statusCode).toBe(400);
-      expect(JSON.parse(result?.body || '{}').message).toBe('Invalid or missing platform');
+      expect(JSON.parse(result?.body || '{}').message).toBe(
+        'Invalid or missing platform',
+      );
     });
 
     it('should return error for invalid platform', () => {
-      const request = { ...validIOSRequest, platform: 'windows' as 'ios' | 'android' };
+      const request = {
+        ...validIOSRequest,
+        platform: 'windows' as 'ios' | 'android',
+      };
       const result = validateRequest(request);
 
       expect(result).not.toBeNull();
@@ -71,7 +81,9 @@ describe('Validation Module', () => {
       const result = validateRequest(request);
 
       expect(result).not.toBeNull();
-      expect(JSON.parse(result?.body || '{}').message).toBe('CSR is not a valid PKCS#10 structure');
+      expect(JSON.parse(result?.body || '{}').message).toBe(
+        'CSR is not a valid PKCS#10 structure',
+      );
     });
 
     // it('should return error for iOS missing appAttest', () => {
@@ -120,7 +132,12 @@ describe('Validation Module', () => {
 
     it('should create error response with details', () => {
       const details = { field: 'testField', value: 'testValue' };
-      const result = createErrorResponse(422, 'validation_error', 'Validation failed', details);
+      const result = createErrorResponse(
+        422,
+        'validation_error',
+        'Validation failed',
+        details,
+      );
 
       expect(result.statusCode).toBe(422);
 
@@ -131,7 +148,11 @@ describe('Validation Module', () => {
     });
 
     it('should create error response without details when not provided', () => {
-      const result = createErrorResponse(500, 'internal_error', 'Internal error');
+      const result = createErrorResponse(
+        500,
+        'internal_error',
+        'Internal error',
+      );
 
       const body = JSON.parse(result.body);
       expect(body.details).toBeUndefined();
@@ -141,7 +162,9 @@ describe('Validation Module', () => {
 
 describe('validateReaderCertSubject', () => {
   it('should return valid for correct subject DN', () => {
-    const result = validateReaderCertSubject('CN=Test Reader, O=Test Org, C=GB');
+    const result = validateReaderCertSubject(
+      'CN=Test Reader, O=Test Org, C=GB',
+    );
 
     expect(result.valid).toBe(true);
   });
@@ -171,7 +194,9 @@ describe('validateReaderCertSubject', () => {
   });
 
   it('should return invalid for invalid country code', () => {
-    const result = validateReaderCertSubject('CN=Test Reader, O=Test Org, C=XX');
+    const result = validateReaderCertSubject(
+      'CN=Test Reader, O=Test Org, C=XX',
+    );
 
     expect(result.valid).toBe(false);
     expect(result.code).toBe('invalid_subject_dn');
@@ -197,11 +222,20 @@ describe('validateCSRContent', () => {
     };
 
     // Mock the constructor to not throw an error
-    vi.spyOn(Pkcs10CertificateRequest, 'constructor' as keyof typeof Pkcs10CertificateRequest).mockImplementation(
-      () => {},
-    );
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('O=Test Org'); // Missing CN and C
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+    vi.spyOn(
+      Pkcs10CertificateRequest,
+      'constructor' as keyof typeof Pkcs10CertificateRequest,
+    ).mockImplementation(() => {});
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'subject',
+      'get',
+    ).mockReturnValue('O=Test Org'); // Missing CN and C
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'publicKey',
+      'get',
+    ).mockReturnValue({
       algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
       getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32)),
     } as import('@peculiar/x509').PublicKey);
@@ -223,11 +257,20 @@ describe('validateCSRContent', () => {
       getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32)),
     };
 
-    vi.spyOn(Pkcs10CertificateRequest, 'constructor' as keyof typeof Pkcs10CertificateRequest).mockImplementation(
-      () => {},
-    );
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+    vi.spyOn(
+      Pkcs10CertificateRequest,
+      'constructor' as keyof typeof Pkcs10CertificateRequest,
+    ).mockImplementation(() => {});
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'subject',
+      'get',
+    ).mockReturnValue('CN=Test, O=Org, C=GB');
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'publicKey',
+      'get',
+    ).mockReturnValue({
       algorithm: { name: 'RSA' },
       getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32)),
     } as import('@peculiar/x509').PublicKey);
@@ -249,11 +292,20 @@ describe('validateCSRContent', () => {
       getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32)),
     };
 
-    vi.spyOn(Pkcs10CertificateRequest, 'constructor' as keyof typeof Pkcs10CertificateRequest).mockImplementation(
-      () => {},
-    );
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+    vi.spyOn(
+      Pkcs10CertificateRequest,
+      'constructor' as keyof typeof Pkcs10CertificateRequest,
+    ).mockImplementation(() => {});
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'subject',
+      'get',
+    ).mockReturnValue('CN=Test, O=Org, C=GB');
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'publicKey',
+      'get',
+    ).mockReturnValue({
       algorithm: { name: 'ECDSA', namedCurve: 'P-192' },
       getThumbprint: vi.fn().mockResolvedValue(new ArrayBuffer(32)),
     } as import('@peculiar/x509').PublicKey);
@@ -275,11 +327,20 @@ describe('validateCSRContent', () => {
       getThumbprint: vi.fn().mockResolvedValue(Buffer.from('different')),
     };
 
-    vi.spyOn(Pkcs10CertificateRequest, 'constructor' as keyof typeof Pkcs10CertificateRequest).mockImplementation(
-      () => {},
-    );
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+    vi.spyOn(
+      Pkcs10CertificateRequest,
+      'constructor' as keyof typeof Pkcs10CertificateRequest,
+    ).mockImplementation(() => {});
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'subject',
+      'get',
+    ).mockReturnValue('CN=Test, O=Org, C=GB');
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'publicKey',
+      'get',
+    ).mockReturnValue({
       algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
       getThumbprint: vi.fn().mockResolvedValue(Buffer.from('original')),
     } as import('@peculiar/x509').PublicKey);
@@ -302,11 +363,20 @@ describe('validateCSRContent', () => {
       getThumbprint: vi.fn().mockResolvedValue(thumbprint),
     };
 
-    vi.spyOn(Pkcs10CertificateRequest, 'constructor' as keyof typeof Pkcs10CertificateRequest).mockImplementation(
-      () => {},
-    );
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+    vi.spyOn(
+      Pkcs10CertificateRequest,
+      'constructor' as keyof typeof Pkcs10CertificateRequest,
+    ).mockImplementation(() => {});
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'subject',
+      'get',
+    ).mockReturnValue('CN=Test, O=Org, C=GB');
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'publicKey',
+      'get',
+    ).mockReturnValue({
       algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
       getThumbprint: vi.fn().mockResolvedValue(thumbprint),
     } as import('@peculiar/x509').PublicKey);
@@ -326,15 +396,27 @@ describe('validateCSRContent', () => {
       getThumbprint: vi.fn().mockRejectedValue(new Error('Thumbprint error')),
     };
 
-    const csrPem = '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
+    const csrPem =
+      '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----';
 
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'subject', 'get').mockReturnValue('CN=Test, O=Org, C=GB');
-    vi.spyOn(Pkcs10CertificateRequest.prototype, 'publicKey', 'get').mockReturnValue({
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'subject',
+      'get',
+    ).mockReturnValue('CN=Test, O=Org, C=GB');
+    vi.spyOn(
+      Pkcs10CertificateRequest.prototype,
+      'publicKey',
+      'get',
+    ).mockReturnValue({
       algorithm: { name: 'ECDSA', namedCurve: 'P-256' },
       getThumbprint: vi.fn().mockRejectedValue(new Error('Error')),
     } as import('@peculiar/x509').PublicKey);
 
-    const result = await validateCSRContent(csrPem, mockPublicKey as import('@peculiar/x509').PublicKey);
+    const result = await validateCSRContent(
+      csrPem,
+      mockPublicKey as import('@peculiar/x509').PublicKey,
+    );
 
     expect(result.valid).toBe(false);
     expect(result.code).toBe('invalid_csr');

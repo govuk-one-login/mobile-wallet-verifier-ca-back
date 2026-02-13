@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { validatePlayIntegritySignature, validatePlayIntegrityPayload } from './play-integrity-validator';
+import {
+  validatePlayIntegritySignature,
+  validatePlayIntegrityPayload,
+} from './play-integrity-validator';
 
 vi.mock('@aws-lambda-powertools/logger', () => ({
   Logger: class MockLogger {
@@ -47,10 +50,15 @@ describe('Play Integrity Validator', () => {
     it('should return valid when JWT verification succeeds', async () => {
       process.env.ALLOW_TEST_TOKENS = 'false';
 
-      const { decodeProtectedHeader, createRemoteJWKSet, jwtVerify } = await import('jose');
+      const { decodeProtectedHeader, createRemoteJWKSet, jwtVerify } =
+        await import('jose');
       vi.mocked(decodeProtectedHeader).mockReturnValue({ kid: 'test-key-id' });
-      vi.mocked(createRemoteJWKSet).mockReturnValue({} as ReturnType<typeof createRemoteJWKSet>);
-      vi.mocked(jwtVerify).mockResolvedValue({} as Awaited<ReturnType<typeof jwtVerify>>);
+      vi.mocked(createRemoteJWKSet).mockReturnValue(
+        {} as ReturnType<typeof createRemoteJWKSet>,
+      );
+      vi.mocked(jwtVerify).mockResolvedValue(
+        {} as Awaited<ReturnType<typeof jwtVerify>>,
+      );
 
       const result = await validatePlayIntegritySignature('test-token');
 
@@ -60,12 +68,19 @@ describe('Play Integrity Validator', () => {
     it('should throw error when JWT verification fails', async () => {
       process.env.ALLOW_TEST_TOKENS = 'false';
 
-      const { decodeProtectedHeader, createRemoteJWKSet, jwtVerify } = await import('jose');
+      const { decodeProtectedHeader, createRemoteJWKSet, jwtVerify } =
+        await import('jose');
       vi.mocked(decodeProtectedHeader).mockReturnValue({ kid: 'test-key-id' });
-      vi.mocked(createRemoteJWKSet).mockReturnValue({} as ReturnType<typeof createRemoteJWKSet>);
-      vi.mocked(jwtVerify).mockRejectedValue(new Error('JWT verification failed'));
+      vi.mocked(createRemoteJWKSet).mockReturnValue(
+        {} as ReturnType<typeof createRemoteJWKSet>,
+      );
+      vi.mocked(jwtVerify).mockRejectedValue(
+        new Error('JWT verification failed'),
+      );
 
-      await expect(validatePlayIntegritySignature('test-token')).rejects.toThrow('JWT verification failed');
+      await expect(
+        validatePlayIntegritySignature('test-token'),
+      ).rejects.toThrow('JWT verification failed');
     });
   });
 
@@ -95,14 +110,19 @@ describe('Play Integrity Validator', () => {
 
       expect(result.valid).toBe(false);
       expect(result.code).toBe('nonce_mismatch');
-      expect(result.message).toBe('Play Integrity nonce does not match request nonce');
+      expect(result.message).toBe(
+        'Play Integrity nonce does not match request nonce',
+      );
     });
 
     it('should return invalid for wrong package name', () => {
       process.env.EXPECTED_ANDROID_PACKAGE_NAME = 'org.multipaz.identityreader';
       const payload = {
         ...validPayload,
-        appIntegrity: { ...validPayload.appIntegrity, packageName: 'com.malicious.app' },
+        appIntegrity: {
+          ...validPayload.appIntegrity,
+          packageName: 'com.malicious.app',
+        },
       };
 
       const result = validatePlayIntegrityPayload(payload, 'test-nonce');
@@ -117,7 +137,10 @@ describe('Play Integrity Validator', () => {
 
       const payload = {
         ...validPayload,
-        appIntegrity: { ...validPayload.appIntegrity, packageName: 'com.custom.app' },
+        appIntegrity: {
+          ...validPayload.appIntegrity,
+          packageName: 'com.custom.app',
+        },
       };
 
       const result = validatePlayIntegrityPayload(payload, 'test-nonce');
@@ -128,7 +151,10 @@ describe('Play Integrity Validator', () => {
     it('should return invalid for unrecognized app', () => {
       const payload = {
         ...validPayload,
-        appIntegrity: { ...validPayload.appIntegrity, appRecognitionVerdict: 'UNKNOWN' },
+        appIntegrity: {
+          ...validPayload.appIntegrity,
+          appRecognitionVerdict: 'UNKNOWN',
+        },
       };
 
       const result = validatePlayIntegrityPayload(payload, 'test-nonce');
@@ -154,7 +180,9 @@ describe('Play Integrity Validator', () => {
     it('should accept MEETS_BASIC_INTEGRITY', () => {
       const payload = {
         ...validPayload,
-        deviceIntegrity: { deviceRecognitionVerdict: ['MEETS_BASIC_INTEGRITY'] },
+        deviceIntegrity: {
+          deviceRecognitionVerdict: ['MEETS_BASIC_INTEGRITY'],
+        },
       };
 
       const result = validatePlayIntegrityPayload(payload, 'test-nonce');

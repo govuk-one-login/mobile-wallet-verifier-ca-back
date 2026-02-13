@@ -33,7 +33,9 @@ describe('Base Application Infrastructure', () => {
     });
 
     it('should have all required parameters', () => {
-      expect(() => testRequiredParameters(template, ['Environment'])).not.toThrow();
+      expect(() =>
+        testRequiredParameters(template, ['Environment']),
+      ).not.toThrow();
     });
   });
 });

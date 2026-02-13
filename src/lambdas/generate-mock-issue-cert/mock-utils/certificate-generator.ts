@@ -1,4 +1,8 @@
-import { generateECDSAKeyPair, importECDSAKeyPair, KeyPair } from './crypto-utils';
+import {
+  generateECDSAKeyPair,
+  importECDSAKeyPair,
+  KeyPair,
+} from './crypto-utils';
 
 export interface CSRSubject {
   countryName?: string;
@@ -24,18 +28,27 @@ export interface CSRResult {
 function buildSubjectString(subject: CSRSubject): string {
   const parts = [];
   if (subject.countryName) parts.push(`C=${subject.countryName}`);
-  if (subject.stateOrProvinceName) parts.push(`ST=${subject.stateOrProvinceName}`);
+  if (subject.stateOrProvinceName)
+    parts.push(`ST=${subject.stateOrProvinceName}`);
   if (subject.localityName) parts.push(`L=${subject.localityName}`);
   if (subject.organizationName) parts.push(`O=${subject.organizationName}`);
-  if (subject.organizationalUnitName) parts.push(`OU=${subject.organizationalUnitName}`);
+  if (subject.organizationalUnitName)
+    parts.push(`OU=${subject.organizationalUnitName}`);
   parts.push(`CN=${subject.commonName}`);
   if (subject.emailAddress) parts.push(`emailAddress=${subject.emailAddress}`);
   return parts.join(', ');
 }
 
-function generateOrUseKeyPair(options: { privateKeyPem?: string; publicKeyPem?: string; keySize?: number }): KeyPair {
+function generateOrUseKeyPair(options: {
+  privateKeyPem?: string;
+  publicKeyPem?: string;
+  keySize?: number;
+}): KeyPair {
   if (options.privateKeyPem && options.publicKeyPem) {
-    return { privateKeyPem: options.privateKeyPem, publicKeyPem: options.publicKeyPem };
+    return {
+      privateKeyPem: options.privateKeyPem,
+      publicKeyPem: options.publicKeyPem,
+    };
   }
 
   return generateECDSAKeyPair('prime256v1');
@@ -62,16 +75,26 @@ export async function generateCSR(
   };
 }
 
-export async function createIntermediateCA(keyPair: KeyPair, rootKeys: KeyPair, rootCert: string): Promise<string> {
-  const { X509CertificateGenerator, BasicConstraintsExtension, KeyUsagesExtension, KeyUsageFlags, X509Certificate } =
-    await import('@peculiar/x509');
+export async function createIntermediateCA(
+  keyPair: KeyPair,
+  rootKeys: KeyPair,
+  rootCert: string,
+): Promise<string> {
+  const {
+    X509CertificateGenerator,
+    BasicConstraintsExtension,
+    KeyUsagesExtension,
+    KeyUsageFlags,
+    X509Certificate,
+  } = await import('@peculiar/x509');
   const cryptoKeys = await importECDSAKeyPair(keyPair);
   const rootCryptoKeys = await importECDSAKeyPair(rootKeys);
   const parsedRootCert = new X509Certificate(rootCert);
 
   const cert = await X509CertificateGenerator.create({
     serialNumber: '02',
-    subject: 'CN=Test Android Hardware Attestation Intermediate CA, OU=Android, O=Google Inc, C=US',
+    subject:
+      'CN=Test Android Hardware Attestation Intermediate CA, OU=Android, O=Google Inc, C=US',
     issuer: parsedRootCert.subject,
     notBefore: new Date(),
     notAfter: new Date(Date.now() + 5 * 365 * 24 * 60 * 60 * 1000), // 5 years
@@ -80,7 +103,10 @@ export async function createIntermediateCA(keyPair: KeyPair, rootKeys: KeyPair, 
     signingKey: rootCryptoKeys.privateKey,
     extensions: [
       new BasicConstraintsExtension(true, 0, true),
-      new KeyUsagesExtension(KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign, true),
+      new KeyUsagesExtension(
+        KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign,
+        true,
+      ),
     ],
   });
 
@@ -107,7 +133,11 @@ export async function createLeafCertWithAttestation(
 
   // Create Android attestation extension using the exact structure from real certificates
   const attestationExtData = createRealAndroidAttestationExtension(nonce);
-  const attestationExt = new Extension('1.3.6.1.4.1.11129.2.1.17', false, new Uint8Array(attestationExtData));
+  const attestationExt = new Extension(
+    '1.3.6.1.4.1.11129.2.1.17',
+    false,
+    new Uint8Array(attestationExtData),
+  );
 
   const cert = await X509CertificateGenerator.create({
     serialNumber: '03',
@@ -120,7 +150,10 @@ export async function createLeafCertWithAttestation(
     signingKey: issuerCryptoKeys.privateKey,
     extensions: [
       new BasicConstraintsExtension(false, undefined, false),
-      new KeyUsagesExtension(KeyUsageFlags.digitalSignature | KeyUsageFlags.keyEncipherment, true),
+      new KeyUsagesExtension(
+        KeyUsageFlags.digitalSignature | KeyUsageFlags.keyEncipherment,
+        true,
+      ),
       attestationExt,
     ],
   });
