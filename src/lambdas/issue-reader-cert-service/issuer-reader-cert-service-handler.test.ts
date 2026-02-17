@@ -22,7 +22,7 @@ describe('Handler', () => {
       await handler(event, context);
     });
 
-    it.skip('Adds context, version and to log attributes and logs STARTED message', () => {
+    it('Adds context, version and to log attributes and logs STARTED message', () => {
       expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
         messageCode: 'MOBILE_CA_ISSUE_READER_CERT_SERVICE_STARTED',
         functionVersion: '1',
