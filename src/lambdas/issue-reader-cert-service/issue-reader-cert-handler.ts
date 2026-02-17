@@ -8,5 +8,5 @@ export const handler = async (
   context: Context,
 ): Promise<void> => {
   setupLogger(context);
-  logger.info(LogMessage.ISSUE_READER_CERT_SERVICE_STARTED);
+  logger.info(LogMessage.ISSUE_READER_CERT_STARTED);
 };

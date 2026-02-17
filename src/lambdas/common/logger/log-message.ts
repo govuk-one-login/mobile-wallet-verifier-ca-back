@@ -8,13 +8,13 @@ export class LogMessage implements LogAttributes {
 
   [key: string]: string; // Index signature needed to implement LogAttributes
 
-  static readonly ISSUE_READER_CERT_SERVICE_STARTED = new LogMessage(
-    'MOBILE_CA_ISSUE_READER_CERT_SERVICE_STARTED',
+  static readonly ISSUE_READER_CERT_STARTED = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_STARTED',
     'Lambda handler processing has started.',
   );
 
-  static readonly ISSUE_READER_CERT_SERVICE_INVALID_CONFIG = new LogMessage(
-    'MOBILE_CA_ISSUE_READER_CERT_SERVICE_INVALID_CONFIG',
+  static readonly ISSUE_READER_CERT_INVALID_CONFIG = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_INVALID_CONFIG',
     'One or more required environment variables were missing or invalid.',
   );
 }

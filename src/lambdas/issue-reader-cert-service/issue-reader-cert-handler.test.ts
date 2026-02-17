@@ -1,6 +1,6 @@
 import { Context, APIGatewayProxyEvent } from 'aws-lambda';
 import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
-import { handler } from './issue-reader-cert-service-handler';
+import { handler } from './issue-reader-cert-handler';
 import { logger } from '../common/logger/logger';
 import '../../../tests/matchers';
 
@@ -24,7 +24,7 @@ describe('Handler', () => {
 
     it('Adds context, version and to log attributes and logs STARTED message', () => {
       expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
-        messageCode: 'MOBILE_CA_ISSUE_READER_CERT_SERVICE_STARTED',
+        messageCode: 'MOBILE_CA_ISSUE_READER_CERT_STARTED',
         functionVersion: '1',
         function_arn: 'arn:12345', // example field to verify that context has been added
       });
