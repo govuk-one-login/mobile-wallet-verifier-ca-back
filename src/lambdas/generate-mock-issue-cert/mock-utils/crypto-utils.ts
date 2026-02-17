@@ -49,35 +49,3 @@ export async function importECDSAKeyPair(
 
   return { privateKey, publicKey };
 }
-
-export async function createRootCA(keyPair: KeyPair): Promise<string> {
-  const {
-    X509CertificateGenerator,
-    BasicConstraintsExtension,
-    KeyUsagesExtension,
-    KeyUsageFlags,
-  } = await import('@peculiar/x509');
-  const cryptoKeys = await importECDSAKeyPair(keyPair);
-
-  const cert = await X509CertificateGenerator.create({
-    serialNumber: '01',
-    subject:
-      'CN=Test Android Hardware Attestation Root CA, OU=Android, O=Google Inc, C=US',
-    issuer:
-      'CN=Test Android Hardware Attestation Root CA, OU=Android, O=Google Inc, C=US',
-    notBefore: new Date(),
-    notAfter: new Date(Date.now() + 10 * 365 * 24 * 60 * 60 * 1000),
-    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
-    publicKey: cryptoKeys.publicKey,
-    signingKey: cryptoKeys.privateKey,
-    extensions: [
-      new BasicConstraintsExtension(true, undefined, true),
-      new KeyUsagesExtension(
-        KeyUsageFlags.keyCertSign | KeyUsageFlags.cRLSign,
-        true,
-      ),
-    ],
-  });
-
-  return cert.toString('pem');
-}
