@@ -79,7 +79,10 @@ describe('Issue Reader Cert Handler', () => {
     });
 
     it('should return 404 for invalid path', async () => {
-      const result = await handler(createMockEvent('POST', '/invalid'), mockContext);
+      const result = await handler(
+        createMockEvent('POST', '/invalid'),
+        mockContext,
+      );
       expect(result.statusCode).toBe(404);
       expect(JSON.parse(result.body).code).toBe('not_found');
     });
@@ -121,7 +124,11 @@ describe('Issue Reader Cert Handler', () => {
   describe('Response Headers', () => {
     it('should include correct headers in success response', async () => {
       const result = await handler(
-        createMockEvent('POST', '/issue-reader-cert', JSON.stringify(validRequest)),
+        createMockEvent(
+          'POST',
+          '/issue-reader-cert',
+          JSON.stringify(validRequest),
+        ),
         mockContext,
       );
 

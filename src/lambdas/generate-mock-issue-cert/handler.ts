@@ -21,7 +21,9 @@ export const handler = async (inputNonce?: string): Promise<MockRequest> => {
   const keyPair = await keyManager.getKeyPair(DEVICE_KEYS_SECRET);
 
   if (!keyPair) {
-    throw new Error('Key pair not found. Run setup-android-infrastructure.ts first.');
+    throw new Error(
+      'Key pair not found. Run setup-android-infrastructure.ts first.',
+    );
   }
 
   const deviceSimulator = new AndroidDeviceSimulator();

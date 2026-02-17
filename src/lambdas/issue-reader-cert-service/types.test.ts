@@ -1,15 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import type { IssueReaderCertRequest, IssueReaderCertResponse, ErrorResponse, AttestationResult } from './types';
+import type {
+  IssueReaderCertRequest,
+  IssueReaderCertResponse,
+  ErrorResponse,
+  AttestationResult,
+} from './types';
 
 describe('Types Module', () => {
   describe('IssueReaderCertRequest', () => {
     it('should accept valid Android request structure', () => {
       const request: IssueReaderCertRequest = {
-        csrPem: '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----',
+        csrPem:
+          '-----BEGIN CERTIFICATE REQUEST-----\ntest\n-----END CERTIFICATE REQUEST-----',
         clientAttestationJwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...',
       };
 
-      expect(request.clientAttestationJwt).toBe('eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...');
+      expect(request.clientAttestationJwt).toBe(
+        'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...',
+      );
     });
   });
 
@@ -19,7 +27,8 @@ describe('Types Module', () => {
         readerId: 'reader-123',
         certChain: {
           leaf: '-----BEGIN CERTIFICATE-----\nleaf\n-----END CERTIFICATE-----',
-          intermediate: '-----BEGIN CERTIFICATE-----\nintermediate\n-----END CERTIFICATE-----',
+          intermediate:
+            '-----BEGIN CERTIFICATE-----\nintermediate\n-----END CERTIFICATE-----',
         },
         profile: 'Reader',
         notBefore: '2023-01-01T00:00:00Z',
