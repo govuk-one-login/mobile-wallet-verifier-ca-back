@@ -364,6 +364,7 @@ Resources:
             - 'true'
             - 'false'
           EXPECTED_ANDROID_PACKAGE_NAME: 'org.multipaz.identityreader'
+          FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks'
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
