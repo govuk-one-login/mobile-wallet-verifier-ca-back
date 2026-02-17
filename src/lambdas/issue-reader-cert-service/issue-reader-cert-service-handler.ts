@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEvent, Context } from 'aws-lambda';
-import { setupLogger } from '../common/logger/setupLogger';
-import { LogMessage } from '../common/logger/logMessage';
+import { setupLogger } from '../common/logger/setup-logger';
+import { LogMessage } from '../common/logger/log-message';
 import { logger } from '../common/logger/logger';
 
 export const handler = async (

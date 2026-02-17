@@ -3,7 +3,7 @@ import {
   getRequiredEnvironmentVariables,
 } from '../common/config/environment';
 import { logger } from '../common/logger/logger';
-import { LogMessage } from '../common/logger/logMessage';
+import { LogMessage } from '../common/logger/log-message';
 import { Result, emptyFailure } from '../common/result/result';
 
 const REQUIRED_ENVIRONMENT_VARIABLES = ['FIREBASE_JWKS_URI'] as const;
