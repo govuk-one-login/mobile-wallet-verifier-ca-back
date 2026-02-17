@@ -1,7 +1,7 @@
 import { Context, APIGatewayProxyEvent } from 'aws-lambda';
 import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
 import { handler } from './issue-reader-cert-service-handler';
-import { logger } from '../common/logger';
+import { logger } from '../common/logger/logger';
 import '../../../tests/matchers';
 
 let consoleInfoSpy: MockInstance;
