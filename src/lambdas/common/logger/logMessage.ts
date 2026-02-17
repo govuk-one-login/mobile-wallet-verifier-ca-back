@@ -12,4 +12,9 @@ export class LogMessage implements LogAttributes {
     'MOBILE_CA_ISSUE_READER_CERT_SERVICE_STARTED',
     'Lambda handler processing has started.',
   );
+
+  static readonly ISSUE_READER_CERT_SERVICE_INVALID_CONFIG = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_SERVICE_INVALID_CONFIG',
+    'One or more required environment variables were missing or invalid.',
+  );
 }
