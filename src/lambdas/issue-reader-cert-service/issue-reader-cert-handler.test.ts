@@ -4,7 +4,7 @@ import {
   APIGatewayProxyResult,
 } from 'aws-lambda';
 import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
-import { handler } from './issue-reader-cert-handler';
+import { handlerConstructor } from './issue-reader-cert-handler';
 import { logger } from '../common/logger/logger';
 import '../../../tests/testUtils/matchers';
 import { IssueReaderCertDependencies } from './handler-dependencies';
@@ -17,6 +17,9 @@ describe('Handler', () => {
   let context: Context;
   let dependencies: IssueReaderCertDependencies;
   let result: APIGatewayProxyResult;
+  const env = {
+    FIREBASE_JWKS_URI: 'mockFirebaseJwksUri',
+  };
 
   beforeEach(() => {
     consoleInfoSpy = vi.spyOn(console, 'info');
@@ -24,16 +27,14 @@ describe('Handler', () => {
     context = buildLambdaContext();
     event = buildRequest();
     dependencies = {
-      env: {
-        FIREBASE_JWKS_URI: 'mockFirebaseJwksUri',
-      },
+      env,
     };
   });
 
   describe('On every invocation', () => {
     beforeEach(async () => {
       logger.appendKeys({ testKey: 'testValue' });
-      await handler(event, context, dependencies);
+      await handlerConstructor(dependencies, event, context);
     });
 
     it('Adds context, version and to log attributes and logs STARTED message', () => {
@@ -52,13 +53,14 @@ describe('Handler', () => {
   });
 
   describe('Config validation', () => {
-    describe.each([['SESSION_TABLE_NAME']])(
+    describe.each(Object.keys(env))(
       'Given %s environment variable is missing',
       (envVar: string) => {
         beforeEach(async () => {
+          dependencies.env = JSON.parse(JSON.stringify(env));
           // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete dependencies.env[envVar];
-          result = await handler(event, context, dependencies);
+          result = await handlerConstructor(dependencies, event, context);
         });
         it('logs INVALID_CONFIG', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
@@ -71,10 +73,11 @@ describe('Handler', () => {
 
         it('returns 500 Internal server error', async () => {
           expect(result).toStrictEqual({
+            headers: { 'Content-Type': 'application/json' },
             statusCode: 500,
             body: JSON.stringify({
               error: 'server_error',
-              error_description: 'Internal Server Error',
+              error_description: 'Server Error',
             }),
           });
         });
