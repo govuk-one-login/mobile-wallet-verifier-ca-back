@@ -68,6 +68,7 @@ declare module 'vitest' {
       functionVersion?: string;
       function_arn?: string;
       testKey?: string;
+      data?: Record<string, unknown>
     }) => void;
   }
 }

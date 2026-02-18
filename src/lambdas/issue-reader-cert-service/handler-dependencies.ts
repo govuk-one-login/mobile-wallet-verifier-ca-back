@@ -1,6 +1,6 @@
 export interface IssueReaderCertDependencies {
-    env: NodeJS.ProcessEnv;
+  env: NodeJS.ProcessEnv;
 }
 export const dependencies: IssueReaderCertDependencies = {
-    env: process.env
-}
+  env: process.env,
+};

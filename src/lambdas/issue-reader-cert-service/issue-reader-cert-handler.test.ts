@@ -1,25 +1,39 @@
-import { Context, APIGatewayProxyEvent } from 'aws-lambda';
+import {
+  Context,
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+} from 'aws-lambda';
 import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
 import { handler } from './issue-reader-cert-handler';
 import { logger } from '../common/logger/logger';
 import '../../../tests/testUtils/matchers';
+import { IssueReaderCertDependencies } from './handler-dependencies';
 
 let consoleInfoSpy: MockInstance;
+let consoleErrorSpy: MockInstance;
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
   let context: Context;
+  let dependencies: IssueReaderCertDependencies;
+  let result: APIGatewayProxyResult;
 
   beforeEach(() => {
     consoleInfoSpy = vi.spyOn(console, 'info');
+    consoleErrorSpy = vi.spyOn(console, 'error');
     context = buildLambdaContext();
     event = buildRequest();
+    dependencies = {
+      env: {
+        FIREBASE_JWKS_URI: 'mockFirebaseJwksUri',
+      },
+    };
   });
 
   describe('On every invocation', () => {
     beforeEach(async () => {
       logger.appendKeys({ testKey: 'testValue' });
-      await handler(event, context);
+      await handler(event, context, dependencies);
     });
 
     it('Adds context, version and to log attributes and logs STARTED message', () => {
@@ -35,6 +49,37 @@ describe('Handler', () => {
         testKey: 'testValue',
       });
     });
+  });
+
+  describe('Config validation', () => {
+    describe.each([['SESSION_TABLE_NAME']])(
+      'Given %s environment variable is missing',
+      (envVar: string) => {
+        beforeEach(async () => {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete dependencies.env[envVar];
+          result = await handler(event, context, dependencies);
+        });
+        it('logs INVALID_CONFIG', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_CONFIG',
+            data: {
+              missingEnvironmentVariables: [envVar],
+            },
+          });
+        });
+
+        it('returns 500 Internal server error', async () => {
+          expect(result).toStrictEqual({
+            statusCode: 500,
+            body: JSON.stringify({
+              error: 'server_error',
+              error_description: 'Internal Server Error',
+            }),
+          });
+        });
+      },
+    );
   });
 });
 
