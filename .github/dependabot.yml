@@ -1,21 +1,52 @@
 version: 2
 updates:
-  - package-ecosystem: 'npm'
-    directory: '/'
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: weekly
+      interval: "daily"
+      time: "03:00"
     groups:
-      dev-deps:
-        dependency-type: development
-      prod-deps:
-        dependency-type: production
-    target-branch: main
-    labels:
-      - direct-dependency-update
-      - dependencies
-      - javascript
+      minor-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     commit-message:
-      prefix: BAU
+      prefix: "BAU"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      time: "03:00"
+    target-branch: "major-updates"
+    groups:
+      major:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
+    labels:
+      - "major-update"
+      - "breaking-change"
+    commit-message:
+      prefix: "BAU"
 
   - package-ecosystem: 'docker'
     directory: '/tests'
@@ -47,3 +78,5 @@ updates:
       - github_actions
     commit-message:
       prefix: BAU
+
+
