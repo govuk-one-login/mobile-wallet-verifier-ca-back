@@ -1,9 +1,9 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directory: "/"
+    directory: "/feature-tests"
     schedule:
-      interval: "daily"
+      interval: "weekly"
       time: "03:00"
     groups:
       minor-patch:
@@ -13,71 +13,23 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      security:
-        applies-to: security-updates
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+    labels:
+      - dependencies
+      - npm
     commit-message:
       prefix: "BAU"
 
-  - package-ecosystem: "npm"
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
       time: "03:00"
-    target-branch: "major-updates"
-    groups:
-      major:
-        applies-to: version-updates
-        patterns:
-          - "*"
-        update-types:
-          - "major"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
-    labels:
-      - "major-update"
-      - "breaking-change"
-    commit-message:
-      prefix: "BAU"
-
-# Commenting out Docker updates for now as we don't have any dependencies in that directory yet
-  # - package-ecosystem: 'docker'
-  #   directory: '/tests'
-  #   schedule:
-  #     interval: weekly
-  #   groups:
-  #     dev-deps:
-  #       patterns:
-  #         - '*'
-  #   target-branch: main
-  #   labels:
-  #     - direct-dependency-update
-  #     - dependencies
-  #   commit-message:
-  #     prefix: BAU
-
-  - package-ecosystem: 'github-actions'
-    directory: '/'
-    schedule:
-      interval: weekly
     groups:
       actions-deps:
         patterns:
-          - '*'
-    target-branch: main
+          - "*"
     labels:
-      - direct-dependency-update
       - dependencies
-      - github_actions
+      - github-actions
     commit-message:
-      prefix: BAU
-
-
+      prefix: "BAU"
