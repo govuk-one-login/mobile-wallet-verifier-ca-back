@@ -32,9 +32,6 @@ export const handlerConstructor = async (
     };
   }
 
-  const env = envResult.value;
-  logger.info('Config loaded successfully', { ...env }); // WILL BE REMOVED LATER
-
   return {
     statusCode: 200,
     headers: {
