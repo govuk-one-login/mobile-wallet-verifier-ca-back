@@ -53,12 +53,8 @@ expect.extend({
   toHaveBeenCalledWithLogFields,
 });
 
-interface CustomMatchers<R = unknown> {
-  toHaveBeenCalledWithLogFields: (logFields: Record<string, unknown>) => R;
-}
-
 declare module 'vitest' {
-  interface Matchers<T> extends CustomMatchers<T> {
-    toHaveBeenCalledWithLogFields: (logFields: Record<string, unknown>) => void;
+  interface Matchers<T> {
+    toHaveBeenCalledWithLogFields: (logFields: Record<string, unknown>) => T;
   }
 }
