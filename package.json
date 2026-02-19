@@ -8,7 +8,7 @@
     "build": "mkdir -p dist && cp -f open-api-spec.yaml dist/ && node build.mjs",
     "test": "./node_modules/.bin/vitest run",
     "test:cov": "./node_modules/.bin/vitest run --coverage",
-    "mock:cert": "./node_modules/.bin/tsx src/lambdas/generate-mock-issue-cert/handler.ts",
+    "mock:cert": "./node_modules/.bin/tsx src/lambdas/generate-mock-issue-cert/issue-reader-cert-handler.ts",
     "setup:android": "./node_modules/.bin/tsx scripts/setup-android-infrastructure.ts",
     "lint": "./node_modules/.bin/eslint .",
     "format": "./node_modules/.bin/prettier --write '**/*.{json,md,ts}'",
