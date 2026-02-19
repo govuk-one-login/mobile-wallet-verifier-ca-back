@@ -84,7 +84,7 @@ message and message code:
 
 ```text
 fields @timestamp, message, messageCode
-| filter messageCode = 'MOBILE_CA_GET_SECRETS_FROM_PARAMETER_STORE_FAILURE'
+| filter messageCode = 'MOBILE_CA_ISSUE_READER_CERT_STARTED'
 | sort @timestamp desc
 | limit 20
 ```
