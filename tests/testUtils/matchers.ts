@@ -54,21 +54,11 @@ expect.extend({
 });
 
 interface CustomMatchers<R = unknown> {
-  toHaveBeenCalledWithLogFields: (logFields: object) => R;
-  toBeValidUuid: () => R;
-  toBeValidJwt: () => R;
-  toHaveUniqueElements: () => R;
+  toHaveBeenCalledWithLogFields: (logFields: Record<string, unknown>) => R;
 }
 
 declare module 'vitest' {
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  interface Matchers<T = any> extends CustomMatchers<T> {
-    toHaveBeenCalledWithLogFields: (arg: {
-      messageCode?: string;
-      functionVersion?: string;
-      function_arn?: string;
-      testKey?: string;
-      data?: Record<string, unknown>;
-    }) => void;
+  interface Matchers<T> extends CustomMatchers<T> {
+    toHaveBeenCalledWithLogFields: (logFields: Record<string, unknown>) => void;
   }
 }
