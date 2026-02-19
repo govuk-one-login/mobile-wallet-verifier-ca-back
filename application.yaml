@@ -348,7 +348,7 @@ Resources:
           - - !Ref IssueReaderCertServiceErrorAlarm
           - []
       CodeUri: ./
-      Handler: src/lambdas/issue-reader-cert-service/handler.handler
+      Handler: src/lambdas/issue-reader-cert-service/issue-reader-cert-handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
       VpcConfig:
         SecurityGroupIds:
