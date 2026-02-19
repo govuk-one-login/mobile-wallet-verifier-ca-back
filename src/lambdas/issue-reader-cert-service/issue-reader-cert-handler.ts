@@ -32,7 +32,7 @@ export const handlerConstructor = async (
     };
   }
 
-  const env = envResult.value;
+  // const env = envResult.value;
   return {
     statusCode: 200,
     headers: {
