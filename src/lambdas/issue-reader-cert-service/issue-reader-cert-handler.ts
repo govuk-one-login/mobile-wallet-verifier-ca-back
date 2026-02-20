@@ -3,9 +3,8 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
-import { setupLogger } from '../common/logger/setup-logger';
+import { setupLogger, logger } from '../common/logger/logger';
 import { LogMessage } from '../common/logger/log-message';
-import { logger } from '../common/logger/logger';
 import {
   dependencies,
   IssueReaderCertDependencies,
