@@ -39,6 +39,10 @@ This project uses **ECMAScript Modules (ESM)** as the module system:
 - [esbuild](https://esbuild.github.io/) for fast TypeScript compilation and bundling
 - [Vitest](https://vitest.dev/) for testing with native ESM support
 
+## Logging
+
+See [logging documentation](./docs/logging.md).
+
 ## Shared Lambda Patterns
 
 ### Environment variable access (`src/lambdas/common/config/environment.ts`)
