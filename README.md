@@ -66,7 +66,7 @@ Use the `Result` pattern for helper/service functions so handlers can evaluate s
 - Return `emptySuccess()` when success has no payload
 - Return `errorResult(error)` for failure paths with an error payload
 - Return `emptyFailure()` when failure has no error payload
-- In handlers, check `result.isError` to decide status code and response body
+- In handlers, check `result.isError` to decide behaviour, status code and response body
 
 This keeps service/helper code consistent and avoids ambiguous return types between success and failure flows.
 
