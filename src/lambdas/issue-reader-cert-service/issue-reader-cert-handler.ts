@@ -9,7 +9,7 @@ import { logger } from '../common/logger/logger';
 import {
   dependencies,
   IssueReaderCertDependencies,
-} from './handler-dependencies.ts';
+} from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
 
 export const handlerConstructor = async (

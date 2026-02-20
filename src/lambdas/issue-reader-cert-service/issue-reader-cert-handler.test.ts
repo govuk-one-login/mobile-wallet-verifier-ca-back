@@ -7,7 +7,7 @@ import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
 import { handlerConstructor } from './issue-reader-cert-handler';
 import { logger } from '../common/logger/logger';
 import '../../../tests/testUtils/matchers';
-import { IssueReaderCertDependencies } from './handler-dependencies';
+import { IssueReaderCertDependencies } from './issue-reader-cert-handler-dependencies.ts';
 import {
   buildLambdaContext,
   buildRequest,
