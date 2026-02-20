@@ -145,22 +145,27 @@ Mappings:
     dev:
       LambdaLogLevel: DEBUG
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     build:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     staging:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     integration:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     prod:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
@@ -331,7 +336,10 @@ Resources:
             - 'true'
             - 'false'
           EXPECTED_ANDROID_PACKAGE_NAME: 'org.multipaz.identityreader'
-          FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks'
+          FIREBASE_JWKS_URI: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - FirebaseJwksUri
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
