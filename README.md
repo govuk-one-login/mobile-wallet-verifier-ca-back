@@ -60,7 +60,7 @@ When a required env var is missing, this utility returns an error containing `mi
 
 ### Result pattern for helpers/services (`src/lambdas/common/result/result.ts`)
 
-Use the `Result<T, E>` pattern for helper/service functions so handlers can evaluate success/failure explicitly and respond accordingly.
+Use the `Result` pattern for helper/service functions so handlers can evaluate success/failure explicitly and respond accordingly.
 
 - Return `successResult(value)` for success paths
 - Return `emptySuccess()` when success has no payload
