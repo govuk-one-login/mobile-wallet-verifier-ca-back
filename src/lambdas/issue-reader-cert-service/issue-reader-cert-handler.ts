@@ -20,8 +20,8 @@ export const handlerConstructor = async (
   setupLogger(context);
   logger.info(LogMessage.ISSUE_READER_CERT_STARTED);
 
-  const envResult = getIssueReaderCertConfig(dependencies.env);
-  if (envResult.isError) {
+  const configResult = getIssueReaderCertConfig(dependencies.env);
+  if (configResult.isError) {
     return {
       headers: { 'Content-Type': 'application/json' },
       statusCode: 500,
