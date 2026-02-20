@@ -196,42 +196,9 @@ Globals:
       Enabled: !If [IsIntegrationOrProd, true, false]
       Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
       Role: !GetAtt CodeDeployServiceRole.Arn
-
-    # Environment:
-    #   Variables:
-    #     DT_CONNECTION_AUTH_TOKEN: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_CONNECTION_BASE_URL: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_CLUSTER_ID: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_TENANT: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: 'true'
-    # Layers:
-    #   - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
+    Environment:
+      Variables:
+        POWERTOOLS_SERVICE_NAME: mobile-wallet-verifier-certificate-authority-backend
 
 Resources:
   # Customer-managed KMS key for SNS encryption with CloudWatch permissions
