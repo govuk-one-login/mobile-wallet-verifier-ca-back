@@ -54,7 +54,7 @@ Use `getRequiredEnvironmentVariables` as the standard way for lambdas to read re
 - Call `getRequiredEnvironmentVariables(env, REQUIRED_ENVIRONMENT_VARIABLES)` and return the typed config result
 - In that same config helper, validate env var values before returning config (for example, valid URL shape or numeric values)
 
-Example: See [issue-reader-cert-config.ts](./src/lambdas/issue-reader-cert-service/issue-reader-cert-config.ts) that defines `REQUIRED_ENVIRONMENT_VARIABLES`:
+Example: See [issue-reader-cert-config.ts](./src/lambdas/issue-reader-cert-service/issue-reader-cert-config.ts) that defines `REQUIRED_ENVIRONMENT_VARIABLES`.
 
 When a required env var is missing, this utility returns an error containing `missingEnvVars`, so the config helper can log details and the handler can fail fast.
 
