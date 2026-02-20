@@ -53,6 +53,8 @@ export const emptyFailure = (): EmptyFailure => {
   };
 };
 
+// Optional discriminator for helper/service errors so handlers can map
+// `result.isError` failures to 5XX (`SERVER_ERROR`) or 4XX (`CLIENT_ERROR`).
 export enum ErrorCategory {
   SERVER_ERROR = 'SERVER_ERROR',
   CLIENT_ERROR = 'CLIENT_ERROR',
