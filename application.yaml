@@ -145,22 +145,27 @@ Mappings:
     dev:
       LambdaLogLevel: DEBUG
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     build:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     staging:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     integration:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     prod:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
+      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
@@ -196,42 +201,9 @@ Globals:
       Enabled: !If [IsIntegrationOrProd, true, false]
       Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
       Role: !GetAtt CodeDeployServiceRole.Arn
-
-    # Environment:
-    #   Variables:
-    #     DT_CONNECTION_AUTH_TOKEN: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_AUTH_TOKEN}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_CONNECTION_BASE_URL: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CONNECTION_BASE_URL}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_CLUSTER_ID: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_CLUSTER_ID}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_LOG_COLLECTION_AUTH_TOKEN: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_LOG_COLLECTION_AUTH_TOKEN}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_TENANT: !Sub
-    #       - '{{resolve:secretsmanager:${SecretArn}:SecretString:DT_TENANT}}'
-    #       - SecretArn: !FindInMap
-    #           - EnvironmentVariables
-    #           - !Ref Environment
-    #           - DynatraceSecretArn
-    #     DT_OPEN_TELEMETRY_ENABLE_INTEGRATION: 'true'
-    # Layers:
-    #   - arn:aws:lambda:eu-west-2:216552277552:layer:Dynatrace_OneAgent_1_311_2_20250307-045250_with_collector_nodejs:1
+    Environment:
+      Variables:
+        POWERTOOLS_SERVICE_NAME: mobile-wallet-verifier-certificate-authority-backend
 
 Resources:
   # Customer-managed KMS key for SNS encryption with CloudWatch permissions
@@ -348,7 +320,7 @@ Resources:
           - - !Ref IssueReaderCertServiceErrorAlarm
           - []
       CodeUri: ./
-      Handler: src/lambdas/issue-reader-cert-service/handler.handler
+      Handler: src/lambdas/issue-reader-cert-service/issue-reader-cert-handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
       VpcConfig:
         SecurityGroupIds:
@@ -364,6 +336,10 @@ Resources:
             - 'true'
             - 'false'
           EXPECTED_ANDROID_PACKAGE_NAME: 'org.multipaz.identityreader'
+          FIREBASE_JWKS_URI: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - FirebaseJwksUri
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
