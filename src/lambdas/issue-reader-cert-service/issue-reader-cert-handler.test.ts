@@ -11,7 +11,7 @@ import { IssueReaderCertDependencies } from './issue-reader-cert-handler-depende
 import {
   buildLambdaContext,
   buildRequest,
-} from '../../../tests/testUtils/buildLambda.ts';
+} from '../../../tests/testUtils/buildRequest.ts';
 
 let consoleInfoSpy: MockInstance;
 let consoleErrorSpy: MockInstance;
