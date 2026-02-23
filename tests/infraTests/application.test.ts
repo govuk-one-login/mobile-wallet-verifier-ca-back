@@ -74,7 +74,7 @@ describe('Application Infrastructure', () => {
         unknown
       >;
       expect(properties.Handler).toBe(
-        'src/lambdas/issue-reader-cert-service/handler.handler',
+        'src/lambdas/issue-reader-cert-service/issue-reader-cert-handler.handler',
       );
     });
 
