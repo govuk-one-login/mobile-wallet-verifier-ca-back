@@ -1,4 +1,4 @@
-import { InMemoryJwksCache } from '../JwksCache';
+import { InMemoryJwksCache } from '../jwks-cache.ts';
 import { describe, it, expect } from 'vitest';
 
 describe('InMemoryJwksCache - getSingletonInstance', () => {

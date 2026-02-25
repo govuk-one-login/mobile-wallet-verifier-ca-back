@@ -1,4 +1,4 @@
-import { parseAgeHeader } from './parseAgeHeader';
+import { parseAgeHeader } from './parse-age-header.ts';
 import { describe, it, expect } from 'vitest';
 
 const testData = [

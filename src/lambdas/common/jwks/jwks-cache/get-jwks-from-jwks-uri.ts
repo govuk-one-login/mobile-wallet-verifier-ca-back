@@ -1,7 +1,7 @@
 import {
   HttpRequest,
   SuccessfulHttpResponse,
-} from '../../../adapters/http/sendHttpRequest';
+} from '../../../adapters/http/send-http-request.ts';
 
 import {
   GetJwksFromJwksUriResponse,
@@ -12,9 +12,9 @@ import {
 import { emptyFailure, Result, successResult } from '../../result/result.ts';
 import { logger } from '../../logger/logger.ts';
 import { LogMessage } from '../../logger/log-message.ts';
-import { getHeader } from '../../request/getHeader/getHeader.ts';
-import { parseCacheControlHeader } from '../../request/parseCacheControlHeader/parseCacheControlHeader.ts';
-import { parseAgeHeader } from '../../request/parseAgeHeader/parseAgeHeader.ts';
+import { getHeader } from '../../request/get-header/get-header.ts';
+import { parseCacheControlHeader } from '../../request/parse-cache-control-header/parse-cache-control-header.ts';
+import { parseAgeHeader } from '../../request/parse-age-header/parse-age-header.ts';
 
 export const getJwksFromJwksUri: IGetJwksFromJwksUri = async (
   jwksUri: string,

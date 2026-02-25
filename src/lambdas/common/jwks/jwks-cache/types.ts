@@ -1,4 +1,4 @@
-import { ISendHttpRequest } from '../../../adapters/http/sendHttpRequest';
+import { ISendHttpRequest } from '../../../adapters/http/send-http-request.ts';
 import { Result } from '../../result/result.ts';
 
 export type IGetJwksFromJwksUri = (

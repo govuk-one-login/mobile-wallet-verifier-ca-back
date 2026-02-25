@@ -2,7 +2,7 @@ import {
   HttpError,
   sendHttpRequest,
   SuccessfulHttpResponse,
-} from './sendHttpRequest.ts';
+} from './send-http-request.ts';
 import { Result } from '../../common/result/result.ts';
 import {
   describe,

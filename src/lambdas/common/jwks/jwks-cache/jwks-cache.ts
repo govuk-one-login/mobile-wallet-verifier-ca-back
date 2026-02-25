@@ -4,8 +4,8 @@ import {
   JwksCache,
   JwksCacheDependencies,
 } from './types';
-import { getJwksFromJwksUri } from './getJwksFromJwksUri';
-import { sendHttpRequest } from '../../../adapters/http/sendHttpRequest';
+import { getJwksFromJwksUri } from './get-jwks-from-jwks-uri.ts';
+import { sendHttpRequest } from '../../../adapters/http/send-http-request.ts';
 import { Result, successResult } from '../../result/result.ts';
 
 export class InMemoryJwksCache implements JwksCache {

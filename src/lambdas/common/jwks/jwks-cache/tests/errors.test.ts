@@ -9,7 +9,7 @@ import {
   vi,
 } from 'vitest';
 
-import { InMemoryJwksCache } from '../JwksCache';
+import { InMemoryJwksCache } from '../jwks-cache.ts';
 import { GetKeysResponse, JwksCacheDependencies } from '../types';
 
 import {
@@ -18,7 +18,7 @@ import {
   Result,
   successResult,
 } from '../../../result/result.ts';
-import { NOW_IN_MILLISECONDS } from '../../../../../../tests/testUtils/unitTestData.ts';
+import { NOW_IN_MILLISECONDS } from '../../../../../../tests/testUtils/unit-test-data.ts';
 
 let inMemoryJwksCache: InMemoryJwksCache;
 let dependencies: JwksCacheDependencies;

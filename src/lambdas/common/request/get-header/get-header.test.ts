@@ -1,4 +1,4 @@
-import { getHeader } from './getHeader';
+import { getHeader } from './get-header.ts';
 import { describe, it, expect } from 'vitest';
 
 describe('Headers', () => {
