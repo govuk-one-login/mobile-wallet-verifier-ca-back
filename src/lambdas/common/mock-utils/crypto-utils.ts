@@ -1,19 +1,38 @@
 import { generateKeyPairSync } from 'node:crypto';
+import { KeyManager } from './key-manager';
 
 export interface KeyPair {
   privateKeyPem: string;
   publicKeyPem: string;
 }
 
-export function generateECDSAKeyPair(curve: string = 'prime256v1'): KeyPair {
-  const { privateKey, publicKey } = generateKeyPairSync('ec', {
-    namedCurve: curve,
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
-  });
-  return { privateKeyPem: privateKey, publicKeyPem: publicKey };
+export async function getOrGenerateECDSAKeyPair(
+  secretName: string,
+  curve: string = 'prime256v1',
+  region?: string,
+): Promise<KeyPair> {
+  const keyManager = new KeyManager(region);
+  let keyPair = await keyManager.getKeyPair(secretName);
+
+  if (
+    !keyPair ||
+    keyPair.privateKeyPem === 'PLACEHOLDER' ||
+    keyPair.publicKeyPem === 'PLACEHOLDER'
+  ) {
+    const { privateKey, publicKey } = generateKeyPairSync('ec', {
+      namedCurve: curve,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    keyPair = { privateKeyPem: privateKey, publicKeyPem: publicKey };
+    await keyManager.updateKeyPair(secretName, keyPair);
+  }
+
+  return keyPair;
 }
 
+// Converts PEM-formatted keys to CryptoKey objects required by @peculiar/x509 for CSR generation
 export async function importECDSAKeyPair(
   keyPair: KeyPair,
 ): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {

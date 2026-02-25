@@ -1,19 +1,9 @@
 import {
   SecretsManagerClient,
   GetSecretValueCommand,
-  CreateSecretCommand,
   UpdateSecretCommand,
 } from '@aws-sdk/client-secrets-manager';
-
-export interface KeyPair {
-  privateKeyPem: string;
-  publicKeyPem: string;
-}
-
-export interface StoredCA {
-  keyPair: KeyPair;
-  certificatePem: string;
-}
+import { KeyPair } from './crypto-utils';
 
 export class KeyManager {
   private client: SecretsManagerClient;
@@ -64,25 +54,6 @@ export class KeyManager {
     return null;
   }
 
-  async storeKeyPair(secretName: string, keyPair: KeyPair): Promise<void> {
-    console.log('Storing key pair in Secrets Manager', { secretName });
-
-    try {
-      await this.client.send(
-        new CreateSecretCommand({
-          Name: secretName,
-          SecretString: JSON.stringify({ keyPair }),
-          Description:
-            'ECDSA key pair for CSR generation and Play Integrity token signing',
-        }),
-      );
-      console.log('Key pair stored successfully');
-    } catch (error) {
-      console.error('Error storing key pair', { error });
-      throw error;
-    }
-  }
-
   async updateKeyPair(secretName: string, keyPair: KeyPair): Promise<void> {
     console.log('Updating key pair in Secrets Manager', { secretName });
 
@@ -98,34 +69,5 @@ export class KeyManager {
       console.error('Error updating key pair', { error });
       throw error;
     }
-  }
-
-  async storeCA(secretName: string, ca: StoredCA): Promise<void> {
-    await this.client.send(
-      new CreateSecretCommand({
-        Name: secretName,
-        SecretString: JSON.stringify(ca),
-        Description: 'Root CA certificate and key pair',
-      }),
-    );
-  }
-
-  async getCA(secretName: string): Promise<StoredCA | null> {
-    try {
-      const command = new GetSecretValueCommand({ SecretId: secretName });
-      const response = await this.client.send(command);
-
-      if (response.SecretString) {
-        return JSON.parse(response.SecretString);
-      }
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.name !== 'ResourceNotFoundException'
-      ) {
-        throw error;
-      }
-    }
-    return null;
   }
 }

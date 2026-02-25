@@ -17,4 +17,14 @@ export class LogMessage implements LogAttributes {
     'MOBILE_CA_ISSUE_READER_CERT_INVALID_CONFIG',
     'One or more required environment variables were missing or invalid.',
   );
+
+  static readonly GENERATE_MOCK_ISSUE_CERT_INVALID_CONFIG = new LogMessage(
+    'MOBILE_CA_GENERATE_MOCK_ISSUE_CERT_INVALID_CONFIG',
+    'One or more required environment variables were missing or invalid.',
+  );
+
+  static readonly MOCK_JWKS_INVALID_CONFIG = new LogMessage(
+    'MOBILE_CA_MOCK_JWKS_INVALID_CONFIG',
+    'One or more required environment variables were missing or invalid.',
+  );
 }

@@ -1,8 +1,4 @@
-import {
-  generateECDSAKeyPair,
-  importECDSAKeyPair,
-  KeyPair,
-} from './crypto-utils';
+import { importECDSAKeyPair } from '../common/mock-utils/crypto-utils';
 
 export interface CSRSubject {
   countryName?: string;
@@ -39,25 +35,13 @@ function buildSubjectString(subject: CSRSubject): string {
   return parts.join(', ');
 }
 
-function generateOrUseKeyPair(options: {
-  privateKeyPem?: string;
-  publicKeyPem?: string;
-  keySize?: number;
-}): KeyPair {
-  if (options.privateKeyPem && options.publicKeyPem) {
-    return {
-      privateKeyPem: options.privateKeyPem,
-      publicKeyPem: options.publicKeyPem,
-    };
-  }
-
-  return generateECDSAKeyPair('prime256v1');
-}
-
 export async function generateCSR(
-  options: CSROptions & { privateKeyPem?: string; publicKeyPem?: string },
+  options: CSROptions & { privateKeyPem: string; publicKeyPem: string },
 ): Promise<CSRResult> {
-  const keyPair = generateOrUseKeyPair(options);
+  const keyPair = {
+    privateKeyPem: options.privateKeyPem,
+    publicKeyPem: options.publicKeyPem,
+  };
   const subject = buildSubjectString(options.subject);
   const cryptoKeys = await importECDSAKeyPair(keyPair);
 

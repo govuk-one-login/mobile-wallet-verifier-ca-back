@@ -1,0 +1,36 @@
+import {
+  Config,
+  getRequiredEnvironmentVariables,
+} from '../common/config/environment';
+import { logger } from '../common/logger/logger';
+import { LogMessage } from '../common/logger/log-message';
+import { Result, emptyFailure } from '../common/result/result';
+
+const REQUIRED_ENVIRONMENT_VARIABLES = [
+  'FIREBASE_APPCHECK_JWKS_SECRET',
+  'DEVICE_KEYS_SECRET',
+] as const;
+
+export type GenerateMockIssueCertConfig = Config<
+  (typeof REQUIRED_ENVIRONMENT_VARIABLES)[number]
+>;
+
+export function getGenerateMockIssueCertConfig(
+  env: NodeJS.ProcessEnv,
+): Result<GenerateMockIssueCertConfig, void> {
+  const envVarsResult = getRequiredEnvironmentVariables(
+    env,
+    REQUIRED_ENVIRONMENT_VARIABLES,
+  );
+
+  if (envVarsResult.isError) {
+    logger.error(LogMessage.GENERATE_MOCK_ISSUE_CERT_INVALID_CONFIG, {
+      data: {
+        missingEnvironmentVariables: envVarsResult.value.missingEnvVars,
+      },
+    });
+    return emptyFailure();
+  }
+
+  return envVarsResult;
+}
