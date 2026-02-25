@@ -14,7 +14,8 @@
     "format": "./node_modules/.bin/prettier --write '**/*.{json,md,ts}'",
     "format:check": "./node_modules/.bin/prettier --check '**/*.{json,md,ts}'",
     "infra:format:check": "rain fmt --verify application.yaml",
-    "infra:format": "rain fmt --write application.yaml"
+    "infra:format": "rain fmt --write application.yaml",
+    "deploy:dev": "./deploy-dev-stacks.sh"
   },
   "license": "MIT",
   "dependencies": {

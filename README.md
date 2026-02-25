@@ -168,6 +168,26 @@ The service automatically configures:
 - **Dev environment**: `ALLOW_TEST_TOKENS=true` (allows mock Play Integrity tokens)
 - **Production environments**: `ALLOW_TEST_TOKENS=false` (enforces Google JWKS verification)
 
+Use the helper script to deploy custom dev stacks:
+
+```bash
+npm run deploy:dev
+```
+
+The script prompts for:
+
+- Stack identifier (e.g. your initials), then derives stack names:
+    - Base: `ca-base-<identifier>`
+    - App: `ca-back-<identifier>`
+- Confirmation of the derived stack names
+- Whether to deploy the base stack
+- Whether to deploy the main application stack
+
+Notes:
+
+- Base stack deployment is required the first time you deploy a new set of stacks.
+- Re deploy the base stack only when `base-application.yaml` changes.
+
 #### AWS Secrets Manager
 
 The mock infrastructure stores keys in AWS Secrets Manager with these secret names:
