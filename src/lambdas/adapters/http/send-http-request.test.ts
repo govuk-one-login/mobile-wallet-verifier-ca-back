@@ -35,7 +35,7 @@ describe('Send HTTP request', () => {
 
     mockSetTimeout = vi
       .spyOn(global, 'setTimeout')
-      .mockImplementation((callback, _) => {
+      .mockImplementation((callback) => {
         callback();
         return {} as NodeJS.Timeout;
       });
