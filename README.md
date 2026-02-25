@@ -39,6 +39,37 @@ This project uses **ECMAScript Modules (ESM)** as the module system:
 - [esbuild](https://esbuild.github.io/) for fast TypeScript compilation and bundling
 - [Vitest](https://vitest.dev/) for testing with native ESM support
 
+## Logging
+
+See [logging documentation](./docs/logging.md).
+
+## Shared Lambda Patterns
+
+### Environment variable access (`src/lambdas/common/config/environment.ts`)
+
+Use `getRequiredEnvironmentVariables` as the standard way for lambdas to read required environment variables.
+
+- Define a `REQUIRED_ENVIRONMENT_VARIABLES` array in a lambda config helper (e.g. `*-config.ts` or `*-handler-config.ts`)
+- Add each required env var key to that array
+- Call `getRequiredEnvironmentVariables(env, REQUIRED_ENVIRONMENT_VARIABLES)` and return the typed config result
+- In that same config helper, validate env var values before returning config (for example, valid URL shape or numeric values)
+
+Example: See [issue-reader-cert-config.ts](./src/lambdas/issue-reader-cert-service/issue-reader-cert-config.ts) that defines `REQUIRED_ENVIRONMENT_VARIABLES`.
+
+When a required env var is missing, this utility returns an error containing `missingEnvVars`, so the config helper can log details and the handler can fail fast.
+
+### Result pattern for helpers/services (`src/lambdas/common/result/result.ts`)
+
+Use the `Result` pattern for helper/service functions so handlers can evaluate success/failure explicitly and respond accordingly.
+
+- Return `successResult(value)` for success paths
+- Return `emptySuccess()` when success has no payload
+- Return `errorResult(error)` for failure paths with an error payload
+- Return `emptyFailure()` when failure has no error payload
+- In handlers, check `result.isError` to decide behaviour, status code and response body
+
+This keeps service/helper code consistent and avoids ambiguous return types between success and failure flows.
+
 ## Quality Gates
 
 Pre merge checks are documented in our quality gates [manifest](quality-gate.manifest.json) to align with the One Login quality gates schema. This is used to track which automated checks run before merging.
