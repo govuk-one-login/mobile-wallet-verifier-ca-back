@@ -189,10 +189,10 @@ The mock infrastructure stores keys in AWS Secrets Manager with these secret nam
 Set to `true` to enable CloudWatch monitoring on the deployed stacks.
 
 4. The workflow will:
-    - Derive the stack identifier from the branch name
-    - Build and validate both SAM templates
-    - Deploy `ca-base-<branch>` (DynamoDB nonce table)
-    - Deploy `ca-back-<branch>` (Lambda functions and API Gateway)
+   - Derive the stack identifier from the branch name
+   - Build and validate both SAM templates
+   - Deploy `ca-base-<branch>` (DynamoDB nonce table)
+   - Deploy `ca-back-<branch>` (Lambda functions and API Gateway)
 
 ### Clean Up a Feature Branch
 
