@@ -13,7 +13,7 @@ import { LogMessage } from '../../logger/log-message.ts';
 import {
   getHeader,
   parseCacheControlHeader,
-} from '../../request/get-header/get-header.ts';
+} from '../../request/header/header.ts';
 
 export const getJwksFromJwksUri: IGetJwksFromJwksUri = async (
   jwksUri: string,
