@@ -1,13 +1,17 @@
 name: Feature Branch Deploy
 
 on:
-  pull_request:
-    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      enable_monitoring:
+        description: 'Enable CloudWatch monitoring on deployed stacks'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
   packages: read
 
 defaults:
@@ -17,26 +21,34 @@ defaults:
 jobs:
   deploy-feature-branch:
     name: Deploy Feature Branch
-    if: github.event.label.name == 'deploy-feature'
     runs-on: ubuntu-24.04
-    environment: dev
     env:
       SAM_CLI_TELEMETRY: 0
       AWS_REGION: eu-west-2
-      PR_NUMBER: ${{ github.event.pull_request.number }}
-      STACK_IDENTIFIER: pr-${{ github.event.pull_request.number }}
-      # Check if enable-monitoring label is present (add it BEFORE deploy-feature to enable)
-      ENABLE_MONITORING: ${{ contains(github.event.pull_request.labels.*.name, 'enable-monitoring') }}
     steps:
+      - name: Validate Branch
+        if: github.ref_name == 'main'
+        run: |
+          echo "::error::Feature branch deploy cannot run on main"
+          exit 1
+
+      - name: Sanitize Branch Name
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          SANITIZED=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//' | cut -c1-40)
+          echo "STACK_IDENTIFIER=$SANITIZED" >> "$GITHUB_ENV"
+          echo "Stack identifier: $SANITIZED (from branch: $BRANCH_NAME)"
+
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           ref: ${{ github.ref }}
           submodules: true
           fetch-depth: 0
 
       - name: Setup NodeJS
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           cache: npm
           cache-dependency-path: package-lock.json
@@ -54,14 +66,13 @@ jobs:
         run: npm clean-install
 
       - name: Setup AWS SAM CLI
-        uses: aws-actions/setup-sam@d78e1a4a9656d3b223e59b80676a797f20093133
+        uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04
 
       - name: Authenticate with AWS
-        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
-          role-session-name: feature-branch-deploy-${{ env.PR_NUMBER }}
 
       - name: SAM Validate Templates
         run: |
@@ -88,19 +99,25 @@ jobs:
               ManagedBy=GitHub-Actions \
               Project=Mobile-Wallet-Verifier-CA \
               FeatureBranch=true \
-              PullRequest="$PR_NUMBER"
+              StackIdentifier="$STACK_IDENTIFIER"
+
+      - name: Authenticate with AWS - backend role
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
 
       - name: Deploy Application Stack
         run: |
           echo "Building application.yaml..."
           sam build --template application.yaml
 
-          # Determine monitoring settings based on enable-monitoring label
-          if [[ "$ENABLE_MONITORING" == "true" ]]; then
-            echo "Monitoring ENABLED (enable-monitoring label detected)"
+          # Determine monitoring settings based on input parameter
+          if [[ "${{ inputs.enable_monitoring }}" == "true" ]]; then
+            echo "Monitoring ENABLED"
             MONITORING_PARAMS="EnableMonitoring=true"
           else
-            echo "Monitoring DISABLED (no enable-monitoring label)"
+            echo "Monitoring DISABLED"
             MONITORING_PARAMS="EnableMonitoring=false"
           fi
 
@@ -124,22 +141,4 @@ jobs:
               ManagedBy=GitHub-Actions \
               Project=Mobile-Wallet-Verifier-CA \
               FeatureBranch=true \
-              PullRequest="$PR_NUMBER"
-
-      - name: Get Stack Outputs
-        id: outputs
-        run: |
-          API_URL=$(aws cloudformation describe-stacks \
-            --stack-name "ca-back-$STACK_IDENTIFIER" \
-            --query 'Stacks[0].Outputs[?OutputKey==`ApiGatewayDomainName`].OutputValue' \
-            --output text \
-            --region "$AWS_REGION")
-
-          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
-          echo "### Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Property | Value |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|----------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Base Stack | \`ca-base-$STACK_IDENTIFIER\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| App Stack | \`ca-back-$STACK_IDENTIFIER\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| API URL | $API_URL |" >> "$GITHUB_STEP_SUMMARY"
+              StackIdentifier="$STACK_IDENTIFIER"

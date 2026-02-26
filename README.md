@@ -178,3 +178,22 @@ The mock infrastructure stores keys in AWS Secrets Manager with these secret nam
 - `android-intermediate-ca-`: Intermediate CA key pair
 
 **Note**: Ensure your AWS credentials have access to Secrets Manager in the `eu-west-2` region.
+
+### Deploy a Feature Branch
+
+1. Push your feature branch to the remote repository.
+2. Go to **Actions** > **Feature Branch Deploy** in GitHub.
+3. Click **Run workflow**, select your feature branch, and optionally enable monitoring:
+
+**Input parameter** `enable_monitoring` - Defaults to `false`.
+Set to `true` to enable CloudWatch monitoring on the deployed stacks.
+
+4. The workflow will:
+    - Derive the stack identifier from the branch name
+    - Build and validate both SAM templates
+    - Deploy `ca-base-<branch>` (DynamoDB nonce table)
+    - Deploy `ca-back-<branch>` (Lambda functions and API Gateway)
+
+### Clean Up a Feature Branch
+
+Cleanup happens **automatically** when the pull request is closed (or merged). The workflow uses the PR's head branch name to derive the same stack identifier that was used during deployment.
