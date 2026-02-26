@@ -173,7 +173,7 @@ describe('InMemoryJwksCache - Caching', () => {
     });
 
     describe('Cache expiry', () => {
-      describe('Given server-defined max-age returned from previous response was less than maximum cache duration', () => {
+      describe('Given cache-control header max-age returned from previous response was less than maximum cache duration', () => {
         describe('Given server-defined max-age has elapsed', () => {
           beforeEach(async () => {
             inMemoryJwksCache = new InMemoryJwksCache(dependencies);
@@ -199,7 +199,7 @@ describe('InMemoryJwksCache - Caching', () => {
           });
         });
 
-        describe('Given Age header returned from previous response, and [max age - age] has elapsed', () => {
+        describe('Given server-defined max-age has not elapsed', () => {
           beforeEach(async () => {
             mockSendRequest = vi.fn().mockResolvedValue(
               successResult({
@@ -209,7 +209,6 @@ describe('InMemoryJwksCache - Caching', () => {
                 }),
                 headers: {
                   'Cache-Control': `max-age=100`,
-                  Age: `50`,
                 },
               }),
             );
@@ -227,47 +226,11 @@ describe('InMemoryJwksCache - Caching', () => {
             );
           });
 
-          it('Makes another call to JWKS URI', () => {
+          it('Does not make another call to JWKS URI', () => {
             expectJwksUriToHaveBeenCalledNTimes(
               mockSendRequest,
               'mock_jwks_uri',
-              2,
-            );
-          });
-        });
-
-        describe('Given Age header returned from previous response, and [max age - age] < 0', () => {
-          beforeEach(async () => {
-            mockSendRequest = vi.fn().mockResolvedValue(
-              successResult({
-                statusCode: 200,
-                body: JSON.stringify({
-                  keys: [{ kid: 'mock_kid' }],
-                }),
-                headers: {
-                  'Cache-Control': `max-age=100`,
-                  Age: `101`,
-                },
-              }),
-            );
-            dependencies.sendRequest = mockSendRequest;
-
-            inMemoryJwksCache = new InMemoryJwksCache(dependencies);
-            await inMemoryJwksCache.getJwks('mock_jwks_uri');
-            result = await inMemoryJwksCache.getJwks('mock_jwks_uri');
-          });
-
-          it('Returns success with keys', () => {
-            expect(result).toEqual(
-              successResult({ keys: [{ kid: 'mock_kid' }] }),
-            );
-          });
-
-          it('Makes another call to JWKS URI', () => {
-            expectJwksUriToHaveBeenCalledNTimes(
-              mockSendRequest,
-              'mock_jwks_uri',
-              2,
+              1,
             );
           });
         });

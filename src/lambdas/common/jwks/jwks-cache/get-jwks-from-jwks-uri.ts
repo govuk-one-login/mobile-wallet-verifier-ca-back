@@ -2,19 +2,16 @@ import {
   HttpRequest,
   SuccessfulHttpResponse,
 } from '../../../adapters/http/send-http-request.ts';
-
 import {
   GetJwksFromJwksUriResponse,
   IGetJwksFromJwksUri,
   JwksCacheDependencies,
 } from './types';
-
 import { emptyFailure, Result, successResult } from '../../result/result.ts';
 import { logger } from '../../logger/logger.ts';
 import { LogMessage } from '../../logger/log-message.ts';
 import { getHeader } from '../../request/get-header/get-header.ts';
 import { parseCacheControlHeader } from '../../request/parse-cache-control-header/parse-cache-control-header.ts';
-import { parseAgeHeader } from '../../request/parse-age-header/parse-age-header.ts';
 
 export const getJwksFromJwksUri: IGetJwksFromJwksUri = async (
   jwksUri: string,
@@ -77,13 +74,9 @@ function validateResponse(
     });
   }
 
-  const jwksAgeSeconds = parseAgeHeader(getHeader(response.headers, 'Age'));
   return successResult({
     keys: body.keys,
-    cacheDurationMillis: Math.max(
-      (jwksMaxAgeSeconds - jwksAgeSeconds) * 1000,
-      0,
-    ),
+    cacheDurationMillis: jwksMaxAgeSeconds * 1000,
   });
 }
 
