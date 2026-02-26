@@ -10,8 +10,10 @@ import {
 import { emptyFailure, Result, successResult } from '../../result/result.ts';
 import { logger } from '../../logger/logger.ts';
 import { LogMessage } from '../../logger/log-message.ts';
-import { getHeader } from '../../request/get-header/get-header.ts';
-import { parseCacheControlHeader } from '../../request/parse-cache-control-header/parse-cache-control-header.ts';
+import {
+  getHeader,
+  parseCacheControlHeader,
+} from '../../request/get-header/get-header.ts';
 
 export const getJwksFromJwksUri: IGetJwksFromJwksUri = async (
   jwksUri: string,

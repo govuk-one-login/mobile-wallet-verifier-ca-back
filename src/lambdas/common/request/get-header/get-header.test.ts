@@ -1,5 +1,7 @@
-import { getHeader } from './get-header.ts';
+import { getHeader, parseCacheControlHeader } from './get-header.ts';
 import { describe, it, expect } from 'vitest';
+
+import { testData } from './header-test-data.ts';
 
 describe('Headers', () => {
   describe('getHeader', () => {
@@ -66,4 +68,17 @@ describe('Headers', () => {
       });
     });
   });
+});
+
+describe('parseCacheControlHeader', () => {
+  describe.each(testData)(
+    '$scenario',
+    ({ cacheControlHeaderValue, expectedMaxAge }) => {
+      it(`Returns max age value of ${expectedMaxAge}`, () => {
+        expect(parseCacheControlHeader(cacheControlHeaderValue)).toEqual({
+          maxAge: expectedMaxAge,
+        });
+      });
+    },
+  );
 });

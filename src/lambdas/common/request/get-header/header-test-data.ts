@@ -1,7 +1,4 @@
-import { parseCacheControlHeader } from './parse-cache-control-header.ts';
-import { describe, it, expect } from 'vitest';
-
-const testData = [
+export const testData = [
   {
     scenario: 'Given header is undefined',
     cacheControlHeaderValue: undefined,
@@ -77,16 +74,3 @@ const testData = [
     expectedMaxAge: 60,
   },
 ];
-
-describe('parseCacheControlHeader', () => {
-  describe.each(testData)(
-    '$scenario',
-    ({ cacheControlHeaderValue, expectedMaxAge }) => {
-      it(`Returns max age value of ${expectedMaxAge}`, () => {
-        expect(parseCacheControlHeader(cacheControlHeaderValue)).toEqual({
-          maxAge: expectedMaxAge,
-        });
-      });
-    },
-  );
-});
