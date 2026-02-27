@@ -10,7 +10,6 @@ import { Result, successResult } from '../../result/result.ts';
 
 export class InMemoryJwksCache implements JwksCache {
   private static INSTANCE: JwksCache;
-  private readonly maximumCacheDuration = 6 * 60 * 60 * 1000; // 6 hours
   private readonly jwksResponses: {
     [key: string]: JwksCacheEntry;
   } = {};
@@ -59,9 +58,7 @@ export class InMemoryJwksCache implements JwksCache {
   ) {
     this.jwksResponses[jwksUri] = {
       keys: jwksResponse.keys,
-      expiry:
-        Date.now() +
-        Math.min(jwksResponse.cacheDurationMillis, this.maximumCacheDuration),
+      expiry: Date.now() + jwksResponse.cacheDurationMillis,
     };
   }
 

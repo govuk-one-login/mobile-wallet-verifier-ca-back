@@ -28,11 +28,7 @@ let dependencies: JwksCacheDependencies;
 let result: Result<GetKeysResponse, void>;
 let mockSendRequest: Mock<ISendHttpRequest>;
 let consoleDebugSpy: MockInstance;
-
-const MAXIMUM_CACHE_DURATION_SECONDS = 6 * 60 * 60; // 6 hours
-const MAXIMUM_CACHE_DURATION_MILLIS = MAXIMUM_CACHE_DURATION_SECONDS * 1000;
-
-const serverDefinedMaxAgeInSeconds = MAXIMUM_CACHE_DURATION_SECONDS - 1;
+const serverDefinedMaxAgeInSeconds = 6 * 60 * 60; // 6 hours
 
 describe('InMemoryJwksCache - Caching', () => {
   beforeEach(() => {
@@ -173,105 +169,64 @@ describe('InMemoryJwksCache - Caching', () => {
     });
 
     describe('Cache expiry', () => {
-      describe('Given cache-control header max-age returned from previous response was less than maximum cache duration', () => {
-        describe('Given server-defined max-age has elapsed', () => {
-          beforeEach(async () => {
-            inMemoryJwksCache = new InMemoryJwksCache(dependencies);
-            await inMemoryJwksCache.getJwks('mock_jwks_uri');
-            vi.setSystemTime(
-              NOW_IN_MILLISECONDS + serverDefinedMaxAgeInSeconds * 1000,
-            );
-            result = await inMemoryJwksCache.getJwks('mock_jwks_uri');
-          });
-
-          it('Returns success with keys', () => {
-            expect(result).toEqual(
-              successResult({ keys: [{ kid: 'mock_kid' }] }),
-            );
-          });
-
-          it('Makes another call to JWKS URI', () => {
-            expectJwksUriToHaveBeenCalledNTimes(
-              mockSendRequest,
-              'mock_jwks_uri',
-              2,
-            );
-          });
+      describe('Given server-defined max-age has elapsed', () => {
+        beforeEach(async () => {
+          inMemoryJwksCache = new InMemoryJwksCache(dependencies);
+          await inMemoryJwksCache.getJwks('mock_jwks_uri');
+          vi.setSystemTime(
+            NOW_IN_MILLISECONDS + serverDefinedMaxAgeInSeconds * 1000,
+          );
+          result = await inMemoryJwksCache.getJwks('mock_jwks_uri');
         });
 
-        describe('Given server-defined max-age has not elapsed', () => {
-          beforeEach(async () => {
-            mockSendRequest = vi.fn().mockResolvedValue(
-              successResult({
-                statusCode: 200,
-                body: JSON.stringify({
-                  keys: [{ kid: 'mock_kid' }],
-                }),
-                headers: {
-                  'Cache-Control': `max-age=100`,
-                },
-              }),
-            );
-            dependencies.sendRequest = mockSendRequest;
+        it('Returns success with keys', () => {
+          expect(result).toEqual(
+            successResult({ keys: [{ kid: 'mock_kid' }] }),
+          );
+        });
 
-            inMemoryJwksCache = new InMemoryJwksCache(dependencies);
-            await inMemoryJwksCache.getJwks('mock_jwks_uri');
-            vi.setSystemTime(NOW_IN_MILLISECONDS + 50000);
-            result = await inMemoryJwksCache.getJwks('mock_jwks_uri');
-          });
-
-          it('Returns success with keys', () => {
-            expect(result).toEqual(
-              successResult({ keys: [{ kid: 'mock_kid' }] }),
-            );
-          });
-
-          it('Does not make another call to JWKS URI', () => {
-            expectJwksUriToHaveBeenCalledNTimes(
-              mockSendRequest,
-              'mock_jwks_uri',
-              1,
-            );
-          });
+        it('Makes another call to JWKS URI', () => {
+          expectJwksUriToHaveBeenCalledNTimes(
+            mockSendRequest,
+            'mock_jwks_uri',
+            2,
+          );
         });
       });
 
-      describe('Given server-defined max-age returned from previous response was greater than maximum cache duration', () => {
-        describe('Given maximum cache duration has elapsed', () => {
-          beforeEach(async () => {
-            mockSendRequest = vi
-              .fn()
-              .mockResolvedValue(
-                buildSuccessfulJwksResponseWithKeyIdsAndMaxAge(
-                  ['mock_kid'],
-                  2 * MAXIMUM_CACHE_DURATION_SECONDS,
-                ),
-              );
-            dependencies.sendRequest = mockSendRequest;
+      describe('Given server-defined max-age has not elapsed', () => {
+        beforeEach(async () => {
+          mockSendRequest = vi.fn().mockResolvedValue(
+            successResult({
+              statusCode: 200,
+              body: JSON.stringify({
+                keys: [{ kid: 'mock_kid' }],
+              }),
+              headers: {
+                'Cache-Control': `max-age=100`,
+              },
+            }),
+          );
+          dependencies.sendRequest = mockSendRequest;
 
-            inMemoryJwksCache = new InMemoryJwksCache(dependencies);
-            await inMemoryJwksCache.getJwks('mock_jwks_uri');
+          inMemoryJwksCache = new InMemoryJwksCache(dependencies);
+          await inMemoryJwksCache.getJwks('mock_jwks_uri');
+          vi.setSystemTime(NOW_IN_MILLISECONDS + 50000);
+          result = await inMemoryJwksCache.getJwks('mock_jwks_uri');
+        });
 
-            vi.setSystemTime(
-              NOW_IN_MILLISECONDS + MAXIMUM_CACHE_DURATION_MILLIS,
-            );
-            await inMemoryJwksCache.getJwks('mock_jwks_uri');
-            result = await inMemoryJwksCache.getJwks('mock_jwks_uri');
-          });
+        it('Returns success with keys', () => {
+          expect(result).toEqual(
+            successResult({ keys: [{ kid: 'mock_kid' }] }),
+          );
+        });
 
-          it('Returns success with keys', () => {
-            expect(result).toEqual(
-              successResult({ keys: [{ kid: 'mock_kid' }] }),
-            );
-          });
-
-          it('Makes 2 calls to JWKS URI', () => {
-            expectJwksUriToHaveBeenCalledNTimes(
-              mockSendRequest,
-              'mock_jwks_uri',
-              2,
-            );
-          });
+        it('Does not make another call to JWKS URI', () => {
+          expectJwksUriToHaveBeenCalledNTimes(
+            mockSendRequest,
+            'mock_jwks_uri',
+            1,
+          );
         });
       });
     });
