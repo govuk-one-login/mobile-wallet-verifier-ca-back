@@ -8,20 +8,20 @@ import {
   vi,
   Mock,
 } from 'vitest';
-import '../../../../../../tests/testUtils/matchers';
+import '../../../../../tests/testUtils/matchers.ts';
 
-import { InMemoryJwksCache } from '../jwks-cache.ts';
-import { GetKeysResponse, JwksCacheDependencies } from '../types';
+import { InMemoryJwksCache } from './jwks-cache.ts';
+import { GetKeysResponse, JwksCacheDependencies } from './types.ts';
 import {
   ISendHttpRequest,
   SuccessfulHttpResponse,
-} from '../../../../adapters/http/send-http-request.ts';
+} from '../../../adapters/http/send-http-request.ts';
 import {
   Result,
   successResult,
   SuccessWithValue,
-} from '../../../result/result.ts';
-import { NOW_IN_MILLISECONDS } from '../../../../../../tests/testUtils/unit-test-data.ts';
+} from '../../result/result.ts';
+import { NOW_IN_MILLISECONDS } from '../../../../../tests/testUtils/unit-test-data.ts';
 
 let inMemoryJwksCache: InMemoryJwksCache;
 let dependencies: JwksCacheDependencies;
@@ -355,6 +355,14 @@ describe('InMemoryJwksCache - Caching', () => {
           1,
         );
       });
+    });
+  });
+
+  describe('InMemoryJwksCache - getSingletonInstance', () => {
+    it('Returns same instance on repeated calls', () => {
+      const first = InMemoryJwksCache.getSingletonInstance();
+      const second = InMemoryJwksCache.getSingletonInstance();
+      expect(first).toBe(second);
     });
   });
 });
