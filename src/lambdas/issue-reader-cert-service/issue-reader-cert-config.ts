@@ -29,5 +29,21 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
+  if (!isValidUrl(envVarsResult.value.FIREBASE_JWKS_URI)) {
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
+      errorMessage: 'FIREBASE_JWKS_URI is not a valid URL',
+    });
+    return emptyFailure();
+  }
+
   return envVarsResult;
 }
+
+const isValidUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+  } catch {
+    return false;
+  }
+  return true;
+};
