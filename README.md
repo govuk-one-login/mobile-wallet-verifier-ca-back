@@ -196,7 +196,7 @@ Set to `true` to enable CloudWatch monitoring on the deployed stacks.
 
 ### Clean Up a Feature Branch
 
-Cleanup happens **automatically** when the pull request is closed (or merged). 
+Cleanup happens **automatically** when the pull request is closed (or merged).
 The workflow uses the PR's head branch name to derive the same stack identifier that was used during deployment.
-The Manaual cleanup is also supported by running the `cleanup-feature-branch` workflow from 
+The Manaual cleanup is also supported by running the `cleanup-feature-branch` workflow from
 GitHub Actions and providing the branch name as an input parameter.
