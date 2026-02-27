@@ -4,11 +4,18 @@ info:
   version: '1.0.0'
   description: |
     Issues short-lived reader certificates (valid for ~24 hours) for Verifier Apps.
-    v1 uses the programme-standard app integrity pattern:
-    - The app obtains a Firebase App Check token
-    - The token is validated by /client-attestation
-    - /client-attestation returns a client attestation JWT bound to the app's public key
-    - The app sends that JWT to this API along with a CSR
+    Authentication model:
+    - The Verifier App generates a keypair locally.
+    - The app obtains a Firebase App Check token.
+    - The App Check JWT is sent in the HTTP header:
+        X-Firebase-AppCheck: <JWT>
+    - The CA Backend validates the Firebase App Check token by:
+        * Fetching JWKS from Firebase (cached, TTL ~6h)
+        * Verifying JWT signature
+        * Validating iss, aud, sub, exp, and nbf claims
+        * Applying replay protection using jti cache
+    - If authentication succeeds, the backend validates the CSR (PKCS#10)
+      and issues a short-lived reader certificate.
 
 servers:
   - url: https://api.example.com
@@ -19,30 +26,29 @@ paths:
       summary: Issue short-lived reader certificate
       description: |
         Issues a short-lived X.509 reader certificate.
-        The CSR’s public key must match the public key bound into the client attestation JWT.
+        Requirements:
+        - A valid Firebase App Check JWT must be provided in the
+          X-Firebase-AppCheck header.
+        - The CSR must be a valid PKCS#10 request.
       operationId: issueReaderCert
-      security: []
+      parameters:
+        - name: X-Firebase-AppCheck
+          in: header
+          required: true
+          description: Firebase App Check JWT issued for this application instance.
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/IssueReaderCertRequest'
-            examples:
-              ios_example:
-                value:
-                  csrPem: |
-                    -----BEGIN CERTIFICATE REQUEST-----
-                    MIIC...
-                    -----END CERTIFICATE REQUEST-----
-                  clientAttestationJwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...'
-              android_example:
-                value:
-                  csrPem: |
-                    -----BEGIN CERTIFICATE REQUEST-----
-                    MIIC...
-                    -----END CERTIFICATE REQUEST-----
-                  clientAttestationJwt: 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjEifQ...'
+            example:
+              csrPem: |
+                -----BEGIN CERTIFICATE REQUEST-----
+                MIIC...
+                -----END CERTIFICATE REQUEST-----
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
@@ -57,36 +63,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/IssueReaderCertResponse'
         '400':
-          description: Invalid request (bad CSR, missing fields, invalid JSON)
+          description: Invalid request (bad CSR, malformed JSON, missing fields)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Client attestation failed or policy rejected the request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
-                attestation_invalid:
-                  summary: Client attestation JWT invalid
-                  value:
-                    code: 'attestation_invalid'
-                    message: 'Client attestation JWT is invalid or expired'
-                key_binding_mismatch:
-                  summary: CSR public key does not match attestation binding
-                  value:
-                    code: 'key_binding_mismatch'
-                    message: 'CSR public key does not match client attestation binding'
-        '429':
-          description: Too many requests / rate limited
+        '401':
+          description: Authentication failed (App Check token missing or invalid)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error issuing certificate
+          description: Internal server error (e.g., JWKS fetch failure, signing failure)
           content:
             application/json:
               schema:
@@ -98,55 +87,38 @@ components:
       type: object
       required:
         - csrPem
-        - clientAttestationJwt
       properties:
         csrPem:
           type: string
           description: |
             PKCS#10 Certificate Signing Request in PEM encoding.
-            The CSR public key must match the public key bound into the client attestation JWT.
-        clientAttestationJwt:
-          type: string
-          description: |
-            Backend-issued client attestation JWT (from `/client-attestation`),
-            bound to the Verifier App public key.
+            The backend validates:
+            - PKCS#10 structure
+            - Signature over CertificationRequestInfo
+            - Extraction of subject public key
+            - Allowed key size and algorithm policy
+            - Signature algorithm consistency
+            - Required subject fields
     IssueReaderCertResponse:
       type: object
       required:
-        - readerId
         - certChain
-        - profile
-        - notBefore
-        - notAfter
       properties:
-        readerId:
-          type: string
         certChain:
-          type: object
-          required: [leaf, intermediate]
-          properties:
-            leaf:
-              type: string
-              description: Leaf reader certificate (PEM encoded)
-            intermediate:
-              type: string
-              description: Intermediary CA certificate (PEM encoded)
-        profile:
           type: string
-        notBefore:
-          type: string
-          format: date-time
-        notAfter:
-          type: string
-          format: date-time
+          description: |
+            PEM-encoded certificate chain.
+            The first certificate is the leaf reader certificate,
+            followed by any intermediate CA certificates.
     ErrorResponse:
       type: object
-      required: [code, message]
+      required:
+        - code
+        - message
       properties:
         code:
           type: string
+          description: Machine-readable error code.
         message:
           type: string
-        details:
-          type: object
-          additionalProperties: true
+          description: Human-readable error message.
