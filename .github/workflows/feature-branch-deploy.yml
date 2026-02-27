@@ -92,6 +92,7 @@ jobs:
             --parameter-overrides \
               Environment=dev \
               EnableCustomDomain=false \
+            --resolve-s3 \
             --no-fail-on-empty-changeset \
             --region "$AWS_REGION" \
             --tags \
@@ -134,6 +135,7 @@ jobs:
               CodeSigningConfigArn=none \
               PermissionsBoundary=none \
               $MONITORING_PARAMS \
+            --resolve-s3 \          
             --no-fail-on-empty-changeset \
             --region "$AWS_REGION" \
             --tags \
