@@ -24,6 +24,11 @@ export class LogMessage implements LogAttributes {
     'Incoming event invalid',
   );
 
+  static readonly ISSUE_READER_CERT_COMPLETED = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
+    'Lambda handler processing has completed.',
+  );
+
   // Get JWKS logs
   static readonly GET_JWKS_ATTEMPT = new LogMessage(
     'MOBILE_CA_GET_JWKS_ATTEMPT',

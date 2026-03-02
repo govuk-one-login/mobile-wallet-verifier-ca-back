@@ -56,6 +56,8 @@ export const handlerConstructor = async (
     };
   }
 
+  logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
+
   return {
     statusCode: 200,
     headers: {
