@@ -20,9 +20,9 @@ export class LogMessage implements LogAttributes {
   );
 
   static readonly ISSUE_READER_CERT_INVALID_EVENT = new LogMessage(
-      'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
-      'Incoming event invalid',
-  )
+    'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+    'Incoming event invalid',
+  );
 
   // Get JWKS logs
   static readonly GET_JWKS_ATTEMPT = new LogMessage(
