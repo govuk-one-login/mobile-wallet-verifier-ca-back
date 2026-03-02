@@ -230,7 +230,11 @@ describe('Handler', () => {
   describe('WIP happy path tests', () => {
     describe('Given a valid event', () => {
       beforeEach(async () => {
-        const validEvent = buildRequest();
+        const validEvent = buildRequest({
+          headers: {
+            'X-Firebase-AppCheck': 'mockXFirebaseAppCheckHeaderValue',
+          },
+        });
         result = await handlerConstructor(dependencies, validEvent, context);
       });
 
