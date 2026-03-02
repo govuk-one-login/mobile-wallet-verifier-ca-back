@@ -10,6 +10,7 @@ import {
   IssueReaderCertDependencies,
 } from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
+import { emptyFailure, emptySuccess, Result } from '../common/result/result.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -21,8 +22,6 @@ export const handlerConstructor = async (
 
   // Request validation function that checks header is there and is a string and returns it to lambda
   // in future commit, we will validate body as well
-
-  validateEvent(event);
 
   // JWT validation function -- check format that it's {string.string.string}
 
@@ -38,6 +37,20 @@ export const handlerConstructor = async (
     };
   }
 
+  const validEvent = validateEvent(event);
+  if (validEvent.isError) {
+    logger.info('we are here');
+    return {
+      headers: { 'Content-Type': 'application/json' },
+      statusCode: 401,
+      body: JSON.stringify({
+        error: 'unauthorized',
+        error_description:
+          'Authentication failed (App Check token missing or invalid)',
+      }),
+    };
+  }
+
   return {
     statusCode: 200,
     headers: {
@@ -48,12 +61,14 @@ export const handlerConstructor = async (
   };
 };
 
-function validateEvent(event: APIGatewayProxyEvent) {
-  if (!event.headers) {
+function validateEvent(event: APIGatewayProxyEvent): Result<void, void> {
+  if (!event.headers || !event.headers['X-Firebase-AppCheck']) {
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
-      errorMessage: 'X-Firebase-AppCheck header missing from event'
+      errorMessage: 'X-Firebase-AppCheck header missing from event',
     });
+    return emptyFailure();
   }
+  return emptySuccess();
 }
 
 export const handler = handlerConstructor.bind(null, dependencies);

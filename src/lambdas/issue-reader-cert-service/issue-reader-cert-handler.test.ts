@@ -119,7 +119,7 @@ describe('Handler', () => {
     describe('Given X-Firebase-AppCheck header is not present in the event', () => {
       beforeEach(async () => {
         const invalidEvent = buildRequest({ headers: {} });
-        await handlerConstructor(dependencies, invalidEvent, context);
+        result = await handlerConstructor(dependencies, invalidEvent, context);
       });
 
       it('Log an INVALID_EVENT error', () => {
