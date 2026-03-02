@@ -19,6 +19,11 @@ export class LogMessage implements LogAttributes {
     'One or more required environment variables were missing or invalid.',
   );
 
+  static readonly ISSUE_READER_CERT_INVALID_EVENT = new LogMessage(
+      'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+      'Incoming event invalid',
+  )
+
   // Get JWKS logs
   static readonly GET_JWKS_ATTEMPT = new LogMessage(
     'MOBILE_CA_GET_JWKS_ATTEMPT',
