@@ -58,18 +58,17 @@ Conditions:
     - !Ref Environment
     - prod
 
-  IsIntegration: !Equals
-    - !Ref Environment
-    - integration
-
   CreateCustomDomain: !Equals
     - !Ref EnableCustomDomain
     - 'true'
 
+  IsDevOrBuild: !Or
+    - !Equals [!Ref Environment, dev]
+    - !Equals [!Ref Environment, build]
+
   CreateMockDomain: !And
     - !Condition CreateCustomDomain
-    - !Not [!Condition IsProduction]
-    - !Not [!Condition IsIntegration]
+    - !Condition IsDevOrBuild
 
 Resources:
   # Shared API Gateway Custom Domains
