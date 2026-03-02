@@ -13,7 +13,7 @@ import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
-  _event: APIGatewayProxyEvent,
+  event: APIGatewayProxyEvent,
   context: Context,
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
@@ -21,6 +21,8 @@ export const handlerConstructor = async (
 
   // Request validation function that checks header is there and is a string and returns it to lambda
   // in future commit, we will validate body as well
+
+  validateEvent(event);
 
   // JWT validation function -- check format that it's {string.string.string}
 
@@ -45,5 +47,13 @@ export const handlerConstructor = async (
     body: 'Ok',
   };
 };
+
+function validateEvent(event: APIGatewayProxyEvent) {
+  if (!event.headers) {
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
+      errorMessage: 'X-Firebase-AppCheck header missing from event'
+    });
+  }
+}
 
 export const handler = handlerConstructor.bind(null, dependencies);

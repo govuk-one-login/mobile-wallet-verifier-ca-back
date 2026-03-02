@@ -125,7 +125,7 @@ describe('Handler', () => {
       it('Log an INVALID_EVENT error', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
-          data: 'X-Firebase-AppCheck header missing from event',
+          errorMessage: 'X-Firebase-AppCheck header missing from event',
         });
       });
 
