@@ -116,9 +116,93 @@ describe('Handler', () => {
   });
 
   describe('Event validation', () => {
+    describe('Given there are no headers in the event', () => {
+      beforeEach(async () => {
+        const invalidEvent = buildRequest({ headers: undefined });
+        result = await handlerConstructor(dependencies, invalidEvent, context);
+      });
+
+      it('Log an INVALID_EVENT error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+          errorMessage: 'X-Firebase-AppCheck header missing from event',
+        });
+      });
+
+      it('Return 401 Unauthorized response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 401,
+          body: JSON.stringify({
+            error: 'unauthorized',
+            error_description:
+              'Authentication failed (App Check token missing or invalid)',
+          }),
+        });
+      });
+    });
+
     describe('Given X-Firebase-AppCheck header is not present in the event', () => {
       beforeEach(async () => {
-        const invalidEvent = buildRequest({ headers: {} });
+        const invalidEvent = buildRequest({
+          headers: { mockHeader: 'mockValue' },
+        });
+        result = await handlerConstructor(dependencies, invalidEvent, context);
+      });
+
+      it('Log an INVALID_EVENT error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+          errorMessage: 'X-Firebase-AppCheck header missing from event',
+        });
+      });
+
+      it('Return 401 Unauthorized response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 401,
+          body: JSON.stringify({
+            error: 'unauthorized',
+            error_description:
+              'Authentication failed (App Check token missing or invalid)',
+          }),
+        });
+      });
+    });
+
+    describe('Given X-Firebase-AppCheck header is an empty string', () => {
+      beforeEach(async () => {
+        const invalidEvent = buildRequest({
+          headers: { 'X-Firebase-AppCheck': '' },
+        });
+        result = await handlerConstructor(dependencies, invalidEvent, context);
+      });
+
+      it('Log an INVALID_EVENT error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+          errorMessage: 'X-Firebase-AppCheck header missing from event',
+        });
+      });
+
+      it('Return 401 Unauthorized response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 401,
+          body: JSON.stringify({
+            error: 'unauthorized',
+            error_description:
+              'Authentication failed (App Check token missing or invalid)',
+          }),
+        });
+      });
+    });
+
+    describe('Given X-Firebase-AppCheck header is an empty string with whitespace', () => {
+      beforeEach(async () => {
+        const invalidEvent = buildRequest({
+          headers: { 'X-Firebase-AppCheck': '  ' },
+        });
         result = await handlerConstructor(dependencies, invalidEvent, context);
       });
 
