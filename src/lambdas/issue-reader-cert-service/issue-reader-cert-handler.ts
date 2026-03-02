@@ -11,6 +11,7 @@ import {
 } from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
 import { emptyFailure, emptySuccess, Result } from '../common/result/result.ts';
+import { getHeader } from '../common/request/header/header.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -62,7 +63,11 @@ export const handlerConstructor = async (
 };
 
 function validateEvent(event: APIGatewayProxyEvent): Result<void, void> {
-  if (!event.headers || !event.headers['X-Firebase-AppCheck'] || !event.headers['X-Firebase-AppCheck'].trim()) {
+  const firebaseAppCheckHeader = getHeader(
+    event.headers ?? {},
+    'X-Firebase-AppCheck',
+  );
+  if (!firebaseAppCheckHeader || !firebaseAppCheckHeader.trim()) {
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage: 'X-Firebase-AppCheck header missing from event',
     });
