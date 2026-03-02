@@ -2,7 +2,7 @@ import { createSign, randomUUID } from 'node:crypto';
 import {
   getOrCreateRSAKeys,
   FIREBASE_KID,
-} from '../common/mock-utils/rsa-key-manager';
+} from '../common/mock-utils/key-pair-manager';
 
 export interface FirebaseAppCheckPayload {
   sub: string;
@@ -23,11 +23,15 @@ export class FirebaseAppCheckSigner {
 
   async generateDebugToken(
     appId: string = 'org.multipaz.identityreader',
+    scenario?: string,
   ): Promise<string> {
     const now = Math.floor(Date.now() / 1000);
 
+    const sub =
+      scenario === 'invalid-sub' ? 'invalid-jwt' : `1:1111:ios:${appId}`;
+
     const payload: FirebaseAppCheckPayload = {
-      sub: `1:1111:ios:${appId}`,
+      sub,
       aud: ['projects/mock-verifier-app'],
       provider: 'custom',
       iss: 'https://mock.verifier-ca.account.gov.uk/mock-jwks',

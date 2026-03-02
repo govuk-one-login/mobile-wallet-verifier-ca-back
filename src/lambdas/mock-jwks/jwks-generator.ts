@@ -2,7 +2,7 @@ import { createPublicKey } from 'node:crypto';
 import {
   getOrCreateRSAKeys,
   FIREBASE_KID,
-} from '../common/mock-utils/rsa-key-manager';
+} from '../common/mock-utils/key-pair-manager';
 
 export async function generateJWKS(region?: string) {
   const keyPair = await getOrCreateRSAKeys(region);

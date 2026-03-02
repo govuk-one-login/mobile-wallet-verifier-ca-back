@@ -1,4 +1,4 @@
-import { importECDSAKeyPair } from '../common/mock-utils/crypto-utils';
+import { importECDSAKeyPair } from '../common/mock-utils/key-pair-manager';
 
 export interface CSRSubject {
   countryName?: string;

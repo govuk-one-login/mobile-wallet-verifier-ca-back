@@ -1,18 +1,23 @@
 import { generateKeyPairSync } from 'node:crypto';
-import { KeyManager } from './key-manager';
+import { SecretsManagerKeyStore } from './secrets-manager';
 
 export interface KeyPair {
   privateKeyPem: string;
   publicKeyPem: string;
 }
 
+export const FIREBASE_KID = 'firebase-appcheck-debug';
+
+const FIREBASE_APPCHECK_JWKS_SECRET =
+  process.env.FIREBASE_APPCHECK_JWKS_SECRET!;
+
 export async function getOrGenerateECDSAKeyPair(
   secretName: string,
   curve: string = 'prime256v1',
   region?: string,
 ): Promise<KeyPair> {
-  const keyManager = new KeyManager(region);
-  let keyPair = await keyManager.getKeyPair(secretName);
+  const keyStore = new SecretsManagerKeyStore(region);
+  let keyPair = await keyStore.getKeyPair(secretName);
 
   if (
     !keyPair ||
@@ -26,13 +31,34 @@ export async function getOrGenerateECDSAKeyPair(
     });
 
     keyPair = { privateKeyPem: privateKey, publicKeyPem: publicKey };
-    await keyManager.updateKeyPair(secretName, keyPair);
+    await keyStore.updateKeyPair(secretName, keyPair);
   }
 
   return keyPair;
 }
 
-// Converts PEM-formatted keys to CryptoKey objects required by @peculiar/x509 for CSR generation
+export async function getOrCreateRSAKeys(region?: string): Promise<KeyPair> {
+  const keyStore = new SecretsManagerKeyStore(region);
+  let keyPair = await keyStore.getKeyPair(FIREBASE_APPCHECK_JWKS_SECRET);
+
+  if (
+    !keyPair ||
+    keyPair.privateKeyPem === 'PLACEHOLDER' ||
+    keyPair.publicKeyPem === 'PLACEHOLDER'
+  ) {
+    const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    keyPair = { privateKeyPem: privateKey, publicKeyPem: publicKey };
+    await keyStore.updateKeyPair(FIREBASE_APPCHECK_JWKS_SECRET, keyPair);
+  }
+
+  return keyPair;
+}
+
 export async function importECDSAKeyPair(
   keyPair: KeyPair,
 ): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {

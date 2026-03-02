@@ -5,9 +5,9 @@ import type {
 } from 'aws-lambda';
 import { logger, setupLogger } from '../common/logger/logger.ts';
 import { generateCSR } from './certificate-generator.ts';
-import { getOrGenerateECDSAKeyPair } from '../common/mock-utils/crypto-utils.ts';
+import { getOrGenerateECDSAKeyPair } from '../common/mock-utils/key-pair-manager.ts';
 import { FirebaseAppCheckSigner } from './firebase-appcheck-signer.ts';
-import { FIREBASE_KID } from '../common/mock-utils/rsa-key-manager.ts';
+import { FIREBASE_KID } from '../common/mock-utils/key-pair-manager.ts';
 import type { MockIssueReaderCertRequest } from '../issue-reader-cert-service/types.ts';
 
 import {
@@ -49,7 +49,8 @@ export const handlerConstructor = async (
   }
 
   try {
-    const mockRequest = await generateMockRequest();
+    const scenario = event.queryStringParameters?.scenario;
+    const mockRequest = await generateMockRequest(scenario);
 
     return {
       statusCode: 200,
@@ -71,7 +72,9 @@ export const handlerConstructor = async (
 
 export const handler = handlerConstructor.bind(null, dependencies);
 
-async function generateMockRequest(): Promise<MockIssueReaderCertRequest> {
+async function generateMockRequest(
+  scenario?: string,
+): Promise<MockIssueReaderCertRequest> {
   logger.info('Generating mock issue cert payload');
 
   const deviceKeysSecret = process.env.DEVICE_KEYS_SECRET!;
@@ -99,7 +102,10 @@ async function generateMockRequest(): Promise<MockIssueReaderCertRequest> {
 
   // Generate Firebase App Check token
   const firebaseAppCheck = new FirebaseAppCheckSigner();
-  const appCheckToken = await firebaseAppCheck.generateDebugToken();
+  const appCheckToken = await firebaseAppCheck.generateDebugToken(
+    'org.multipaz.identityreader',
+    scenario,
+  );
 
   // Log Firebase public key for debugging
   const firebasePublicKey = await firebaseAppCheck.getPublicKeyPem();

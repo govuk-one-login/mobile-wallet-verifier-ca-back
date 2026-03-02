@@ -18,10 +18,25 @@ Generates cryptographically secure, single-use nonces for replay protection. Eac
 
 Issues short-lived X.509 reader certificates (24-hours validity) after verifying:
 
-- **iOS**: Apple App Attest (keyId, attestation object, client data)
-- **Android**: Google Play Integrity + Key Attestation chains
-- Nonce consumption (prevents replay attacks)
+- Firebase App Check token (via `X-Firebase-AppCheck` header)
 - Certificate Signing Request (CSR) validation
+
+#### Mock Services (Dev/Build Only)
+
+**Mock JWKS Service (`/mock-jwks`)**: Returns public keys for Firebase App Check token verification in test environments.
+
+**Mock Issue Cert Service (`/mock-issue-cert`)**: Generates complete mock certificate requests with Firebase App Check tokens for testing.
+
+```json
+{
+  "headers": {
+    "X-Firebase-AppCheck": "<firebase-app-check-jwt>"
+  },
+  "body": {
+    "csrPem": "-----BEGIN CERTIFICATE REQUEST-----\n...\n-----END CERTIFICATE REQUEST-----"
+  }
+}
+```
 
 ## Pre-requisites
 
@@ -115,41 +130,32 @@ Run tests with coverage:
 npm run test:cov
 ```
 
-#### Mock Certificate Generation
+#### Mock Testing
 
-For testing Android attestation flows, you can generate mock certificates and attestation data:
+For testing in dev/build environments, mock services are available:
 
-##### Setup Android Infrastructure
+##### Mock JWKS Endpoint
 
-First, set up the required keys and certificates in AWS Secrets Manager:
-
-```bash
-npm run setup:android
-```
-
-This creates:
-
-- Device keys (ECDSA P-256) for Android attestation
-- Play Integrity signing keys (ECDSA P-256)
-- Root CA certificate and keys
-- Intermediate CA keys
-
-##### Generate Mock Request
-
-Generate a complete mock Android attestation request:
+Retrieve Firebase App Check public keys for token verification:
 
 ```bash
-# Generate with specific nonce
-npm run mock:cert your-nonce-value
+curl https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
 ```
 
-This outputs a JSON payload containing:
+##### Mock Certificate Request Generator
 
-- `csrPem`: Certificate signing request
-- `keyAttestationChain`: Android key attestation certificate chain (DER format, base64 encoded)
-- `playIntegrityToken`: Signed Play Integrity JWT token
-- `nonce`: Challenge nonce (random UUID or provided value)
-- `platform`: "android"
+Generate a complete mock certificate request with Firebase App Check token:
+
+```bash
+curl https://mock.verifier-ca.dev.account.gov.uk/mock-issue-cert
+```
+
+This returns a JSON payload containing:
+
+- `headers`: Object with `X-Firebase-AppCheck` JWT token
+- `body`: Object with `csrPem` (Certificate Signing Request)
+
+You can use this payload directly to test the `/issue-reader-cert` endpoint.
 
 ### AWS Environment Setup
 
@@ -157,25 +163,22 @@ This outputs a JSON payload containing:
 
 The certificate issuer service uses these environment variables:
 
-- `ALLOW_TEST_TOKENS`: Set to `'true'` in dev environment to skip Play Integrity signature verification
-- `EXPECTED_ANDROID_PACKAGE_NAME`: Android app package name for validation (default: `org.multipaz.identityreader`)
+- `FIREBASE_JWKS_URI`: URI for Firebase App Check JWKS endpoint (production: `https://firebaseappcheck.googleapis.com/v1/jwks`, dev/build: mock endpoint)
 - `NONCE_TABLE_NAME`: DynamoDB table for nonce storage
 
 #### Deployment
 
 The service automatically configures:
 
-- **Dev environment**: `ALLOW_TEST_TOKENS=true` (allows mock Play Integrity tokens)
-- **Production environments**: `ALLOW_TEST_TOKENS=false` (enforces Google JWKS verification)
+- **Dev/Build environments**: Uses mock JWKS endpoint for Firebase App Check token verification
+- **Production environments**: Uses official Firebase App Check JWKS endpoint
 
 #### AWS Secrets Manager
 
-The mock infrastructure stores keys in AWS Secrets Manager with these secret names:
+The mock infrastructure stores keys in AWS Secrets Manager:
 
-- `android-device-keys-`: Device ECDSA P-256 key pair
-- `android-play-integrity-keys-`: Play Integrity ECDSA P-256 key pair
-- `android-root-ca-`: Root CA certificate and key pair
-- `android-intermediate-ca-`: Intermediate CA key pair
+- `<stack-name>-mock-device-keys`: ECDSA P-256 key pair for CSR generation
+- `<stack-name>-mock-firebase-appcheck-keys`: RSA 2048 key pair for Firebase App Check JWT signing
 
 **Note**: Ensure your AWS credentials have access to Secrets Manager in the `eu-west-2` region.
 

@@ -3,42 +3,35 @@ import {
   GetSecretValueCommand,
   UpdateSecretCommand,
 } from '@aws-sdk/client-secrets-manager';
-import { KeyPair } from './crypto-utils';
+import { KeyPair } from './key-pair-manager';
+import { logger } from '../logger/logger';
 
-export class KeyManager {
+export class SecretsManagerKeyStore {
   private client: SecretsManagerClient;
 
   constructor(region = 'eu-west-2') {
-    console.log('KeyManager constructor', { region });
+    logger.info('SecretsManagerKeyStore constructor', { region });
     this.client = new SecretsManagerClient({ region });
   }
 
   async getKeyPair(secretName: string): Promise<KeyPair | null> {
-    console.log('Getting key pair from Secrets Manager', { secretName });
+    logger.info('Getting key pair from Secrets Manager', { secretName });
 
     try {
       const command = new GetSecretValueCommand({ SecretId: secretName });
       const response = await this.client.send(command);
-      console.log('Secrets Manager response received', {
+      logger.info('Secrets Manager response received', {
         hasSecretString: !!response.SecretString,
       });
 
       if (response.SecretString) {
         const data = JSON.parse(response.SecretString);
         const keyPair = data.keyPair || data;
-
-        // Log PEM format for debugging
-        console.log('Key pair structure:', {
-          hasPrivateKey: !!keyPair.privateKeyPem,
-          hasPublicKey: !!keyPair.publicKeyPem,
-          publicKeyStart: keyPair.publicKeyPem?.substring(0, 50),
-          publicKeyEnd: keyPair.publicKeyPem?.substring(-50),
-        });
-
+        logger.info('Key pair retrieved successfully');
         return keyPair;
       }
     } catch (error) {
-      console.log('Error getting key pair', {
+      logger.error('Error getting key pair', {
         error: error instanceof Error ? error.message : String(error),
         errorName: error instanceof Error ? error.name : 'Unknown',
       });
@@ -50,12 +43,12 @@ export class KeyManager {
         throw error;
       }
     }
-    console.log('No key pair found, returning null');
+    logger.info('No key pair found, returning null');
     return null;
   }
 
   async updateKeyPair(secretName: string, keyPair: KeyPair): Promise<void> {
-    console.log('Updating key pair in Secrets Manager', { secretName });
+    logger.info('Updating key pair in Secrets Manager', { secretName });
 
     try {
       await this.client.send(
@@ -64,9 +57,9 @@ export class KeyManager {
           SecretString: JSON.stringify({ keyPair }),
         }),
       );
-      console.log('Key pair updated successfully');
+      logger.info('Key pair updated successfully');
     } catch (error) {
-      console.error('Error updating key pair', { error });
+      logger.error('Error updating key pair', { error });
       throw error;
     }
   }
