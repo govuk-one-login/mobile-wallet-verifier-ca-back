@@ -226,4 +226,30 @@ describe('Handler', () => {
       });
     });
   });
+
+  describe('WIP happy path tests', () => {
+    describe('Given a valid event', () => {
+      beforeEach(async () => {
+        const validEvent = buildRequest();
+        result = await handlerConstructor(dependencies, validEvent, context);
+      });
+
+      it('Logs COMPLETED', () => {
+        expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
+        });
+      });
+
+      it('Returns 200 OK response', () => {
+        expect(result).toStrictEqual({
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Request-Id': context.awsRequestId,
+          },
+          body: 'Ok',
+        });
+      });
+    });
+  });
 });
