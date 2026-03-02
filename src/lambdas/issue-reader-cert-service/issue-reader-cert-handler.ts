@@ -1,5 +1,6 @@
 import type {
-  APIGatewayProxyEvent, APIGatewayProxyEventHeaders,
+  APIGatewayProxyEvent,
+  APIGatewayProxyEventHeaders,
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
@@ -10,7 +11,11 @@ import {
   IssueReaderCertDependencies,
 } from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
-import { emptyFailure, emptySuccess, Result } from '../common/result/result.ts';
+import {
+  emptyFailure,
+  Result,
+  successResult,
+} from '../common/result/result.ts';
 import { getHeader } from '../common/request/header/header.ts';
 
 export const handlerConstructor = async (
@@ -38,9 +43,8 @@ export const handlerConstructor = async (
     };
   }
 
-  const validEvent = validateEvent(event.headers);
-  if (validEvent.isError) {
-    logger.info('we are here');
+  const validateEventResult = validateEvent(event.headers);
+  if (validateEventResult.isError) {
     return {
       headers: { 'Content-Type': 'application/json' },
       statusCode: 401,
@@ -62,9 +66,11 @@ export const handlerConstructor = async (
   };
 };
 
-function validateEvent(eventHeaders: APIGatewayProxyEventHeaders): Result<void, void> {
+function validateEvent(
+  eventHeaders: APIGatewayProxyEventHeaders,
+): Result<string, void> {
   const firebaseAppCheckHeader = getHeader(
-      eventHeaders ?? {},
+    eventHeaders ?? {},
     'X-Firebase-AppCheck',
   );
   if (!firebaseAppCheckHeader || !firebaseAppCheckHeader.trim()) {
@@ -73,7 +79,7 @@ function validateEvent(eventHeaders: APIGatewayProxyEventHeaders): Result<void, 
     });
     return emptyFailure();
   }
-  return emptySuccess();
+  return successResult(firebaseAppCheckHeader);
 }
 
 export const handler = handlerConstructor.bind(null, dependencies);
