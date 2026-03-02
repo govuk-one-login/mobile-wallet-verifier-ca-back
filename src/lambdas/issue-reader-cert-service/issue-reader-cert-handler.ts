@@ -19,6 +19,11 @@ export const handlerConstructor = async (
   setupLogger(context);
   logger.info(LogMessage.ISSUE_READER_CERT_STARTED);
 
+  // Request validation function that checks header is there and is a string and returns it to lambda
+  // in future commit, we will validate body as well
+
+  // JWT validation function -- check format that it's {string.string.string}
+
   const configResult = getIssueReaderCertConfig(dependencies.env);
   if (configResult.isError) {
     return {
