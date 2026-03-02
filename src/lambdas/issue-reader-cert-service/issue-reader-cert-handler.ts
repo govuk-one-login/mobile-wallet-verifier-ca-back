@@ -62,7 +62,7 @@ export const handlerConstructor = async (
 };
 
 function validateEvent(event: APIGatewayProxyEvent): Result<void, void> {
-  if (!event.headers || !event.headers['X-Firebase-AppCheck']) {
+  if (!event.headers || !event.headers['X-Firebase-AppCheck'] || !event.headers['X-Firebase-AppCheck'].trim()) {
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage: 'X-Firebase-AppCheck header missing from event',
     });
