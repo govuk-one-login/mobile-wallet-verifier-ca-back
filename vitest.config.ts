@@ -3,7 +3,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     env: {
-      POWERTOOLS_DEV: 'true ',
+      POWERTOOLS_DEV: 'true',
+      POWERTOOLS_LOG_LEVEL: 'DEBUG',
     },
     environment: 'node',
     coverage: {

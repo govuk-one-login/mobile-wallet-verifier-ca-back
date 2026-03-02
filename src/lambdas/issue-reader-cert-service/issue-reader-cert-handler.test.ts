@@ -22,7 +22,7 @@ describe('Handler', () => {
   let dependencies: IssueReaderCertDependencies;
   let result: APIGatewayProxyResult;
   const env = {
-    FIREBASE_JWKS_URI: 'mockFirebaseJwksUri',
+    FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
   };
 
   beforeEach(() => {
@@ -87,5 +87,31 @@ describe('Handler', () => {
         });
       },
     );
+
+    describe('Given FIREBASE_JWKS_URI is not a valid URL', () => {
+      beforeEach(async () => {
+        dependencies.env = JSON.parse(JSON.stringify(env));
+        dependencies.env['FIREBASE_JWKS_URI'] = 'mockInvalidUrl';
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('logs INVALID_CONFIG', async () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_CONFIG',
+          errorMessage: 'FIREBASE_JWKS_URI is not a valid URL',
+        });
+      });
+
+      it('returns 500 Internal server error', async () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            error: 'server_error',
+            error_description: 'Server Error',
+          }),
+        });
+      });
+    });
   });
 });

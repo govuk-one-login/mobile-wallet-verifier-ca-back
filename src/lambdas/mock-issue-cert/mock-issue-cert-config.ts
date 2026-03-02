@@ -24,7 +24,7 @@ export function getGenerateMockIssueCertConfig(
   );
 
   if (envVarsResult.isError) {
-    logger.error(LogMessage.GENERATE_MOCK_ISSUE_CERT_INVALID_CONFIG, {
+    logger.error(LogMessage.MOCK_ISSUE_CERT_INVALID_CONFIG, {
       data: {
         missingEnvironmentVariables: envVarsResult.value.missingEnvVars,
       },
