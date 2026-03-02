@@ -1,5 +1,5 @@
 import type {
-  APIGatewayProxyEvent,
+  APIGatewayProxyEvent, APIGatewayProxyEventHeaders,
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
@@ -38,7 +38,7 @@ export const handlerConstructor = async (
     };
   }
 
-  const validEvent = validateEvent(event);
+  const validEvent = validateEvent(event.headers);
   if (validEvent.isError) {
     logger.info('we are here');
     return {
@@ -62,9 +62,9 @@ export const handlerConstructor = async (
   };
 };
 
-function validateEvent(event: APIGatewayProxyEvent): Result<void, void> {
+function validateEvent(eventHeaders: APIGatewayProxyEventHeaders): Result<void, void> {
   const firebaseAppCheckHeader = getHeader(
-    event.headers ?? {},
+      eventHeaders ?? {},
     'X-Firebase-AppCheck',
   );
   if (!firebaseAppCheckHeader || !firebaseAppCheckHeader.trim()) {
