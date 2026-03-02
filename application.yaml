@@ -20,6 +20,13 @@ Parameters:
       Defaults to 'ca-base' or 'ca-base-pr-{pr-number}'.
     Type: String
     Default: 'ca-base'
+    
+  MockBaseAppStack:
+    Description: |
+      Name of the base-application stack (for CloudFormation imports).
+      Defaults to 'ca-base' or 'ca-base-pr-{pr-number}'.
+    Type: String
+    Default: 'richa-app-base'
 
   CodeSigningConfigArn:
     Description: |
@@ -213,6 +220,8 @@ Resources:
   # Mock Secrets Manager secrets for certificate generation
   MockDeviceKeysSecret:
     Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       Name: !Sub '${AWS::StackName}-mock-device-keys'
       Description: 'ECDSA P-256 key pair for mobile device CSR generation (mock - shared across iOS/Android)'
@@ -226,6 +235,8 @@ Resources:
 
   MockFirebaseAppCheckKeysSecret:
     Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       Name: !Sub '${AWS::StackName}-mock-firebase-appcheck-keys'
       Description: 'RSA 2048 key pair for Firebase App Check JWT signing (mock)'
@@ -284,6 +295,8 @@ Resources:
       Handler: src/lambdas/mock-jwks/mock-jwks-handler.handler
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
+      DeploymentPreference:
+        Enabled: false
       VpcConfig:
         SecurityGroupIds:
           - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
@@ -317,6 +330,8 @@ Resources:
       Handler: src/lambdas/mock-issue-cert/mock-issue-cert-handler.handler
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
+      DeploymentPreference:
+        Enabled: false
       VpcConfig:
         SecurityGroupIds:
           - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
@@ -379,6 +394,20 @@ Resources:
                 type: aws_proxy
                 httpMethod: POST
                 uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MockIssueCertServiceFunction.Arn}/invocations'
+
+   # Base Path Mapping for Public Domain - maps the same API to the public domain
+  MockApiGatewayPublicBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    #Condition: CreateCustomDomain
+    Properties:
+      DomainName: !ImportValue
+        Fn::Sub: '${MockBaseAppStack}-ApiGatewayMockDomain'
+      RestApiId: !Ref MockServicesApi
+      Stage: !Ref MockServicesApi.Stage
+      BasePath: !If
+        - UseBasePath
+        - !Ref CustomDomainBasePath
+        - !Ref AWS::NoValue
 
   # Lambda Permissions for API Gateway
   MockJWKSServicePermission:
@@ -814,3 +843,5 @@ Outputs:
     Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/generate-mock-issue-cert'
     Export:
       Name: !Sub '${AWS::StackName}-mock-issue-cert-endpoint'
+
+

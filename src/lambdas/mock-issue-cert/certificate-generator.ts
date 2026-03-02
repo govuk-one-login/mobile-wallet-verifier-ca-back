@@ -8,6 +8,7 @@ export interface CSRSubject {
   organizationalUnitName?: string;
   commonName: string;
   emailAddress?: string;
+  serialNumber?: string;
 }
 
 export interface CSROptions {
@@ -31,7 +32,8 @@ function buildSubjectString(subject: CSRSubject): string {
   if (subject.organizationalUnitName)
     parts.push(`OU=${subject.organizationalUnitName}`);
   parts.push(`CN=${subject.commonName}`);
-  if (subject.emailAddress) parts.push(`emailAddress=${subject.emailAddress}`);
+  if (subject.serialNumber) parts.push(`2.5.4.5=${subject.serialNumber}`);
+  if (subject.emailAddress) parts.push(`E=${subject.emailAddress}`);
   return parts.join(', ');
 }
 

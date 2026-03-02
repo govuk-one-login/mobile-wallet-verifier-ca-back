@@ -18,14 +18,14 @@ import { getGenerateMockIssueCertConfig } from './mock-issue-cert-config.ts';
 
 export const handlerConstructor = async (
   dependencies: GenerateMockIssueCertDependencies,
-  _event: APIGatewayProxyEvent,
+  event: APIGatewayProxyEvent,
   context: Context,
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
 
   logger.info('Generate mock issue cert endpoint called', {
-    path: _event.path,
-    method: _event.httpMethod,
+    path: event.path,
+    method: event.httpMethod,
   });
 
   const configResult = getGenerateMockIssueCertConfig(dependencies.env);
@@ -40,7 +40,7 @@ export const handlerConstructor = async (
     };
   }
 
-  if (_event.httpMethod !== 'GET' || _event.path !== '/mock-issue-cert') {
+  if (event.httpMethod !== 'GET' || !event.path.endsWith('/mock-issue-cert')) {
     return {
       statusCode: 404,
       headers: { 'Content-Type': 'application/json' },
@@ -80,14 +80,20 @@ async function generateMockRequest(): Promise<MockIssueReaderCertRequest> {
     'prime256v1',
   );
 
+  // Generate UUID for serial number
+  const { randomUUID } = await import('node:crypto');
+  const serialNumber = randomUUID();
+
   // Generate CSR
   const csr = await generateCSR({
     privateKeyPem: keyPair.privateKeyPem,
     publicKeyPem: keyPair.publicKeyPem,
     subject: {
-      countryName: 'UK',
-      organizationName: 'GDS',
-      commonName: 'Mock Reader Device',
+      countryName: 'GB',
+      organizationName: 'Example Verifier Org Ltd',
+      organizationalUnitName: 'Reader Certification Authority',
+      commonName: 'Example Verifier Org Reader Sub-CA',
+      serialNumber,
     },
   });
 

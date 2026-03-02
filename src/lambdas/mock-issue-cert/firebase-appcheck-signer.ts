@@ -1,16 +1,17 @@
-import { createSign } from 'node:crypto';
+import { createSign, randomUUID } from 'node:crypto';
 import {
   getOrCreateRSAKeys,
   FIREBASE_KID,
 } from '../common/mock-utils/rsa-key-manager';
 
 export interface FirebaseAppCheckPayload {
-  iss: string;
   sub: string;
   aud: string[];
+  provider: string;
+  iss: string;
   exp: number;
   iat: number;
-  app_id: string;
+  jti: string;
 }
 
 export class FirebaseAppCheckSigner {
@@ -26,12 +27,13 @@ export class FirebaseAppCheckSigner {
     const now = Math.floor(Date.now() / 1000);
 
     const payload: FirebaseAppCheckPayload = {
-      iss: 'https://firebase.google.com/project/mock-project',
-      sub: appId,
-      aud: [`projects/mock-project/apps/${appId}`],
-      exp: now + 3600, // 1 hour
+      sub: `1:1111:ios:${appId}`,
+      aud: ['projects/mock-verifier-app'],
+      provider: 'custom',
+      iss: 'https://mock.verifier-ca.account.gov.uk/mock-jwks',
+      exp: now + 3600,
       iat: now,
-      app_id: appId,
+      jti: randomUUID(),
     };
 
     const header = {

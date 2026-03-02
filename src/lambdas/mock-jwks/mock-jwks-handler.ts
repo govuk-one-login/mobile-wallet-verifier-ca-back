@@ -13,14 +13,14 @@ import { getMockJwksConfig } from './mock-jwks-config.ts';
 
 export const handlerConstructor = async (
   dependencies: MockJwksHandlerDependencies,
-  _event: APIGatewayProxyEvent,
+  event: APIGatewayProxyEvent,
   context: Context,
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
 
   logger.info('Mock JWKS endpoint called', {
-    path: _event.path,
-    method: _event.httpMethod,
+    path: event.path,
+    method: event.httpMethod,
   });
 
   const configResult = getMockJwksConfig(dependencies.env);
@@ -35,10 +35,10 @@ export const handlerConstructor = async (
     };
   }
 
-  if (_event.httpMethod !== 'GET' || _event.path !== '/mock-jwks') {
+  if (event.httpMethod !== 'GET' || !event.path.endsWith('/mock-jwks')) {
     logger.warn('Invalid request', {
-      httpMethod: _event.httpMethod,
-      path: _event.path,
+      httpMethod: event.httpMethod,
+      path: event.path,
     });
     return {
       statusCode: 404,
