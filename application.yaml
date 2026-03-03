@@ -315,8 +315,8 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-mock-jwks-service
       RetentionInDays: 30
 
-  # Mock Issue Cert Service Lambda
-  MockIssueCertServiceFunction:
+  # Mock Issue Cert Request Lambda
+  MockIssueCertRequestFunction:
     Type: AWS::Serverless::Function
     Metadata:
       BuildMethod: esbuild
@@ -325,9 +325,9 @@ Resources:
         Sourcemap: false
         Target: es2022
     Properties:
-      FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-issue-cert-service'
+      FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-issue-cert-request'
       CodeUri: ./
-      Handler: src/lambdas/mock-issue-cert/mock-issue-cert-handler.handler
+      Handler: src/lambdas/mock-issue-cert-request/mock-issue-reader-cert-request-handler.handler
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
       DeploymentPreference:
@@ -343,11 +343,15 @@ Resources:
         Variables:
           DEVICE_KEYS_SECRET: !Sub '${AWS::StackName}-mock-device-keys'
           FIREBASE_APPCHECK_JWKS_SECRET: !Sub '${AWS::StackName}-mock-firebase-appcheck-keys'
+          FIREBASE_JWKS_URI: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - FirebaseJwksUri
 
-  MockIssueCertServiceFunctionLogGroup:
+  MockIssueCertRequestFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-mock-issue-cert-service
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-mock-issue-cert-request
       RetentionInDays: 30
 
   # Mock API Gateway
@@ -380,7 +384,7 @@ Resources:
                 type: aws_proxy
                 httpMethod: POST
                 uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MockJWKSServiceFunction.Arn}/invocations'
-          /mock-issue-cert:
+          /mock-issue-cert-request:
             get:
               summary: Generate mock issue certificate request
               responses:
@@ -393,7 +397,7 @@ Resources:
               x-amazon-apigateway-integration:
                 type: aws_proxy
                 httpMethod: POST
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MockIssueCertServiceFunction.Arn}/invocations'
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MockIssueCertRequestFunction.Arn}/invocations'
 
    # Base Path Mapping for Public Domain - maps the same API to the public domain
   MockApiGatewayPublicBasePathMapping:
@@ -418,10 +422,10 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MockServicesApi}/*/*'
 
-  MockIssueCertServicePermission:
+  MockIssueCertRequestPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref MockIssueCertServiceFunction
+      FunctionName: !Ref MockIssueCertRequestFunction
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MockServicesApi}/*/*'
@@ -826,22 +830,16 @@ Outputs:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-function-version'
 
   # Mock Services Outputs
-  MockServicesApiUrl:
-    Description: Mock Services API URL for testing (JWKS and certificate generation)
-    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
-    Export:
-      Name: !Sub '${AWS::StackName}-mock-services-api-url'
-
   MockJWKSEndpoint:
     Description: Mock JWKS endpoint URL for Firebase App Check token verification
-    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/v1/jwks'
+    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mock-jwks'
     Export:
       Name: !Sub '${AWS::StackName}-mock-jwks-endpoint'
 
   MockIssueCertEndpoint:
     Description: Mock certificate generation endpoint URL
-    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/generate-mock-issue-cert'
+    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mock-issue-cert-request'
     Export:
-      Name: !Sub '${AWS::StackName}-mock-issue-cert-endpoint'
+      Name: !Sub '${AWS::StackName}-mock-issue-cert-request-endpoint'
 
 

@@ -3,15 +3,6 @@ export interface IssueReaderCertRequest {
   clientAttestationJwt: string;
 }
 
-export interface MockIssueReaderCertRequest {
-  headers: {
-    'X-Firebase-AppCheck': string;
-  };
-  body: {
-    csrPem: string;
-  };
-}
-
 export interface IssueReaderCertResponse {
   readerId: string;
   certChain: {

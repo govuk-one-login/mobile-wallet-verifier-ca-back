@@ -35,18 +35,6 @@ export const handlerConstructor = async (
     };
   }
 
-  if (event.httpMethod !== 'GET' || !event.path.endsWith('/mock-jwks')) {
-    logger.warn('Invalid request', {
-      httpMethod: event.httpMethod,
-      path: event.path,
-    });
-    return {
-      statusCode: 404,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Not found' }),
-    };
-  }
-
   try {
     logger.info('Generating JWKS');
     const jwks = await generateJWKS();

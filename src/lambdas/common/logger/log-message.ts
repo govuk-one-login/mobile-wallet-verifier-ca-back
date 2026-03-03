@@ -40,7 +40,7 @@ export class LogMessage implements LogAttributes {
     'JWKS retrieved successfully.',
   );
 
-  static readonly MOCK_ISSUE_CERT_INVALID_CONFIG = new LogMessage(
+  static readonly MOCK_ISSUE_CERT_REQUEST_INVALID_CONFIG = new LogMessage(
     'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
     'One or more required environment variables were missing or invalid.',
   );

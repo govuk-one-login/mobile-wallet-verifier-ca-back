@@ -8,13 +8,22 @@ import { generateCSR } from './certificate-generator.ts';
 import { getOrGenerateECDSAKeyPair } from '../common/mock-utils/key-pair-manager.ts';
 import { FirebaseAppCheckSigner } from './firebase-appcheck-signer.ts';
 import { FIREBASE_KID } from '../common/mock-utils/key-pair-manager.ts';
-import type { MockIssueReaderCertRequest } from '../issue-reader-cert-service/types.ts';
+import { randomUUID } from 'crypto';
 
 import {
   dependencies,
   GenerateMockIssueCertDependencies,
 } from './mock-issue-cert-handler-dependencies.ts';
-import { getGenerateMockIssueCertConfig } from './mock-issue-cert-config.ts';
+import { getGenerateMockIssueCertRequestConfig } from './mock-issue-cert-config.ts';
+
+interface MockIssueReaderCertRequest {
+  headers: {
+    'X-Firebase-AppCheck': string;
+  };
+  body: {
+    csrPem: string;
+  };
+}
 
 export const handlerConstructor = async (
   dependencies: GenerateMockIssueCertDependencies,
@@ -28,7 +37,7 @@ export const handlerConstructor = async (
     method: event.httpMethod,
   });
 
-  const configResult = getGenerateMockIssueCertConfig(dependencies.env);
+  const configResult = getGenerateMockIssueCertRequestConfig(dependencies.env);
   if (configResult.isError) {
     return {
       headers: { 'Content-Type': 'application/json' },
@@ -37,14 +46,6 @@ export const handlerConstructor = async (
         error: 'server_error',
         error_description: 'Server Error',
       }),
-    };
-  }
-
-  if (event.httpMethod !== 'GET' || !event.path.endsWith('/mock-issue-cert')) {
-    return {
-      statusCode: 404,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Not found' }),
     };
   }
 
@@ -84,7 +85,6 @@ async function generateMockRequest(
   );
 
   // Generate UUID for serial number
-  const { randomUUID } = await import('node:crypto');
   const serialNumber = randomUUID();
 
   // Generate CSR
