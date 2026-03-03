@@ -12,6 +12,7 @@ import {
   buildLambdaContext,
   buildRequest,
 } from '../../../tests/testUtils/buildRequest.ts';
+import { ErrorCategory, errorResult } from '../common/result/result.ts';
 
 let consoleInfoSpy: MockInstance;
 let consoleErrorSpy: MockInstance;
@@ -163,6 +164,52 @@ describe('Handler', () => {
                 'Authentication failed (App Check token missing or invalid)',
             }),
           });
+        });
+      });
+    });
+  });
+
+  describe('JWT verification', () => {
+    describe('JWT verification failed with client error', () => {
+      beforeEach(async () => {
+        dependencies.verifyJwt = vi.fn().mockResolvedValue(
+          errorResult({
+            errorCategory: ErrorCategory.CLIENT_ERROR,
+            errorMessage: 'Mock Client Error Message',
+          }),
+        );
+        result = await handlerConstructor(dependencies, event, context);
+      });
+      it('Should return 401', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 401,
+          body: JSON.stringify({
+            error: 'unauthorized',
+            error_description: 'Mock Client Error Message',
+          }),
+        });
+      });
+    });
+
+    describe('JWT verification failed with server error', () => {
+      beforeEach(async () => {
+        dependencies.verifyJwt = vi.fn().mockResolvedValue(
+          errorResult({
+            errorCategory: ErrorCategory.SERVER_ERROR,
+            errorMessage: 'Mock Server Error Message',
+          }),
+        );
+        result = await handlerConstructor(dependencies, event, context);
+      });
+      it('Should return 500', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            error: 'server_error',
+            error_description: 'Server Error',
+          }),
         });
       });
     });
