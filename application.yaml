@@ -306,7 +306,6 @@ Resources:
           - Fn::ImportValue: !Sub ${VpcStackName}-PrivateSubnetIdC
       Environment:
         Variables:
-          DEVICE_KEYS_SECRET: !Sub '${AWS::StackName}-mock-device-keys'
           FIREBASE_APPCHECK_JWKS_SECRET: !Sub '${AWS::StackName}-mock-firebase-appcheck-keys'
 
   MockJWKSServiceFunctionLogGroup:

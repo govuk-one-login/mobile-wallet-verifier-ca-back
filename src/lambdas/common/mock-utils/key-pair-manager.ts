@@ -8,15 +8,15 @@ export interface KeyPair {
 
 export const FIREBASE_KID = 'firebase-appcheck-debug';
 
-const FIREBASE_APPCHECK_JWKS_SECRET =
-  process.env.FIREBASE_APPCHECK_JWKS_SECRET!;
-
+/**
+ * Generates or retrieves EC (Elliptic Curve) key pairs for CSR generation.
+ * Used by: mock-issue-reader-cert-request-handler for creating Certificate Signing Requests
+ */
 export async function getOrGenerateECDSAKeyPair(
   secretName: string,
   curve: string = 'prime256v1',
-  region?: string,
 ): Promise<KeyPair> {
-  const keyStore = new SecretsManagerKeyStore(region);
+  const keyStore = new SecretsManagerKeyStore();
   let keyPair = await keyStore.getKeyPair(secretName);
 
   if (
@@ -37,9 +37,15 @@ export async function getOrGenerateECDSAKeyPair(
   return keyPair;
 }
 
-export async function getOrCreateRSAKeys(region?: string): Promise<KeyPair> {
-  const keyStore = new SecretsManagerKeyStore(region);
-  let keyPair = await keyStore.getKeyPair(FIREBASE_APPCHECK_JWKS_SECRET);
+/**
+ * Generates or retrieves RSA key pairs for Firebase App Check JWT signing.
+ * Used by: firebase-appcheck-signer for JWT token signing and jwks-generator for public key exposure
+ */
+export async function getOrCreateRSAKeys(
+  firebaseJwksSecret: string,
+): Promise<KeyPair> {
+  const keyStore = new SecretsManagerKeyStore();
+  let keyPair = await keyStore.getKeyPair(firebaseJwksSecret);
 
   if (
     !keyPair ||
@@ -53,7 +59,7 @@ export async function getOrCreateRSAKeys(region?: string): Promise<KeyPair> {
     });
 
     keyPair = { privateKeyPem: privateKey, publicKeyPem: publicKey };
-    await keyStore.updateKeyPair(FIREBASE_APPCHECK_JWKS_SECRET, keyPair);
+    await keyStore.updateKeyPair(firebaseJwksSecret, keyPair);
   }
 
   return keyPair;
@@ -64,15 +70,15 @@ export async function importECDSAKeyPair(
 ): Promise<{ privateKey: CryptoKey; publicKey: CryptoKey }> {
   const privateKeyBuffer = Buffer.from(
     keyPair.privateKeyPem
-      .replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----/g, '')
-      .replace(/\s/g, ''),
+      .replaceAll(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----/g, '')
+      .replaceAll(/\s/g, ''),
     'base64',
   );
 
   const publicKeyBuffer = Buffer.from(
     keyPair.publicKeyPem
-      .replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----/g, '')
-      .replace(/\s/g, ''),
+      .replaceAll(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----/g, '')
+      .replaceAll(/\s/g, ''),
     'base64',
   );
 

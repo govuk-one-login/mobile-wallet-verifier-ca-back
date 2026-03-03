@@ -4,6 +4,7 @@ import type {
   Context,
 } from 'aws-lambda';
 import { logger, setupLogger } from '../common/logger/logger.ts';
+import { LogMessage } from '../common/logger/log-message.ts';
 import { generateJWKS } from './jwks-generator.ts';
 import {
   dependencies,
@@ -18,9 +19,8 @@ export const handlerConstructor = async (
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
 
-  logger.info('Mock JWKS endpoint called', {
-    path: event.path,
-    method: event.httpMethod,
+  logger.info(LogMessage.MOCK_JWKS_STARTED, {
+    data: { path: event.path, method: event.httpMethod },
   });
 
   const configResult = getMockJwksConfig(dependencies.env);
@@ -36,10 +36,9 @@ export const handlerConstructor = async (
   }
 
   try {
-    logger.info('Generating JWKS');
-    const jwks = await generateJWKS();
-
-    logger.info('JWKS generated successfully', { keysCount: jwks.keys.length });
+    const jwks = await generateJWKS(
+      configResult.value.FIREBASE_APPCHECK_JWKS_SECRET,
+    );
 
     return {
       statusCode: 200,
@@ -51,7 +50,9 @@ export const handlerConstructor = async (
       body: JSON.stringify(jwks),
     };
   } catch (error) {
-    logger.error('Error in JWKS handler', { error });
+    logger.error(LogMessage.MOCK_JWKS_GENERATION_ERROR, {
+      data: { error: error instanceof Error ? error.message : error },
+    });
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

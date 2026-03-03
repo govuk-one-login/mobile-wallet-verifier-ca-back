@@ -4,8 +4,8 @@ import {
   FIREBASE_KID,
 } from '../common/mock-utils/key-pair-manager';
 
-export async function generateJWKS(region?: string) {
-  const keyPair = await getOrCreateRSAKeys(region);
+export async function generateJWKS(firebaseJwksSecret: string) {
+  const keyPair = await getOrCreateRSAKeys(firebaseJwksSecret);
 
   const publicKeyPem = keyPair.publicKeyPem.trim();
   if (!publicKeyPem.startsWith('-----BEGIN PUBLIC KEY-----')) {

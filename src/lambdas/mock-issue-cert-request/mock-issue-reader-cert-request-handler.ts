@@ -4,11 +4,14 @@ import type {
   Context,
 } from 'aws-lambda';
 import { logger, setupLogger } from '../common/logger/logger.ts';
+import { LogMessage } from '../common/logger/log-message.ts';
 import { generateCSR } from './certificate-generator.ts';
-import { getOrGenerateECDSAKeyPair } from '../common/mock-utils/key-pair-manager.ts';
+import {
+  getOrGenerateECDSAKeyPair,
+  FIREBASE_KID,
+} from '../common/mock-utils/key-pair-manager.ts';
 import { FirebaseAppCheckSigner } from './firebase-appcheck-signer.ts';
-import { FIREBASE_KID } from '../common/mock-utils/key-pair-manager.ts';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 import {
   dependencies,
@@ -32,9 +35,8 @@ export const handlerConstructor = async (
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
 
-  logger.info('Generate mock issue cert endpoint called', {
-    path: event.path,
-    method: event.httpMethod,
+  logger.info(LogMessage.MOCK_ISSUE_CERT_REQUEST_STARTED, {
+    data: { path: event.path, method: event.httpMethod },
   });
 
   const configResult = getGenerateMockIssueCertRequestConfig(dependencies.env);
@@ -51,7 +53,7 @@ export const handlerConstructor = async (
 
   try {
     const scenario = event.queryStringParameters?.scenario;
-    const mockRequest = await generateMockRequest(scenario);
+    const mockRequest = await generateMockRequest(dependencies.env, scenario);
 
     return {
       statusCode: 200,
@@ -62,7 +64,9 @@ export const handlerConstructor = async (
       body: JSON.stringify(mockRequest),
     };
   } catch (error) {
-    logger.error('Error generating mock request', { error });
+    logger.error(LogMessage.MOCK_ISSUE_CERT_REQUEST_ERROR, {
+      data: { error: error instanceof Error ? error.message : error },
+    });
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -74,13 +78,16 @@ export const handlerConstructor = async (
 export const handler = handlerConstructor.bind(null, dependencies);
 
 async function generateMockRequest(
+  env: NodeJS.ProcessEnv,
   scenario?: string,
 ): Promise<MockIssueReaderCertRequest> {
-  logger.info('Generating mock issue cert payload');
+  const configResult = getGenerateMockIssueCertRequestConfig(env);
+  if (configResult.isError) {
+    throw new Error('Failed to load configuration');
+  }
 
-  const deviceKeysSecret = process.env.DEVICE_KEYS_SECRET!;
   const keyPair = await getOrGenerateECDSAKeyPair(
-    deviceKeysSecret,
+    configResult.value.DEVICE_KEYS_SECRET,
     'prime256v1',
   );
 
@@ -101,14 +108,16 @@ async function generateMockRequest(
   });
 
   // Generate Firebase App Check token
-  const firebaseAppCheck = new FirebaseAppCheckSigner();
+  const firebaseAppCheck = new FirebaseAppCheckSigner(env);
   const appCheckToken = await firebaseAppCheck.generateDebugToken(
     'org.multipaz.identityreader',
     scenario,
   );
 
   // Log Firebase public key for debugging
-  const firebasePublicKey = await firebaseAppCheck.getPublicKeyPem();
+  const firebasePublicKey = await firebaseAppCheck.getPublicKeyPem(
+    configResult.value.FIREBASE_APPCHECK_JWKS_SECRET,
+  );
   logger.info('Firebase JWT signing public key', {
     kid: FIREBASE_KID,
     publicKey: firebasePublicKey,

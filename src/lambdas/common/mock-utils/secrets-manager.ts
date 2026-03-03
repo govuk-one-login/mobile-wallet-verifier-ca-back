@@ -7,7 +7,7 @@ import { KeyPair } from './key-pair-manager';
 import { logger } from '../logger/logger';
 
 export class SecretsManagerKeyStore {
-  private client: SecretsManagerClient;
+  private readonly client: SecretsManagerClient;
 
   constructor(region = 'eu-west-2') {
     logger.info('SecretsManagerKeyStore constructor', { region });
@@ -26,7 +26,7 @@ export class SecretsManagerKeyStore {
 
       if (response.SecretString) {
         const data = JSON.parse(response.SecretString);
-        const keyPair = data.keyPair || data;
+        const keyPair = data.keyPair;
         logger.info('Key pair retrieved successfully');
         return keyPair;
       }

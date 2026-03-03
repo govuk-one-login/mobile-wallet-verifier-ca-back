@@ -3,7 +3,6 @@ import {
   getOrCreateRSAKeys,
   FIREBASE_KID,
 } from '../common/mock-utils/key-pair-manager';
-import { dependencies } from './mock-issue-cert-handler-dependencies';
 import { getGenerateMockIssueCertRequestConfig } from './mock-issue-cert-config';
 
 export interface FirebaseAppCheckPayload {
@@ -17,10 +16,10 @@ export interface FirebaseAppCheckPayload {
 }
 
 export class FirebaseAppCheckSigner {
-  private region?: string;
+  private readonly env: NodeJS.ProcessEnv;
 
-  constructor(region?: string) {
-    this.region = region;
+  constructor(env: NodeJS.ProcessEnv = process.env) {
+    this.env = env;
   }
 
   async generateDebugToken(
@@ -32,13 +31,12 @@ export class FirebaseAppCheckSigner {
     const sub =
       scenario === 'invalid-sub' ? 'invalid-jwt' : `1:1111:ios:${appId}`;
 
-    const configResult = getGenerateMockIssueCertRequestConfig(
-      dependencies.env,
-    );
+    const configResult = getGenerateMockIssueCertRequestConfig(this.env);
     if (configResult.isError) {
       throw new Error('Failed to load configuration');
     }
 
+    const firebaseJwksSecret = configResult.value.FIREBASE_APPCHECK_JWKS_SECRET;
     const payload: FirebaseAppCheckPayload = {
       sub,
       aud: ['projects/mock-verifier-app'],
@@ -63,7 +61,7 @@ export class FirebaseAppCheckSigner {
     );
     const data = `${encodedHeader}.${encodedPayload}`;
 
-    const keyPair = await getOrCreateRSAKeys(this.region);
+    const keyPair = await getOrCreateRSAKeys(firebaseJwksSecret);
     const sign = createSign('SHA256');
     sign.update(data);
     const signature = sign.sign(keyPair.privateKeyPem, 'base64url');
@@ -71,8 +69,8 @@ export class FirebaseAppCheckSigner {
     return `${data}.${signature}`;
   }
 
-  async getPublicKeyPem(): Promise<string> {
-    const keyPair = await getOrCreateRSAKeys(this.region);
+  async getPublicKeyPem(firebaseJwksSecret: string): Promise<string> {
+    const keyPair = await getOrCreateRSAKeys(firebaseJwksSecret);
     return keyPair.publicKeyPem;
   }
 }
