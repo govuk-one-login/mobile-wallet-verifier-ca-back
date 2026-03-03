@@ -1,6 +1,5 @@
 import type {
   APIGatewayProxyEvent,
-  APIGatewayProxyEventHeaders,
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
@@ -11,12 +10,7 @@ import {
   IssueReaderCertDependencies,
 } from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
-import {
-  emptyFailure,
-  Result,
-  successResult,
-} from '../common/result/result.ts';
-import { getHeader } from '../common/request/header/header.ts';
+import { validateEvent } from './validate-event.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -25,11 +19,6 @@ export const handlerConstructor = async (
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
   logger.info(LogMessage.ISSUE_READER_CERT_STARTED);
-
-  // Request validation function that checks header is there and is a string and returns it to lambda
-  // in future commit, we will validate body as well
-
-  // JWT validation function -- check format that it's {string.string.string}
 
   const configResult = getIssueReaderCertConfig(dependencies.env);
   if (configResult.isError) {
@@ -67,21 +56,5 @@ export const handlerConstructor = async (
     body: 'Ok',
   };
 };
-
-function validateEvent(
-  eventHeaders: APIGatewayProxyEventHeaders,
-): Result<string, void> {
-  const firebaseAppCheckHeader = getHeader(
-    eventHeaders ?? {},
-    'X-Firebase-AppCheck',
-  );
-  if (!firebaseAppCheckHeader || !firebaseAppCheckHeader.trim()) {
-    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
-      errorMessage: 'X-Firebase-AppCheck header missing from event',
-    });
-    return emptyFailure();
-  }
-  return successResult(firebaseAppCheckHeader);
-}
 
 export const handler = handlerConstructor.bind(null, dependencies);
