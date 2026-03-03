@@ -1,5 +1,6 @@
 import { ErrorCategory, errorResult, Result } from '../common/result/result';
 import { describe, it, beforeEach, expect } from 'vitest';
+import { verifyJwt } from './verify-jwt.ts';
 
 describe('Verify JWT', () => {
   let result: Result<void, void>;
