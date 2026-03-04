@@ -18,11 +18,12 @@ import {
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 
 describe('Verify JWT', () => {
-  let result: Result<void, void>;
+  let result: Promise<Result<void>>;
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let mockJwksCache: JwksCache;
   let dependencies: VerifyJwtDependencies;
+  const mockJwksUrl = 'https://mockJwksUrl.com'
   beforeEach(async () => {
     const generatedKeyPair = await generateKeyPair('RS256');
     privateKey = generatedKeyPair.privateKey;
@@ -43,7 +44,7 @@ describe('Verify JWT', () => {
   });
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
-      result = verifyJwt('invalidFormatJwt', dependencies);
+      result = await verifyJwt('invalidFormatJwt', dependencies, mockJwksUrl);
     });
 
     it('Returns error result with client error', () => {
@@ -61,7 +62,7 @@ describe('Verify JWT', () => {
       const jwtWithoutKid = await createSignedJwt(privateKey, {
         includeKid: false,
       });
-      result = verifyJwt(jwtWithoutKid, dependencies);
+      result = await verifyJwt(jwtWithoutKid, dependencies, mockJwksUrl);
     });
 
     it('Returns error result with client error', () => {
@@ -80,7 +81,7 @@ describe('Verify JWT', () => {
       dependencies.jwksCache.getJwks = vi
         .fn()
         .mockResolvedValue(emptyFailure());
-      result = verifyJwt(jwt, dependencies);
+      result = await verifyJwt(jwt, dependencies, mockJwksUrl);
     });
 
     it('Returns error result with server error', () => {

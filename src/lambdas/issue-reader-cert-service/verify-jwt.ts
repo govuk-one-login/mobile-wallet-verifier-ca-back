@@ -1,7 +1,7 @@
 import {
   emptySuccess,
   ErrorCategory,
-  errorResult,
+  errorResult, FailureWithValue,
   Result,
 } from '../common/result/result.ts';
 import { decodeProtectedHeader } from 'jose';
@@ -15,10 +15,11 @@ export interface VerifyJwtDependencies {
 const defaultDependencies: VerifyJwtDependencies = {
   jwksCache: InMemoryJwksCache.getSingletonInstance(),
 };
-export function verifyJwt(
+export async function verifyJwt(
   jwt: string,
   dependencies: VerifyJwtDependencies = defaultDependencies,
-): Result<void, void> {
+  jwksUrl: string
+): Promise<Result<void>> {
   // const jwt = "mockHeader.mockPayload.mockSignature";
 
   if (jwt.split('.').length !== 3) {
@@ -36,6 +37,8 @@ export function verifyJwt(
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
+
+  const jwksResult = await dependencies.jwksCache.getJwks(jwksUrl, header.kid)
 
   return emptySuccess();
 }
