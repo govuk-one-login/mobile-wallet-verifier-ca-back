@@ -1,7 +1,8 @@
 import {
   emptySuccess,
   ErrorCategory,
-  errorResult, FailureWithValue,
+  errorResult,
+  FailureWithValue,
   Result,
 } from '../common/result/result.ts';
 import { decodeProtectedHeader } from 'jose';
@@ -18,8 +19,8 @@ const defaultDependencies: VerifyJwtDependencies = {
 export async function verifyJwt(
   jwt: string,
   dependencies: VerifyJwtDependencies = defaultDependencies,
-  jwksUrl: string
-): Promise<Result<void>> {
+  jwksUrl: string,
+): Promise<Result<void, void>> {
   // const jwt = "mockHeader.mockPayload.mockSignature";
 
   if (jwt.split('.').length !== 3) {
@@ -38,7 +39,13 @@ export async function verifyJwt(
     });
   }
 
-  const jwksResult = await dependencies.jwksCache.getJwks(jwksUrl, header.kid)
+  const jwksResult = await dependencies.jwksCache.getJwks(jwksUrl, header.kid);
+  if (jwksResult.isError) {
+    return errorResult({
+      errorMessage: 'Unexpected error when fetching JWKS',
+      errorCategory: ErrorCategory.SERVER_ERROR,
+    });
+  }
 
   return emptySuccess();
 }
