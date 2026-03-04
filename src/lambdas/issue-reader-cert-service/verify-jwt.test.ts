@@ -142,26 +142,52 @@ describe('Verify JWT', () => {
     });
 
     describe('Given claim validation fails', () => {
-      beforeEach(async () => {
-        const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
-          issuer: 'invalidIssuer',
+      describe('Given issue claim is invalid', () => {
+        beforeEach(async () => {
+          const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
+            issuer: 'invalidIssuer',
+          });
+
+          result = await verifyJwt(
+            jwtWithInvalidIssuer,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
         });
 
-        result = await verifyJwt(
-          jwtWithInvalidIssuer,
-          mockJwksUrl,
-          validExpectedClaims,
-          dependencies,
-        );
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT signature or claims are invalid',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
       });
 
-      it('Returns error result with client error', () => {
-        expect(result).toEqual(
-          errorResult({
-            errorMessage: 'JWT signature or claims are invalid',
-            errorCategory: ErrorCategory.CLIENT_ERROR,
-          }),
-        );
+      describe('Given audience claim is invalid', () => {
+        beforeEach(async () => {
+          const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
+            audience: 'invalidAudience',
+          });
+
+          result = await verifyJwt(
+            jwtWithInvalidIssuer,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
+        });
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT signature or claims are invalid',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
       });
     });
   });
@@ -191,12 +217,13 @@ async function createSignedJwt(
     audience?: string;
     subject?: string;
     tokenId?: string;
+    alg?: string;
     includeExp?: boolean;
   } = {},
 ): Promise<string> {
   const nowInSeconds = Math.floor(Date.now() / 1000);
   const protectedHeader: JWTHeaderParameters = {
-    alg: 'RS256',
+    alg: options.alg ?? 'RS256',
     typ: 'JWT',
   };
   if (options.includeKid !== false) {
