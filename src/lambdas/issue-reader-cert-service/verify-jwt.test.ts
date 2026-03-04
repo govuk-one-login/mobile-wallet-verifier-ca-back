@@ -119,12 +119,34 @@ describe('Verify JWT', () => {
         );
       });
     });
+
+    describe('Given claim validation fails', () => {
+      beforeEach(async () => {
+        const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
+          issuer: 'invalidIssuer',
+        });
+
+        result = await verifyJwt(
+          jwtWithInvalidIssuer,
+          mockJwksUrl,
+          dependencies,
+        );
+      });
+
+      it('Returns error result with client error', () => {
+        expect(result).toEqual(
+          errorResult({
+            errorMessage: 'JWT signature or claims are invalid',
+            errorCategory: ErrorCategory.CLIENT_ERROR,
+          }),
+        );
+      });
+    });
   });
 
   describe('WIP Happy path', () => {
     beforeEach(async () => {
       const jwt = await createSignedJwt(privateKey);
-
       result = await verifyJwt(jwt, mockJwksUrl, dependencies);
     });
 
