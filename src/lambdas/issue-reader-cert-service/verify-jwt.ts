@@ -4,7 +4,7 @@ import {
   errorResult,
   Result,
 } from '../common/result/result.ts';
-import { decodeProtectedHeader } from 'jose';
+import {createLocalJWKSet, decodeProtectedHeader, jwtVerify} from 'jose';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 import { InMemoryJwksCache } from '../common/jwks/jwks-cache/jwks-cache.ts';
 
@@ -41,6 +41,21 @@ export async function verifyJwt(
     return errorResult({
       errorMessage: 'Unexpected error when fetching JWKS',
       errorCategory: ErrorCategory.SERVER_ERROR,
+    });
+  }
+
+  const jwks = jwksResult.value;
+
+  const localJwks = createLocalJWKSet({
+    keys: jwks.keys,
+  });
+
+  try {
+    await jwtVerify(jwt, localJwks);
+  } catch (error) {
+    return errorResult({
+      errorMessage: 'JWT signature or claims are invalid',
+      errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
 
