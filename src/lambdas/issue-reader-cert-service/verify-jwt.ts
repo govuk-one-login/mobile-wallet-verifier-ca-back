@@ -15,9 +15,16 @@ export interface VerifyJwtDependencies {
 const defaultDependencies: VerifyJwtDependencies = {
   jwksCache: InMemoryJwksCache.getSingletonInstance(),
 };
+
+export interface ExpectedClaims {
+  issuer: string;
+  audience: string;
+  allowedAppId: string[];
+}
 export async function verifyJwt(
   jwt: string,
   jwksUrl: string,
+  expectedClaims: ExpectedClaims,
   dependencies: VerifyJwtDependencies = defaultDependencies,
 ): Promise<Result<void, void>> {
   if (jwt.split('.').length !== 3) {
@@ -52,7 +59,7 @@ export async function verifyJwt(
 
   try {
     await jwtVerify(jwt, localJwks, {
-      issuer: 'mockIssuer'
+      issuer: expectedClaims.issuer,
     });
   } catch (error) {
     return errorResult({

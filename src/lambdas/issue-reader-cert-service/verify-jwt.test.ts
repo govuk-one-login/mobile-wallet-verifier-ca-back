@@ -25,6 +25,11 @@ describe('Verify JWT', () => {
   let mockJwksCache: JwksCache;
   let dependencies: VerifyJwtDependencies;
   const mockJwksUrl = 'https://mockJwksUrl.com';
+  const validExpectedClaims = {
+    issuer: 'mockIssuer',
+    audience: 'mockAudience',
+    allowedAppId: ['mockSubject'],
+  };
   beforeEach(async () => {
     const generatedKeyPair = await generateKeyPair('RS256');
     privateKey = generatedKeyPair.privateKey;
@@ -45,7 +50,12 @@ describe('Verify JWT', () => {
   });
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
-      result = await verifyJwt('invalidFormatJwt', mockJwksUrl, dependencies);
+      result = await verifyJwt(
+        'invalidFormatJwt',
+        mockJwksUrl,
+        validExpectedClaims,
+        dependencies,
+      );
     });
 
     it('Returns error result with client error', () => {
@@ -63,7 +73,12 @@ describe('Verify JWT', () => {
       const jwtWithoutKid = await createSignedJwt(privateKey, {
         includeKid: false,
       });
-      result = await verifyJwt(jwtWithoutKid, mockJwksUrl, dependencies);
+      result = await verifyJwt(
+        jwtWithoutKid,
+        mockJwksUrl,
+        validExpectedClaims,
+        dependencies,
+      );
     });
 
     it('Returns error result with client error', () => {
@@ -82,7 +97,12 @@ describe('Verify JWT', () => {
       dependencies.jwksCache.getJwks = vi
         .fn()
         .mockResolvedValue(emptyFailure());
-      result = await verifyJwt(jwt, mockJwksUrl, dependencies);
+      result = await verifyJwt(
+        jwt,
+        mockJwksUrl,
+        validExpectedClaims,
+        dependencies,
+      );
     });
 
     it('Returns error result with server error', () => {
@@ -106,6 +126,7 @@ describe('Verify JWT', () => {
         result = await verifyJwt(
           jwtWithInvalidSignature,
           mockJwksUrl,
+          validExpectedClaims,
           dependencies,
         );
       });
@@ -129,6 +150,7 @@ describe('Verify JWT', () => {
         result = await verifyJwt(
           jwtWithInvalidIssuer,
           mockJwksUrl,
+          validExpectedClaims,
           dependencies,
         );
       });
@@ -147,7 +169,12 @@ describe('Verify JWT', () => {
   describe('WIP Happy path', () => {
     beforeEach(async () => {
       const jwt = await createSignedJwt(privateKey);
-      result = await verifyJwt(jwt, mockJwksUrl, dependencies);
+      result = await verifyJwt(
+        jwt,
+        mockJwksUrl,
+        validExpectedClaims,
+        dependencies,
+      );
     });
 
     it('Returns empty success', () => {
