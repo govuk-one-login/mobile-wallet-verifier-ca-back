@@ -2,7 +2,6 @@ import {
   emptySuccess,
   ErrorCategory,
   errorResult,
-  FailureWithValue,
   Result,
 } from '../common/result/result.ts';
 import { decodeProtectedHeader } from 'jose';
@@ -18,11 +17,9 @@ const defaultDependencies: VerifyJwtDependencies = {
 };
 export async function verifyJwt(
   jwt: string,
-  dependencies: VerifyJwtDependencies = defaultDependencies,
   jwksUrl: string,
+  dependencies: VerifyJwtDependencies = defaultDependencies,
 ): Promise<Result<void, void>> {
-  // const jwt = "mockHeader.mockPayload.mockSignature";
-
   if (jwt.split('.').length !== 3) {
     return errorResult({
       errorMessage: 'Invalid JWT format',

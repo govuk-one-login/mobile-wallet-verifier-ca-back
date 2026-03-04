@@ -44,7 +44,7 @@ describe('Verify JWT', () => {
   });
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
-      result = await verifyJwt('invalidFormatJwt', dependencies, mockJwksUrl);
+      result = await verifyJwt('invalidFormatJwt', mockJwksUrl, dependencies);
     });
 
     it('Returns error result with client error', () => {
@@ -62,7 +62,7 @@ describe('Verify JWT', () => {
       const jwtWithoutKid = await createSignedJwt(privateKey, {
         includeKid: false,
       });
-      result = await verifyJwt(jwtWithoutKid, dependencies, mockJwksUrl);
+      result = await verifyJwt(jwtWithoutKid, mockJwksUrl, dependencies);
     });
 
     it('Returns error result with client error', () => {
@@ -81,7 +81,7 @@ describe('Verify JWT', () => {
       dependencies.jwksCache.getJwks = vi
         .fn()
         .mockResolvedValue(emptyFailure());
-      result = await verifyJwt(jwt, dependencies, mockJwksUrl);
+      result = await verifyJwt(jwt, mockJwksUrl, dependencies);
     });
 
     it('Returns error result with server error', () => {
@@ -91,6 +91,32 @@ describe('Verify JWT', () => {
           errorCategory: ErrorCategory.SERVER_ERROR,
         }),
       );
+    });
+  });
+
+  describe('Given JWT verification fails', () => {
+    describe('Given signature verification fails', () => {
+      beforeEach(async () => {
+        const differentKeyPair = await generateKeyPair('RS256');
+        const jwtWithInvalidSignature = await createSignedJwt(
+          differentKeyPair.privateKey,
+        );
+
+        result = await verifyJwt(
+          jwtWithInvalidSignature,
+          mockJwksUrl,
+          dependencies,
+        );
+      });
+
+      it('Returns error result with client error', () => {
+        expect(result).toEqual(
+          errorResult({
+            errorMessage: 'JWT signature or claims are invalid',
+            errorCategory: ErrorCategory.CLIENT_ERROR,
+          }),
+        );
+      });
     });
   });
 });
