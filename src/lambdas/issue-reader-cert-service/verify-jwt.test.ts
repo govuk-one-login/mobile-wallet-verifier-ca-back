@@ -1,5 +1,6 @@
 import {
   emptyFailure,
+  emptySuccess,
   ErrorCategory,
   errorResult,
   Result,
@@ -117,6 +118,18 @@ describe('Verify JWT', () => {
           }),
         );
       });
+    });
+  });
+
+  describe('WIP Happy path', () => {
+    beforeEach(async () => {
+      const jwt = await createSignedJwt(privateKey);
+
+      result = await verifyJwt(jwt, mockJwksUrl, dependencies);
+    });
+
+    it('Returns empty success', () => {
+      expect(result).toEqual(emptySuccess());
     });
   });
 });

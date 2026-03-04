@@ -4,7 +4,7 @@ import {
   errorResult,
   Result,
 } from '../common/result/result.ts';
-import {createLocalJWKSet, decodeProtectedHeader, jwtVerify} from 'jose';
+import { createLocalJWKSet, decodeProtectedHeader, jwtVerify } from 'jose';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 import { InMemoryJwksCache } from '../common/jwks/jwks-cache/jwks-cache.ts';
 
