@@ -51,7 +51,9 @@ export async function verifyJwt(
   });
 
   try {
-    await jwtVerify(jwt, localJwks);
+    await jwtVerify(jwt, localJwks, {
+      issuer: 'mockIssuer'
+    });
   } catch (error) {
     return errorResult({
       errorMessage: 'JWT signature or claims are invalid',
