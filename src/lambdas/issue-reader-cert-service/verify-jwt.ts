@@ -5,8 +5,17 @@ import {
   Result,
 } from '../common/result/result.ts';
 import { decodeProtectedHeader } from 'jose';
+import {JwksCache} from "../common/jwks/jwks-cache/types.ts";
+import {InMemoryJwksCache} from "../common/jwks/jwks-cache/jwks-cache.ts";
 
-export function verifyJwt(jwt: string): Result<void, void> {
+interface VerifyJwtDependencies {
+  jwksCache: JwksCache
+}
+
+const defaultDependencies: VerifyJwtDependencies = {
+  jwksCache: InMemoryJwksCache.getSingletonInstance()
+}
+export function verifyJwt(jwt: string, dependencies: VerifyJwtDependencies = defaultDependencies): Result<void, void> {
   // const jwt = "mockHeader.mockPayload.mockSignature";
 
   if (jwt.split('.').length !== 3) {
