@@ -10,7 +10,7 @@ export const FIREBASE_KID = 'firebase-appcheck-debug';
 
 /**
  * Generates or retrieves EC (Elliptic Curve) key pairs for CSR generation.
- * Used by: mock-issue-reader-cert-request-handler for creating Certificate Signing Requests
+ * Used by: mock-issue-cert-request-handler for creating Certificate Signing Requests
  */
 export async function getOrGenerateECDSAKeyPair(
   secretName: string,

@@ -147,7 +147,7 @@ curl https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
 Generate a complete mock certificate request with Firebase App Check token:
 
 ```bash
-curl https://mock.verifier-ca.dev.account.gov.uk/mock-issue-cert
+curl https://mock.verifier-ca.dev.account.gov.uk/mock-issue-cert-request
 ```
 
 This returns a JSON payload containing:
@@ -163,7 +163,6 @@ You can use this payload directly to test the `/issue-reader-cert` endpoint.
 
 The certificate issuer service uses these environment variables:
 
-- `FIREBASE_JWKS_URI`: URI for Firebase App Check JWKS endpoint (production: `https://firebaseappcheck.googleapis.com/v1/jwks`, dev/build: mock endpoint)
 - `NONCE_TABLE_NAME`: DynamoDB table for nonce storage
 
 #### Deployment

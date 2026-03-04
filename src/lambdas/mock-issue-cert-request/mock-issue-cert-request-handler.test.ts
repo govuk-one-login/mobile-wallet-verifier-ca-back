@@ -4,7 +4,7 @@ import {
   APIGatewayProxyResult,
 } from 'aws-lambda';
 import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
-import { handlerConstructor } from './mock-issue-reader-cert-request-handler';
+import { handlerConstructor } from './mock-issue-cert-request-handler';
 import { logger } from '../common/logger/logger';
 import '../../../tests/testUtils/matchers';
 import { GenerateMockIssueCertDependencies } from './mock-issue-cert-handler-dependencies';
@@ -21,6 +21,8 @@ const mockGenerateDebugToken = vi.fn().mockResolvedValue('mock-token');
 vi.mock('./certificate-generator', () => ({
   generateCSR: vi.fn().mockResolvedValue({
     csrPem: 'mock-csr',
+    privateKeyPem: 'mock-private',
+    publicKeyPem: 'mock-public',
   }),
 }));
 
@@ -66,28 +68,23 @@ describe('Mock Issue Reader Cert Request Handler', () => {
     vi.mocked(certificateGenerator.generateCSR).mockClear();
     vi.mocked(keyPairManager.getOrGenerateECDSAKeyPair).mockClear();
 
-    // Mock successful environment validation by default
-    vi.spyOn(environment, 'getRequiredEnvironmentVariables').mockReturnValue({
-      isError: false,
-      value: env,
+    vi.mocked(certificateGenerator.generateCSR).mockResolvedValue({
+      csrPem: 'mock-csr',
+      privateKeyPem: 'mock-private',
+      publicKeyPem: 'mock-public',
     });
   });
 
   describe('On every invocation', () => {
-    beforeEach(async () => {
+    it('Adds context, version, logs STARTED message and clears pre-existing log attributes', async () => {
       logger.appendKeys({ testKey: 'testValue' });
       await handlerConstructor(dependencies, event, context);
-    });
 
-    it('Adds context, version and logs STARTED message', () => {
       expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
         messageCode: 'MOBILE_CA_MOCK_ISSUE_CERT_REQUEST_STARTED',
         functionVersion: '1',
         function_arn: 'arn:12345',
       });
-    });
-
-    it('Clears pre-existing log attributes', async () => {
       expect(consoleInfoSpy).not.toHaveBeenCalledWithLogFields({
         testKey: 'testValue',
       });
@@ -95,11 +92,9 @@ describe('Mock Issue Reader Cert Request Handler', () => {
   });
 
   describe('Successful request generation', () => {
-    beforeEach(async () => {
+    it('returns 200 with mock request data and calls dependencies with correct parameters', async () => {
       result = await handlerConstructor(dependencies, event, context);
-    });
 
-    it('returns 200 with mock request data', () => {
       expect(result.statusCode).toBe(200);
       expect(result.headers).toEqual({
         'Content-Type': 'application/json',
@@ -115,9 +110,7 @@ describe('Mock Issue Reader Cert Request Handler', () => {
           csrPem: 'mock-csr',
         },
       });
-    });
 
-    it('calls generateCSR with correct parameters', () => {
       expect(certificateGenerator.generateCSR).toHaveBeenCalledWith({
         privateKeyPem: 'mock-private',
         publicKeyPem: 'mock-public',
@@ -129,9 +122,7 @@ describe('Mock Issue Reader Cert Request Handler', () => {
           serialNumber: expect.any(String),
         },
       });
-    });
 
-    it('calls Firebase App Check signer with default parameters', () => {
       expect(mockGenerateDebugToken).toHaveBeenCalledWith(
         'org.multipaz.identityreader',
         undefined,
@@ -140,12 +131,10 @@ describe('Mock Issue Reader Cert Request Handler', () => {
   });
 
   describe('With scenario parameter', () => {
-    beforeEach(async () => {
+    it('passes scenario to Firebase App Check signer', async () => {
       event.queryStringParameters = { scenario: 'invalid-sub' };
       result = await handlerConstructor(dependencies, event, context);
-    });
 
-    it('passes scenario to Firebase App Check signer', () => {
       expect(mockGenerateDebugToken).toHaveBeenCalledWith(
         'org.multipaz.identityreader',
         'invalid-sub',
@@ -154,46 +143,30 @@ describe('Mock Issue Reader Cert Request Handler', () => {
   });
 
   describe('Config validation', () => {
-    describe.each(Object.keys(env))(
-      'Given %s environment variable is missing',
-      (envVar: string) => {
-        beforeEach(async () => {
-          dependencies.env = JSON.parse(JSON.stringify(env));
-          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-          delete dependencies.env[envVar];
+    it('logs INVALID_CONFIG and returns 500 Internal server error when environment variable is missing', async () => {
+      dependencies.env = {};
 
-          // Mock environment validation to return error for missing env var
-          vi.spyOn(
-            environment,
-            'getRequiredEnvironmentVariables',
-          ).mockReturnValue({
-            isError: true,
-            value: { missingEnvVars: [envVar] },
-          });
+      vi.spyOn(environment, 'getRequiredEnvironmentVariables').mockReturnValue({
+        isError: true,
+        value: { missingEnvVars: ['FIREBASE_APPCHECK_JWKS_SECRET'] },
+      });
 
-          result = await handlerConstructor(dependencies, event, context);
-        });
+      result = await handlerConstructor(dependencies, event, context);
 
-        it('logs INVALID_CONFIG', async () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
-            data: {
-              missingEnvironmentVariables: [envVar],
-            },
-          });
-        });
-
-        it('returns 500 Internal server error', async () => {
-          expect(result).toStrictEqual({
-            headers: { 'Content-Type': 'application/json' },
-            statusCode: 500,
-            body: JSON.stringify({
-              error: 'server_error',
-              error_description: 'Server Error',
-            }),
-          });
-        });
-      },
-    );
+      expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+        messageCode: 'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
+        data: {
+          missingEnvironmentVariables: ['FIREBASE_APPCHECK_JWKS_SECRET'],
+        },
+      });
+      expect(result).toStrictEqual({
+        headers: { 'Content-Type': 'application/json' },
+        statusCode: 500,
+        body: JSON.stringify({
+          error: 'server_error',
+          error_description: 'Server Error',
+        }),
+      });
+    });
   });
 });
