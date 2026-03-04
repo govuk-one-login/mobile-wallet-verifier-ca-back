@@ -1,6 +1,12 @@
-import { ErrorCategory, errorResult, Result } from '../common/result/result';
-import { describe, it, beforeEach, expect } from 'vitest';
-import { verifyJwt } from './verify-jwt.ts';
+import {
+  emptyFailure,
+  ErrorCategory,
+  errorResult,
+  Result,
+  successResult,
+} from '../common/result/result';
+import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { verifyJwt, VerifyJwtDependencies } from './verify-jwt.ts';
 import {
   exportJWK,
   generateKeyPair,
@@ -9,11 +15,14 @@ import {
   type JWK,
   type JWTHeaderParameters,
 } from 'jose';
+import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 
 describe('Verify JWT', () => {
   let result: Result<void, void>;
   let privateKey: CryptoKey;
   let publicJwk: JWK;
+  let mockJwksCache: JwksCache;
+  let dependencies: VerifyJwtDependencies;
   beforeEach(async () => {
     const generatedKeyPair = await generateKeyPair('RS256');
     privateKey = generatedKeyPair.privateKey;
@@ -21,10 +30,20 @@ describe('Verify JWT', () => {
     publicJwk.kid = 'mockKeyId';
     publicJwk.alg = 'RS256';
     publicJwk.use = 'sig';
+    mockJwksCache = {
+      getJwks: vi.fn().mockResolvedValue(
+        successResult({
+          keys: [publicJwk],
+        }),
+      ),
+    };
+    dependencies = {
+      jwksCache: mockJwksCache,
+    };
   });
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
-      result = verifyJwt('invalidFormatJwt');
+      result = verifyJwt('invalidFormatJwt', dependencies);
     });
 
     it('Returns error result with client error', () => {
@@ -42,7 +61,7 @@ describe('Verify JWT', () => {
       const jwtWithoutKid = await createSignedJwt(privateKey, {
         includeKid: false,
       });
-      result = verifyJwt(jwtWithoutKid);
+      result = verifyJwt(jwtWithoutKid, dependencies);
     });
 
     it('Returns error result with client error', () => {
@@ -50,6 +69,25 @@ describe('Verify JWT', () => {
         errorResult({
           errorMessage: 'JWT header does not include kid',
           errorCategory: ErrorCategory.CLIENT_ERROR,
+        }),
+      );
+    });
+  });
+
+  describe('Given JWKS retrieval fails', () => {
+    beforeEach(async () => {
+      const jwt = await createSignedJwt(privateKey);
+      dependencies.jwksCache.getJwks = vi
+        .fn()
+        .mockResolvedValue(emptyFailure());
+      result = verifyJwt(jwt, dependencies);
+    });
+
+    it('Returns error result with server error', () => {
+      expect(result).toEqual(
+        errorResult({
+          errorMessage: 'Unexpected error when fetching JWKS',
+          errorCategory: ErrorCategory.SERVER_ERROR,
         }),
       );
     });
