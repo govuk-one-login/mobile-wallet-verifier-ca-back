@@ -60,6 +60,7 @@ export async function verifyJwt(
   try {
     await jwtVerify(jwt, localJwks, {
       issuer: expectedClaims.issuer,
+      audience: expectedClaims.audience,
     });
   } catch (error) {
     return errorResult({
