@@ -24,7 +24,7 @@ describe('Verify JWT', () => {
   });
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
-      result = await verifyJwt('invalidFormatJwt');
+      result = verifyJwt('invalidFormatJwt');
     });
 
     it('Returns error result with client error', () => {
@@ -42,7 +42,7 @@ describe('Verify JWT', () => {
       const jwtWithoutKid = await createSignedJwt(privateKey, {
         includeKid: false,
       });
-      result = await verifyJwt(jwtWithoutKid);
+      result = verifyJwt(jwtWithoutKid);
     });
 
     it('Returns error result with client error', () => {
