@@ -18,12 +18,12 @@ import {
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 
 describe('Verify JWT', () => {
-  let result: Promise<Result<void>>;
+  let result: Result<void, void>;
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let mockJwksCache: JwksCache;
   let dependencies: VerifyJwtDependencies;
-  const mockJwksUrl = 'https://mockJwksUrl.com'
+  const mockJwksUrl = 'https://mockJwksUrl.com';
   beforeEach(async () => {
     const generatedKeyPair = await generateKeyPair('RS256');
     privateKey = generatedKeyPair.privateKey;
