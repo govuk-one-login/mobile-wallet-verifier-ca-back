@@ -24,6 +24,9 @@ describe('Handler', () => {
   let result: APIGatewayProxyResult;
   const env = {
     FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
+    ISSUER: 'https://mockIssuer.com/',
+    AUDIENCE: 'mockProjectId',
+    ALLOWED_APP_ID: ['mockAppId'],
   };
 
   beforeEach(() => {

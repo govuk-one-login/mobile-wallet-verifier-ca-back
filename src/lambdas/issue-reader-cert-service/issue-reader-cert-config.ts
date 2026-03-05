@@ -15,7 +15,9 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
 
 export type IssueReaderCertConfig = Config<
   (typeof REQUIRED_ENVIRONMENT_VARIABLES)[number]
->;
+> & {
+  ALLOWED_APP_ID_ARRAY: string[];
+};
 
 export function getIssueReaderCertConfig(
   env: NodeJS.ProcessEnv,
@@ -41,7 +43,15 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
-  return envVarsResult;
+  const allowedAppIds = envVarsResult.value.ALLOWED_APP_ID.split(',').map(id => id.trim());
+
+  return {
+    ...envVarsResult,
+    value: {
+      ...envVarsResult.value,
+      ALLOWED_APP_ID_ARRAY: allowedAppIds,
+    },
+  };
 }
 
 const isValidUrl = (url: string): boolean => {
