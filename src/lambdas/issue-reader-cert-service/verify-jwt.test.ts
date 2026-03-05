@@ -190,22 +190,46 @@ describe('Verify JWT', () => {
         });
       });
       describe('Given sub claim is not in the list of App Ids', () => {
-        beforeEach((async () => {
+        beforeEach(async () => {
           const jwtWithInvalidSubject = await createSignedJwt(privateKey, {
-            subject: 'invalidAppId'
+            subject: 'invalidAppId',
           });
           result = await verifyJwt(
-              jwtWithInvalidSubject,
-              mockJwksUrl,
-              validExpectedClaims,
-              dependencies,
+            jwtWithInvalidSubject,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
           );
-        }));
+        });
 
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
               errorMessage: 'App ID is not in the list of allowed App IDs',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
+      });
+
+      describe('Given jti claim is invalid', () => {
+        beforeEach(async () => {
+          const jwtInvalidJti = await createSignedJwt(privateKey, {
+            tokenId: '',
+          });
+
+          result = await verifyJwt(
+            jwtInvalidJti,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
+        });
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT signature or claims are invalid',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );

@@ -70,7 +70,7 @@ export async function verifyJwt(
       audience: expectedClaims.audience,
     });
     payload = verifiedJwt.payload;
-  } catch (error) {
+  } catch (error: unknown) {
     return errorResult({
       errorMessage: 'JWT signature or claims are invalid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
@@ -80,6 +80,13 @@ export async function verifyJwt(
   if (!expectedClaims.allowedAppId.includes(payload.sub as string)) {
     return errorResult({
       errorMessage: 'App ID is not in the list of allowed App IDs',
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  if (!payload.jti || !payload.jti.trim()) {
+    return errorResult({
+      errorMessage: 'JWT signature or claims are invalid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }

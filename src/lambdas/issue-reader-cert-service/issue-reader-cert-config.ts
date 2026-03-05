@@ -43,7 +43,9 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
-  const allowedAppIds = envVarsResult.value.ALLOWED_APP_ID.split(',').map(id => id.trim());
+  const allowedAppIds = envVarsResult.value.ALLOWED_APP_ID.split(',').map(
+    (id) => id.trim(),
+  );
 
   return {
     ...envVarsResult,
