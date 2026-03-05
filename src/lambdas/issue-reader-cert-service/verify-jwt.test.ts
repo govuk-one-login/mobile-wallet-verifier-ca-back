@@ -189,6 +189,28 @@ describe('Verify JWT', () => {
           );
         });
       });
+      describe('Given sub claim is not in the list of App Ids', () => {
+        beforeEach((async () => {
+          const jwtWithInvalidSubject = await createSignedJwt(privateKey, {
+            subject: 'invalidAppId'
+          });
+          result = await verifyJwt(
+              jwtWithInvalidSubject,
+              mockJwksUrl,
+              validExpectedClaims,
+              dependencies,
+          );
+        }));
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'App ID is not in the list of allowed App IDs',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
+      });
     });
   });
 

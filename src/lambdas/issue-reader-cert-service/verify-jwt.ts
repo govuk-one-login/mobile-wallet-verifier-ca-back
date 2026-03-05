@@ -77,7 +77,12 @@ export async function verifyJwt(
     });
   }
 
-  console.log(payload);
+  if (!expectedClaims.allowedAppId.includes(payload.sub as string)) {
+    return errorResult({
+      errorMessage: 'App ID is not in the list of allowed App IDs',
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
 
   return emptySuccess();
 }
