@@ -28,6 +28,11 @@ Parameters:
     Type: String
     Default: account.gov.uk
 
+  MockSubDomain:
+    Description: The mock/test root domain (e.g., mock.account.gov.uk)
+    Type: String
+    Default: mock
+
   ServiceSubdomain:
     Description: The service-specific subdomain (e.g., verifier-ca)
     Type: String
@@ -56,6 +61,14 @@ Conditions:
   CreateCustomDomain: !Equals
     - !Ref EnableCustomDomain
     - 'true'
+
+  IsDevOrBuild: !Or
+    - !Equals [!Ref Environment, dev]
+    - !Equals [!Ref Environment, build]
+
+  CreateMockDomain: !And
+    - !Condition CreateCustomDomain
+    - !Condition IsDevOrBuild
 
 Resources:
   # Shared API Gateway Custom Domains
@@ -106,6 +119,24 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
+  ApiGatewayMockDomain:
+    Type: AWS::ApiGateway::DomainName
+    Condition: CreateMockDomain
+    Properties:
+      DomainName: !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      RegionalCertificateArn: !ImportValue
+        Fn::Sub: '${RegionalCertificateStack}-CertificateARN'
+      SecurityPolicy: TLS_1_2
+      Tags:
+        - Key: Name
+          Value: !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - Key: Environment
+          Value: !Ref Environment
+
+
 Outputs:
   # Custom Domain Outputs for use by application stacks
   OriginDomainName:
@@ -135,3 +166,24 @@ Outputs:
     Value: !Ref ApiGatewayPublicDomain
     Export:
       Name: !Sub '${AWS::StackName}-ApiGatewayPublicDomain'
+
+  MockDomainName:
+    Condition: CreateMockDomain
+    Description: The mock custom domain name (for base path mappings)
+    Value: !Ref ApiGatewayMockDomain
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiGatewayMockDomain'
+
+  MockDomainRegionalName:
+    Condition: CreateMockDomain
+    Description: The mock regional domain name for Route53 alias
+    Value: !GetAtt ApiGatewayMockDomain.RegionalDomainName
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiGatewayMockDomainRegionalName'
+
+  MockDomainRegionalHostedZoneId:
+    Condition: CreateMockDomain
+    Description: The mock regional hosted zone ID for Route53 alias
+    Value: !GetAtt ApiGatewayMockDomain.RegionalHostedZoneId
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiGatewayMockDomainRegionalHostedZoneId'

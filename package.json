@@ -8,8 +8,6 @@
     "build": "mkdir -p dist && cp -f open-api-spec.yaml dist/ && node build.mjs",
     "test": "./node_modules/.bin/vitest run",
     "test:cov": "./node_modules/.bin/vitest run --coverage",
-    "mock:cert": "./node_modules/.bin/tsx src/lambdas/generate-mock-issue-cert/handler.ts",
-    "setup:android": "./node_modules/.bin/tsx scripts/setup-android-infrastructure.ts",
     "lint": "./node_modules/.bin/eslint .",
     "format": "./node_modules/.bin/prettier --write '**/*.{json,md,ts}'",
     "format:check": "./node_modules/.bin/prettier --check '**/*.{json,md,ts}'",
@@ -19,8 +17,8 @@
   "license": "MIT",
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.31.0",
-    "@aws-sdk/client-dynamodb": "^3.998.0",
-    "@aws-sdk/client-secrets-manager": "^3.998.0",
+    "@aws-sdk/client-dynamodb": "^3.1002.0",
+    "@aws-sdk/client-secrets-manager": "^3.1002.0",
     "@peculiar/asn1-android": "^2.3.8",
     "@peculiar/asn1-schema": "^2.3.8",
     "@peculiar/webcrypto": "1.5.0",
@@ -35,7 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
-    "@types/aws-lambda": "^8.10.160",
+    "@types/aws-lambda": "^8.10.161",
     "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@vitest/coverage-v8": "^4.0.18",

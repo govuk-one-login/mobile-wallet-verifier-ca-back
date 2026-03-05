@@ -16,8 +16,6 @@ export default defineConfig({
         'vitest.config.ts',
         'eslint.config.ts',
         'tests/**',
-        'scripts/**',
-        'src/lambdas/generate-mock-issue-cert/**',
       ],
     },
   },
