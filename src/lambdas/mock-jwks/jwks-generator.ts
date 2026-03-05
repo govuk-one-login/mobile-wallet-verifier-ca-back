@@ -1,0 +1,33 @@
+import { createPublicKey } from 'node:crypto';
+import {
+  getOrCreateRSAKeys,
+  FIREBASE_KID,
+} from '../common/mock-utils/key-pair-manager';
+
+export async function generateJWKS(firebaseJwksSecret: string) {
+  const keyPair = await getOrCreateRSAKeys(firebaseJwksSecret);
+
+  const publicKeyPem = keyPair.publicKeyPem.trim();
+  if (!publicKeyPem.startsWith('-----BEGIN PUBLIC KEY-----')) {
+    throw new Error('Invalid public key PEM format - missing header');
+  }
+  if (!publicKeyPem.endsWith('-----END PUBLIC KEY-----')) {
+    throw new Error('Invalid public key PEM format - missing footer');
+  }
+
+  const publicKey = createPublicKey(publicKeyPem);
+  const jwk = publicKey.export({ format: 'jwk' }) as Record<string, string>;
+
+  return {
+    keys: [
+      {
+        kty: jwk.kty,
+        use: 'sig',
+        kid: FIREBASE_KID,
+        alg: 'RS256',
+        n: jwk.n,
+        e: jwk.e,
+      },
+    ],
+  };
+}

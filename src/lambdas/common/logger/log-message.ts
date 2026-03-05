@@ -39,4 +39,34 @@ export class LogMessage implements LogAttributes {
     'MOBILE_CA_GET_JWKS_SUCCESS',
     'JWKS retrieved successfully.',
   );
+
+  static readonly MOCK_ISSUE_CERT_REQUEST_INVALID_CONFIG = new LogMessage(
+    'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
+    'One or more required environment variables were missing or invalid.',
+  );
+
+  static readonly MOCK_JWKS_INVALID_CONFIG = new LogMessage(
+    'MOBILE_CA_MOCK_JWKS_INVALID_CONFIG',
+    'One or more required environment variables were missing or invalid.',
+  );
+
+  static readonly MOCK_JWKS_GENERATION_ERROR = new LogMessage(
+    'MOBILE_CA_MOCK_JWKS_GENERATION_ERROR',
+    'An error occurred while generating mock JWKS.',
+  );
+
+  static readonly MOCK_JWKS_STARTED = new LogMessage(
+    'MOBILE_CA_MOCK_JWKS_STARTED',
+    'Mock JWKS endpoint handler processing has started.',
+  );
+
+  static readonly MOCK_ISSUE_CERT_REQUEST_STARTED = new LogMessage(
+    'MOBILE_CA_MOCK_ISSUE_CERT_REQUEST_STARTED',
+    'Mock issue certificate request handler processing has started.',
+  );
+
+  static readonly MOCK_ISSUE_CERT_REQUEST_ERROR = new LogMessage(
+    'MOBILE_CA_MOCK_ISSUE_CERT_REQUEST_ERROR',
+    'An error occurred while generating mock certificate request.',
+  );
 }
