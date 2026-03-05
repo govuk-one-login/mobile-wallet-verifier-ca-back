@@ -235,6 +235,30 @@ describe('Verify JWT', () => {
           );
         });
       });
+
+      describe('Given exp claim does not exist', () => {
+        beforeEach(async () => {
+          const jwtMissingExp = await createSignedJwt(privateKey, {
+            includeExp: false,
+          });
+
+          result = await verifyJwt(
+            jwtMissingExp,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
+        });
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT signature or claims are invalid',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
+      });
     });
   });
 

@@ -91,5 +91,13 @@ export async function verifyJwt(
     });
   }
 
+  // Jose jwtVerify function checks the type and expiration of exp claim automatically if it exists
+  if (!payload.exp) {
+    return errorResult({
+      errorMessage: 'JWT signature or claims are invalid',
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
   return emptySuccess();
 }
