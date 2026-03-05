@@ -604,15 +604,17 @@ Resources:
           ISSUER: !FindInMap
             - EnvironmentVariables
             - !Ref Environment
-            - issuer
+            - Issuer
           AUDIENCE: !FindInMap
             - EnvironmentVariables
             - !Ref Environment
-            - audience
-          ALLOWED_APP_ID: !FindInMap
-            - EnvironmentVariables
-            - !Ref Environment
-            - AllowedAppId
+            - Audience
+          ALLOWED_APP_ID: !Join
+            - ','
+            - !FindInMap
+              - EnvironmentVariables
+              - !Ref Environment
+              - AllowedAppId
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
