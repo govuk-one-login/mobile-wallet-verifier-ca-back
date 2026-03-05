@@ -41,14 +41,14 @@ jobs:
           echo "Stack identifier: $SANITIZED (from branch: $BRANCH_NAME)"
 
       - name: Checkout Repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           ref: ${{ github.ref }}
           submodules: true
           fetch-depth: 0
 
       - name: Setup NodeJS
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
         with:
           cache: npm
           cache-dependency-path: package-lock.json
@@ -69,7 +69,7 @@ jobs:
         uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04
 
       - name: Authenticate with AWS
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
@@ -103,7 +103,7 @@ jobs:
               StackIdentifier="$STACK_IDENTIFIER"
 
       - name: Authenticate with AWS - backend role
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
