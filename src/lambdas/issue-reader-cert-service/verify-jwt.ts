@@ -4,7 +4,7 @@ import {
   errorResult,
   Result,
 } from '../common/result/result.ts';
-import { createLocalJWKSet, decodeProtectedHeader, jwtVerify } from 'jose';
+import {createLocalJWKSet, decodeProtectedHeader, JWTPayload, jwtVerify} from 'jose';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 import { InMemoryJwksCache } from '../common/jwks/jwks-cache/jwks-cache.ts';
 
@@ -57,17 +57,22 @@ export async function verifyJwt(
     keys: jwks.keys,
   });
 
+  let payload: JWTPayload;
+
   try {
-    await jwtVerify(jwt, localJwks, {
+    const verifiedJwt = await jwtVerify(jwt, localJwks, {
       issuer: expectedClaims.issuer,
       audience: expectedClaims.audience,
     });
+    payload = verifiedJwt.payload;
   } catch (error) {
     return errorResult({
       errorMessage: 'JWT signature or claims are invalid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
+
+  console.log(payload);
 
   return emptySuccess();
 }
