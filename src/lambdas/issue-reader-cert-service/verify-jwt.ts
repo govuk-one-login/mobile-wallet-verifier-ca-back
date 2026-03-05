@@ -71,6 +71,7 @@ export async function verifyJwt(
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
+    console.error('JWT verification failed:', error);
     return errorResult({
       errorMessage: 'JWT signature or claims are invalid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
