@@ -121,7 +121,7 @@ Resources:
 
   ApiGatewayMockDomain:
     Type: AWS::ApiGateway::DomainName
-    #Condition: CreateMockDomain
+    Condition: CreateMockDomain
     Properties:
       DomainName: !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
       EndpointConfiguration:
@@ -168,21 +168,21 @@ Outputs:
       Name: !Sub '${AWS::StackName}-ApiGatewayPublicDomain'
 
   MockDomainName:
-    #Condition: CreateMockDomain
+    Condition: CreateMockDomain
     Description: The mock custom domain name (for base path mappings)
     Value: !Ref ApiGatewayMockDomain
     Export:
       Name: !Sub '${AWS::StackName}-ApiGatewayMockDomain'
 
   MockDomainRegionalName:
-    #Condition: CreateMockDomain
+    Condition: CreateMockDomain
     Description: The mock regional domain name for Route53 alias
     Value: !GetAtt ApiGatewayMockDomain.RegionalDomainName
     Export:
       Name: !Sub '${AWS::StackName}-ApiGatewayMockDomainRegionalName'
 
   MockDomainRegionalHostedZoneId:
-    #Condition: CreateMockDomain
+    Condition: CreateMockDomain
     Description: The mock regional hosted zone ID for Route53 alias
     Value: !GetAtt ApiGatewayMockDomain.RegionalHostedZoneId
     Export:

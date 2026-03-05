@@ -26,7 +26,7 @@ Parameters:
       Name of the base-application stack (for CloudFormation imports).
       Defaults to 'ca-base' or 'ca-base-pr-{pr-number}'.
     Type: String
-    Default: 'richa-app-base'
+    Default: 'ca-base'
 
   CodeSigningConfigArn:
     Description: |
