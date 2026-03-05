@@ -162,26 +162,41 @@ Mappings:
       LambdaLogLevel: DEBUG
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      Audience: mockProjectId
+      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
 
     build:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      Audience: mockProjectId
+      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
 
     staging:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      Audience: mockProjectId
+      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
 
     integration:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      Audience: mockProjectId
+      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
 
     prod:
       LambdaLogLevel: INFO
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      Audience: mockProjectId
+      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
@@ -586,6 +601,18 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - FirebaseJwksUri
+          ISSUER: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - issuer
+          AUDIENCE: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - audience
+          ALLOWED_APP_ID: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - AllowedAppId
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
