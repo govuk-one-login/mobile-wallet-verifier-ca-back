@@ -147,6 +147,11 @@ Conditions:
       - !Ref EnableWafAssociation
       - 'true'
 
+  # Mock resources condition - only deploy in dev and build
+  DeployMockResources: !Or
+    - !Equals [!Ref Environment, dev]
+    - !Equals [!Ref Environment, build]
+
 Mappings:
   EnvironmentVariables:
     dev:
@@ -220,6 +225,7 @@ Resources:
   # Mock Secrets Manager secrets for certificate generation
   MockDeviceKeysSecret:
     Type: AWS::SecretsManager::Secret
+    Condition: DeployMockResources
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
@@ -235,6 +241,7 @@ Resources:
 
   MockFirebaseAppCheckKeysSecret:
     Type: AWS::SecretsManager::Secret
+    Condition: DeployMockResources
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
@@ -251,6 +258,7 @@ Resources:
   # Mock Services IAM Role
   MockServicesRole:
     Type: AWS::IAM::Role
+    Condition: DeployMockResources
     Properties:
       RoleName: !Sub '${AWS::StackName}-${Environment}-mock-services-role'
       PermissionsBoundary: !If
@@ -283,6 +291,7 @@ Resources:
   # Mock JWKS Service Lambda
   MockJWKSServiceFunction:
     Type: AWS::Serverless::Function
+    Condition: DeployMockResources
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -310,6 +319,7 @@ Resources:
 
   MockJWKSServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: DeployMockResources
     Properties:
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-mock-jwks-service
       RetentionInDays: 30
@@ -317,6 +327,7 @@ Resources:
   # Mock Issue Cert Request Lambda
   MockIssueCertRequestFunction:
     Type: AWS::Serverless::Function
+    Condition: DeployMockResources
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -349,6 +360,7 @@ Resources:
 
   MockIssueCertRequestFunctionLogGroup:
     Type: AWS::Logs::LogGroup
+    Condition: DeployMockResources
     Properties:
       LogGroupName: !Sub /aws/lambda/${AWS::StackName}-mock-issue-cert-request
       RetentionInDays: 30
@@ -356,6 +368,7 @@ Resources:
   # Mock API Gateway
   MockServicesApi:
     Type: AWS::Serverless::Api
+    Condition: DeployMockResources
     Properties:
       Name: !Sub ${AWS::StackName}-mock-services-api
       Description: Mock services API for testing - JWKS and certificate generation
@@ -401,7 +414,7 @@ Resources:
    # Base Path Mapping for Public Domain - maps the same API to the public domain
   MockApiGatewayPublicBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
-    #Condition: CreateCustomDomain
+    Condition: DeployMockResources
     Properties:
       DomainName: !ImportValue
         Fn::Sub: '${MockBaseAppStack}-ApiGatewayMockDomain'
@@ -415,6 +428,7 @@ Resources:
   # Lambda Permissions for API Gateway
   MockJWKSServicePermission:
     Type: AWS::Lambda::Permission
+    Condition: DeployMockResources
     Properties:
       FunctionName: !Ref MockJWKSServiceFunction
       Action: lambda:InvokeFunction
@@ -423,6 +437,7 @@ Resources:
 
   MockIssueCertRequestPermission:
     Type: AWS::Lambda::Permission
+    Condition: DeployMockResources
     Properties:
       FunctionName: !Ref MockIssueCertRequestFunction
       Action: lambda:InvokeFunction
@@ -831,12 +846,14 @@ Outputs:
   # Mock Services Outputs
   MockJWKSEndpoint:
     Description: Mock JWKS endpoint URL for Firebase App Check token verification
+    Condition: DeployMockResources
     Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mock-jwks'
     Export:
       Name: !Sub '${AWS::StackName}-mock-jwks-endpoint'
 
   MockIssueCertEndpoint:
     Description: Mock certificate generation endpoint URL
+    Condition: DeployMockResources
     Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/mock-issue-cert-request'
     Export:
       Name: !Sub '${AWS::StackName}-mock-issue-cert-request-endpoint'
