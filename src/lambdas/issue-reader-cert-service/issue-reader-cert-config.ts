@@ -20,7 +20,7 @@ export type IssueReaderCertConfig = Config<
 };
 
 export function getIssueReaderCertConfig(
-  env: NodeJS.ProcessEnv,
+  env: NodeJS.ProcessEnv | Record<string, string | string[]>,
 ): Result<IssueReaderCertConfig, void> {
   const envVarsResult = getRequiredEnvironmentVariables(
     env,

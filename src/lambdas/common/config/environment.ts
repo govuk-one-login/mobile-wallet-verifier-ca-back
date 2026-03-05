@@ -14,12 +14,17 @@ export type Config<T extends string> = {
 };
 
 export const getRequiredEnvironmentVariables = <T extends string>(
-  env: NodeJS.ProcessEnv,
+  env: NodeJS.ProcessEnv | Record<string, string | string[] | undefined>,
   requiredEnvironmentVariables: readonly T[],
 ): Result<Config<T>, MissingEnvVarError> => {
   const config: Partial<Config<T>> = requiredEnvironmentVariables.reduce(
     (partialConfig: Partial<Config<T>>, key) => {
-      partialConfig[key] = env[key];
+      const value = env[key];
+      if (Array.isArray(value)) {
+        partialConfig[key] = value.join(',') as Config<T>[T];
+      } else {
+        partialConfig[key] = value as Config<T>[T];
+      }
       return partialConfig;
     },
     {},
