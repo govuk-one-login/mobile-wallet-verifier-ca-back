@@ -582,6 +582,7 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - FirebaseJwksUri
+          ALLOWED_IDS: '["mock_id_1", "mock_id_2"]'
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup

@@ -4,13 +4,23 @@ import {
 } from '../common/config/environment';
 import { logger } from '../common/logger/logger';
 import { LogMessage } from '../common/logger/log-message';
-import { Result, emptyFailure } from '../common/result/result';
+import { Result, emptyFailure, successResult } from '../common/result/result';
 
-const REQUIRED_ENVIRONMENT_VARIABLES = ['FIREBASE_JWKS_URI'] as const;
+const REQUIRED_ENVIRONMENT_VARIABLES = [
+  'FIREBASE_JWKS_URI',
+  'ALLOWED_IDS',
+] as const;
 
-export type IssueReaderCertConfig = Config<
+type RawIssueReaderCertConfig = Config<
   (typeof REQUIRED_ENVIRONMENT_VARIABLES)[number]
 >;
+
+export type IssueReaderCertConfig = Omit<
+  RawIssueReaderCertConfig,
+  'ALLOWED_IDS'
+> & {
+  ALLOWED_IDS: string[];
+};
 
 export function getIssueReaderCertConfig(
   env: NodeJS.ProcessEnv,
@@ -36,7 +46,18 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
-  return envVarsResult;
+  const allowedIds = parseJsonStringArray(envVarsResult.value.ALLOWED_IDS);
+  if (!allowedIds) {
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
+      errorMessage: 'ALLOWED_IDS must be a JSON array of strings',
+    });
+    return emptyFailure();
+  }
+
+  return successResult({
+    ...envVarsResult.value,
+    ALLOWED_IDS: allowedIds,
+  });
 }
 
 const isValidUrl = (url: string): boolean => {
@@ -47,3 +68,19 @@ const isValidUrl = (url: string): boolean => {
   }
   return true;
 };
+
+function parseJsonStringArray(value: string): string[] | null {
+  try {
+    const parsedValue = JSON.parse(value);
+    if (
+      !Array.isArray(parsedValue) ||
+      !parsedValue.every((item) => typeof item === 'string')
+    ) {
+      return null;
+    }
+
+    return parsedValue;
+  } catch {
+    return null;
+  }
+}
