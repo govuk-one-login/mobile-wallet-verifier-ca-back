@@ -27,7 +27,7 @@ describe('Verify JWT', () => {
   const mockJwksUrl = 'https://mockJwksUrl.com';
   const validExpectedClaims = {
     issuer: 'mockIssuer',
-    audience: 'mockAudience',
+    audience: ['mockAudience'],
     allowedAppId: ['mockSubject'],
   };
   beforeEach(async () => {
