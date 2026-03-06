@@ -147,7 +147,7 @@ Mappings:
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: mockProjectId
+      Audience: '["mockProjectId"]'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     build:
@@ -163,7 +163,7 @@ Mappings:
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: mockProjectId
+      Audience: '["mockProjectId"]'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     integration:
@@ -171,7 +171,7 @@ Mappings:
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: mockProjectId
+      Audience: '["mockProjectId"]'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     prod:
@@ -179,7 +179,7 @@ Mappings:
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: mockProjectId
+      Audience: '["mockProjectId"]'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     CslsEgress:
