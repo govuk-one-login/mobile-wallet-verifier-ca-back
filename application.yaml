@@ -164,7 +164,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       Audience: mockProjectId
-      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     build:
       LambdaLogLevel: INFO
@@ -172,7 +172,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       Audience: mockProjectId
-      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     staging:
       LambdaLogLevel: INFO
@@ -180,7 +180,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       Audience: mockProjectId
-      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     integration:
       LambdaLogLevel: INFO
@@ -188,7 +188,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       Audience: mockProjectId
-      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     prod:
       LambdaLogLevel: INFO
@@ -196,7 +196,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       Audience: mockProjectId
-      AllowedAppId: [1:mockProjectId:ios:mockAppId, 1:mockProjectId:android:mockAppId]
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
