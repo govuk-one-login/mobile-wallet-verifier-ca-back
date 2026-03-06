@@ -25,7 +25,7 @@ describe('Handler', () => {
   const env = {
     FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
     ISSUER: 'https://mockIssuer.com/',
-    AUDIENCE: 'mockProjectId',
+    AUDIENCE: JSON.stringify(['mockAudience']),
     ALLOWED_APP_ID: ['mockAppId'],
   };
 
@@ -143,6 +143,34 @@ describe('Handler', () => {
         });
       });
     });
+
+    describe('Given AUDIENCE is not a JSON array of strings', () => {
+      beforeEach(async () => {
+        dependencies.env = JSON.parse(JSON.stringify(env));
+        dependencies.env['AUDIENCE'] = '100';
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('logs INVALID_CONFIG', async () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_CONFIG',
+          errorMessage: 'AUDIENCE must be a JSON array of strings',
+        });
+      });
+
+      it('returns 500 Internal server error', async () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            error: 'server_error',
+            error_description: 'Server Error',
+          }),
+        });
+      });
+    });
+
+
   });
 
   describe('Event validation', () => {
