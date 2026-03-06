@@ -4,7 +4,7 @@ import {
 } from '../common/config/environment';
 import { logger } from '../common/logger/logger';
 import { LogMessage } from '../common/logger/log-message';
-import { Result, emptyFailure } from '../common/result/result';
+import { Result, emptyFailure, successResult } from '../common/result/result';
 
 const REQUIRED_ENVIRONMENT_VARIABLES = [
   'FIREBASE_JWKS_URI',
@@ -13,14 +13,19 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
   'ALLOWED_APP_ID',
 ] as const;
 
-export type IssueReaderCertConfig = Config<
+type RawIssueReaderCertConfig = Config<
   (typeof REQUIRED_ENVIRONMENT_VARIABLES)[number]
+>;
+
+export type IssueReaderCertConfig = Omit<
+  RawIssueReaderCertConfig,
+  'ALLOWED_APP_ID'
 > & {
-  ALLOWED_APP_ID_ARRAY: string[];
+  ALLOWED_APP_ID: string[];
 };
 
 export function getIssueReaderCertConfig(
-  env: NodeJS.ProcessEnv | Record<string, string | string[]>,
+  env: NodeJS.ProcessEnv,
 ): Result<IssueReaderCertConfig, void> {
   const envVarsResult = getRequiredEnvironmentVariables(
     env,
@@ -43,17 +48,20 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
-  const allowedAppIds = envVarsResult.value.ALLOWED_APP_ID.split(',').map(
-    (id) => id.trim(),
+  const parsedAllowedAppId = parseJsonStringArray(
+    envVarsResult.value.ALLOWED_APP_ID,
   );
+  if (!parsedAllowedAppId) {
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
+      errorMessage: 'ALLOWED_APP_ID must be a JSON array of strings',
+    });
+    return emptyFailure();
+  }
 
-  return {
-    ...envVarsResult,
-    value: {
-      ...envVarsResult.value,
-      ALLOWED_APP_ID_ARRAY: allowedAppIds,
-    },
-  };
+  return successResult({
+    ...envVarsResult.value,
+    ALLOWED_APP_ID: parsedAllowedAppId,
+  });
 }
 
 const isValidUrl = (url: string): boolean => {
@@ -64,3 +72,20 @@ const isValidUrl = (url: string): boolean => {
   }
   return true;
 };
+
+function parseJsonStringArray(value: string): string[] | null {
+  let parsedValue: unknown;
+  try {
+    parsedValue = JSON.parse(value);
+  } catch {
+    return null;
+  }
+
+  if (
+    !Array.isArray(parsedValue) ||
+    !parsedValue.every((item) => typeof item === 'string')
+  ) {
+    return null;
+  }
+  return parsedValue;
+}
