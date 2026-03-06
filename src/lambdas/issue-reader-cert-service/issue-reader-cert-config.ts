@@ -1,5 +1,4 @@
 import {
-  Config,
   getRequiredEnvironmentVariables,
 } from '../common/config/environment';
 import { logger } from '../common/logger/logger';
@@ -47,6 +46,7 @@ export function getIssueReaderCertConfig(
   const parsedAllowedAppId = parseJsonStringArray(
     envVarsResult.value.ALLOWED_APP_ID,
   );
+
   if (!parsedAllowedAppId) {
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
       errorMessage: 'ALLOWED_APP_ID must be a JSON array of strings',
@@ -65,9 +65,9 @@ export function getIssueReaderCertConfig(
   }
 
   return successResult({
-    ...envVarsResult.value,
-    AUDIENCE: parsedAudience,
+    ...envVarsResult.value, // Spread all basic string envVars
     ALLOWED_APP_ID: parsedAllowedAppId,
+    AUDIENCE: parsedAudience,
   });
 }
 

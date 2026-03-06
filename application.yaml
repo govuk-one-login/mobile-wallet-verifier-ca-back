@@ -159,36 +159,36 @@ Conditions:
 Mappings:
   EnvironmentVariables:
     dev:
-      LambdaLogLevel: DEBUG
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: '["mockProjectId"]'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      LambdaLogLevel: DEBUG
 
     build:
-      LambdaLogLevel: INFO
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: mockProjectId
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: mockProjectId
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      LambdaLogLevel: INFO
 
     staging:
-      LambdaLogLevel: INFO
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: '["mockProjectId"]'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      LambdaLogLevel: INFO
 
     integration:
-      LambdaLogLevel: INFO
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: '["mockProjectId"]'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      LambdaLogLevel: INFO
 
     prod:
       LambdaLogLevel: INFO

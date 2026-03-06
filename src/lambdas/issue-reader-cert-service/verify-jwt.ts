@@ -23,7 +23,7 @@ const defaultDependencies: VerifyJwtDependencies = {
 
 export interface ExpectedClaims {
   issuer: string;
-  audience: string;
+  audience: string[];
   allowedAppId: string[];
 }
 export async function verifyJwt(
@@ -66,12 +66,13 @@ export async function verifyJwt(
 
   try {
     const verifiedJwt = await jwtVerify(jwt, localJwks, {
-      issuer: expectedClaims.issuer,
+      // Add alg here
       audience: expectedClaims.audience, // what is the type of audience? does this need to change?
+      issuer: expectedClaims.issuer,
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
-    console.error('JWT verification failed:', error);
+    console.error('JWT verification failed:', error); // Will remove once we've added custom error type checking
     return errorResult({
       errorMessage: 'JWT signature or claims are invalid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
