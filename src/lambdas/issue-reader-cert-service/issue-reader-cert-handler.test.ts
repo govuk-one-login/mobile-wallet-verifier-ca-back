@@ -26,7 +26,7 @@ describe('Handler', () => {
     FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
     ISSUER: 'https://mockIssuer.com/',
     AUDIENCE: JSON.stringify(['mockAudience']),
-    ALLOWED_APP_ID: ['mockAppId'],
+    ALLOWED_APP_ID: JSON.stringify(['mockAppId']),
   };
 
   beforeEach(() => {
