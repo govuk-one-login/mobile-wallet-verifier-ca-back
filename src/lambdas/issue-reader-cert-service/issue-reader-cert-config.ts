@@ -13,16 +13,12 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
   'ALLOWED_APP_ID',
 ] as const;
 
-type RawIssueReaderCertConfig = Config<
-  (typeof REQUIRED_ENVIRONMENT_VARIABLES)[number]
->;
-
-export type IssueReaderCertConfig = Omit<
-  RawIssueReaderCertConfig,
-  'ALLOWED_APP_ID'
-> & {
+export type IssueReaderCertConfig = {
+  FIREBASE_JWKS_URI: string;
+  ISSUER: string;
+  AUDIENCE: string[];
   ALLOWED_APP_ID: string[];
-};
+}
 
 export function getIssueReaderCertConfig(
   env: NodeJS.ProcessEnv,
@@ -58,8 +54,19 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
+  const parsedAudience = parseJsonStringArray(
+      envVarsResult.value.AUDIENCE,
+  );
+  if (!parsedAudience) {
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
+      errorMessage: 'AUDIENCE must be a JSON array of strings',
+    });
+    return emptyFailure();
+  }
+
   return successResult({
     ...envVarsResult.value,
+    AUDIENCE: parsedAudience,
     ALLOWED_APP_ID: parsedAllowedAppId,
   });
 }
