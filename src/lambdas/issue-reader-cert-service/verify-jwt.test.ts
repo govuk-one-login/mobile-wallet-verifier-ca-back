@@ -205,7 +205,7 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'App ID is not in the list of allowed App IDs',
+              errorMessage: 'JWT sub is not in the list of allowed App IDs',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -229,7 +229,7 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT signature or claims are invalid',
+              errorMessage: 'JWT jti claim is missing',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -253,7 +253,7 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT signature or claims are invalid',
+              errorMessage: 'JWT exp claim is missing',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );

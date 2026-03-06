@@ -67,7 +67,7 @@ export async function verifyJwt(
   try {
     const verifiedJwt = await jwtVerify(jwt, localJwks, {
       issuer: expectedClaims.issuer,
-      audience: expectedClaims.audience,
+      audience: expectedClaims.audience, // what is the type of audience? does this need to change?
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
@@ -78,16 +78,16 @@ export async function verifyJwt(
     });
   }
 
-  if (!expectedClaims.allowedAppId.includes(payload.sub as string)) {
+  if (!payload.sub || !expectedClaims.allowedAppId.includes(payload.sub)) {
     return errorResult({
-      errorMessage: 'App ID is not in the list of allowed App IDs',
+      errorMessage: 'JWT sub is not in the list of allowed App IDs',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
 
   if (!payload.jti || !payload.jti.trim()) {
     return errorResult({
-      errorMessage: 'JWT signature or claims are invalid',
+      errorMessage: 'JWT jti claim is missing',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
@@ -95,7 +95,7 @@ export async function verifyJwt(
   // Jose jwtVerify function checks the type and expiration of exp claim automatically if it exists
   if (!payload.exp) {
     return errorResult({
-      errorMessage: 'JWT signature or claims are invalid',
+      errorMessage: 'JWT exp claim is missing',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
