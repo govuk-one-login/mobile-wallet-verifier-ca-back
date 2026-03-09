@@ -7,7 +7,11 @@ import {
   successResult,
 } from '../common/result/result';
 import { describe, it, beforeEach, expect, vi, MockInstance } from 'vitest';
-import { verifyJwt, VerifyJwtDependencies } from './verify-jwt.ts';
+import {
+  InMemoryTokenReplayCache,
+  verifyJwt,
+  VerifyJwtDependencies,
+} from './verify-jwt.ts';
 import {
   CompactSign,
   exportJWK,
@@ -18,6 +22,7 @@ import {
   type JWTHeaderParameters,
 } from 'jose';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
+import { randomUUID } from "crypto";
 import '../../../tests/testUtils/matchers';
 
 describe('Verify JWT', () => {
@@ -49,6 +54,7 @@ describe('Verify JWT', () => {
     };
     dependencies = {
       jwksCache: mockJwksCache,
+      tokenReplayCache: new InMemoryTokenReplayCache,
     };
     consoleErrorSpy = vi.spyOn(console, 'error');
   });
@@ -339,6 +345,37 @@ describe('Verify JWT', () => {
     });
   });
 
+  describe('Given JWT replay is detected', () => {
+    beforeEach(async () => {
+      const jwt = await createSignedJwt(privateKey, {
+        tokenId: 'mockTokenId'
+      });
+      await verifyJwt(jwt, mockJwksUrl, validExpectedClaims, dependencies);
+      result = await verifyJwt(
+        jwt,
+        mockJwksUrl,
+        validExpectedClaims,
+        dependencies,
+      );
+    });
+
+    it('Logs error', () => {
+      expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+        messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+        errorMessage: 'JWT replay detected',
+      });
+    });
+
+    it('Returns error result with client error', () => {
+      expect(result).toEqual(
+        errorResult({
+          errorMessage: 'JWT replay detected',
+          errorCategory: ErrorCategory.CLIENT_ERROR,
+        }),
+      );
+    });
+  });
+
   describe('Given JWT is valid', () => {
     beforeEach(async () => {
       const jwt = await createSignedJwt(privateKey);
@@ -384,7 +421,7 @@ async function createSignedJwt(
     .setIssuer(options.issuer ?? 'mockIssuer')
     .setAudience(options.audience ?? 'mockAudience')
     .setSubject(options.subject ?? 'mockSubject')
-    .setJti(options.tokenId ?? 'mockTokenJti')
+    .setJti(options.tokenId ?? randomUUID())
     .setNotBefore(nowInSeconds - 5);
 
   if (options.includeExp !== false) {
