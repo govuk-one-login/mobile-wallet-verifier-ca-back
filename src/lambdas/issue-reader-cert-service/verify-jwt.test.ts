@@ -339,7 +339,7 @@ describe('Verify JWT', () => {
     });
   });
 
-  describe('WIP Happy path', () => {
+  describe('Given JWT is valid', () => {
     beforeEach(async () => {
       const jwt = await createSignedJwt(privateKey);
       result = await verifyJwt(
