@@ -9,6 +9,7 @@ import {
 import { describe, it, beforeEach, expect, vi, MockInstance } from 'vitest';
 import { verifyJwt, VerifyJwtDependencies } from './verify-jwt.ts';
 import {
+  CompactSign,
   exportJWK,
   generateKeyPair,
   SignJWT,
@@ -137,7 +138,7 @@ describe('Verify JWT', () => {
       it('Returns error result with client error', () => {
         expect(result).toEqual(
           errorResult({
-            errorMessage: 'JWT signature or claims are invalid',
+            errorMessage: 'JWT signature is invalid',
             errorCategory: ErrorCategory.CLIENT_ERROR,
           }),
         );
@@ -162,7 +163,7 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT signature or claims are invalid',
+              errorMessage: 'JWT claims are invalid',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -186,12 +187,124 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT signature or claims are invalid',
+              errorMessage: 'JWT claims are invalid',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
         });
       });
+
+      describe('Given exp claim is expired', () => {
+        beforeEach(async () => {
+          const jwtWithExpiredExp = await createSignedJwt(privateKey, {
+            expOffsetSeconds: -10,
+          });
+
+          result = await verifyJwt(
+            jwtWithExpiredExp,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
+        });
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT expired',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
+      });
+
+      describe('Given jwt algorithm is not allowed', () => {
+        beforeEach(async () => {
+          const generatedPs256KeyPair = await generateKeyPair('PS256');
+          const ps256PublicJwk = await exportJWK(
+            generatedPs256KeyPair.publicKey,
+          );
+          ps256PublicJwk.kid = 'mockPs256KeyId';
+          ps256PublicJwk.alg = 'PS256';
+          ps256PublicJwk.use = 'sig';
+
+          dependencies.jwksCache.getJwks = vi.fn().mockResolvedValue(
+            successResult({
+              keys: [ps256PublicJwk],
+            }),
+          );
+
+          const jwtWithDisallowedAlg = await createSignedJwt(
+            generatedPs256KeyPair.privateKey,
+            {
+              alg: 'PS256',
+              kid: 'mockPs256KeyId',
+            },
+          );
+
+          result = await verifyJwt(
+            jwtWithDisallowedAlg,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
+        });
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT algorithm is not allowed',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
+      });
+
+      describe('Given jwt is malformed', () => {
+        beforeEach(async () => {
+          const jwtWithNonJsonPayload =
+            await createSignedNonJsonJwt(privateKey);
+
+          result = await verifyJwt(
+            jwtWithNonJsonPayload,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
+        });
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT is malformed',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
+      });
+
+      describe('Given jws is malformed', () => {
+        beforeEach(async () => {
+          const malformedJws = await createMalformedJws(privateKey);
+
+          result = await verifyJwt(
+            malformedJws,
+            mockJwksUrl,
+            validExpectedClaims,
+            dependencies,
+          );
+        });
+
+        it('Returns error result with client error', () => {
+          expect(result).toEqual(
+            errorResult({
+              errorMessage: 'JWT is malformed',
+              errorCategory: ErrorCategory.CLIENT_ERROR,
+            }),
+          );
+        });
+      });
+
       describe('Given sub claim is not in the list of App Ids', () => {
         beforeEach(async () => {
           const jwtWithInvalidSubject = await createSignedJwt(privateKey, {
@@ -312,7 +425,9 @@ async function createSignedJwt(
     subject?: string;
     tokenId?: string;
     alg?: string;
+    kid?: string;
     includeExp?: boolean;
+    expOffsetSeconds?: number;
   } = {},
 ): Promise<string> {
   const nowInSeconds = Math.floor(Date.now() / 1000);
@@ -321,7 +436,7 @@ async function createSignedJwt(
     typ: 'JWT',
   };
   if (options.includeKid !== false) {
-    protectedHeader.kid = 'mockKeyId';
+    protectedHeader.kid = options.kid ?? 'mockKeyId';
   }
 
   let signedToken = new SignJWT({})
@@ -333,8 +448,26 @@ async function createSignedJwt(
     .setNotBefore(nowInSeconds - 5);
 
   if (options.includeExp !== false) {
-    signedToken = signedToken.setExpirationTime(nowInSeconds + 120);
+    signedToken = signedToken.setExpirationTime(
+      nowInSeconds + (options.expOffsetSeconds ?? 120),
+    );
   }
 
   return signedToken.sign(privateKey);
+}
+
+async function createSignedNonJsonJwt(privateKey: CryptoKey): Promise<string> {
+  return new CompactSign(new TextEncoder().encode('not-json'))
+    .setProtectedHeader({
+      alg: 'RS256',
+      typ: 'JWT',
+      kid: 'mockKeyId',
+    })
+    .sign(privateKey);
+}
+
+async function createMalformedJws(privateKey: CryptoKey): Promise<string> {
+  const jwt = await createSignedJwt(privateKey);
+  const [header, payload] = jwt.split('.');
+  return `${header}.${payload}.not-base64!`;
 }
