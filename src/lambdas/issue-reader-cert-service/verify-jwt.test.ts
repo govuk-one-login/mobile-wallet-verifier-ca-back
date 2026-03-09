@@ -176,6 +176,13 @@ describe('Verify JWT', () => {
           expectedErrorMessage: 'JWT expired',
         },
         {
+          scenario: 'Given exp claim does not exist',
+          jwtConfig: {
+            includeExp: false,
+          },
+          expectedErrorMessage: 'JWT exp claim is missing',
+        },
+        {
           scenario: 'Given sub claim is not in the list of App Ids',
           jwtConfig: {
             subject: 'invalidAppId',
@@ -189,13 +196,6 @@ describe('Verify JWT', () => {
             tokenId: '',
           },
           expectedErrorMessage: 'JWT jti claim is missing',
-        },
-        {
-          scenario: 'Given exp claim does not exist',
-          jwtConfig: {
-            includeExp: false,
-          },
-          expectedErrorMessage: 'JWT exp claim is missing',
         },
       ])('$scenario', ({ jwtConfig, expectedErrorMessage }) => {
         beforeEach(async () => {

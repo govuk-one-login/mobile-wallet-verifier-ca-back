@@ -85,6 +85,17 @@ export async function verifyJwt(
     });
   }
 
+  if (!payload.exp) {
+    const errorMessage = 'JWT exp claim is missing';
+    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
   if (!payload.sub || !expectedClaims.allowedAppId.includes(payload.sub)) {
     const errorMessage = 'JWT sub claim is not in the list of allowed App IDs';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
@@ -98,17 +109,6 @@ export async function verifyJwt(
 
   if (!payload.jti || !payload.jti.trim()) {
     const errorMessage = 'JWT jti claim is missing';
-    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
-      errorMessage,
-    });
-    return errorResult({
-      errorMessage,
-      errorCategory: ErrorCategory.CLIENT_ERROR,
-    });
-  }
-
-  if (!payload.exp) {
-    const errorMessage = 'JWT exp claim is missing';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
