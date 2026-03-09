@@ -27,7 +27,7 @@ const defaultDependencies: VerifyJwtDependencies = {
   jwtReplayCache: InMemoryJwtReplayCache.getSingletonInstance(),
 };
 
-export interface ExpectedClaims {
+export interface ExpectedJwtData {
   issuer: string;
   audience: string[];
   allowedAppId: string[];
@@ -36,7 +36,7 @@ export interface ExpectedClaims {
 export async function verifyJwt(
   jwt: string,
   jwksUrl: string,
-  expectedClaims: ExpectedClaims,
+  expectedJwtData: ExpectedJwtData,
   dependencies: VerifyJwtDependencies = defaultDependencies,
 ): Promise<Result<void, void>> {
   if (jwt.split('.').length !== 3) {
@@ -70,18 +70,16 @@ export async function verifyJwt(
   try {
     const verifiedJwt = await jwtVerify(jwt, localJwks, {
       algorithms: ['RS256'],
-      audience: expectedClaims.audience,
-      issuer: expectedClaims.issuer,
+      audience: expectedJwtData.audience,
+      issuer: expectedJwtData.issuer,
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
     const errorMessage = getJwtVerifyErrorMessage(error);
-
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       error,
       errorMessage,
     });
-
     return errorResult({
       errorMessage,
       errorCategory: ErrorCategory.CLIENT_ERROR,
@@ -99,7 +97,7 @@ export async function verifyJwt(
     });
   }
 
-  if (!payload.sub || !expectedClaims.allowedAppId.includes(payload.sub)) {
+  if (!payload.sub || !expectedJwtData.allowedAppId.includes(payload.sub)) {
     const errorMessage = 'JWT sub claim is not in the list of allowed App IDs';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
