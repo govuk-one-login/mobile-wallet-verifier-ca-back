@@ -72,30 +72,7 @@ export async function verifyJwt(
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
-    let errorMessage = 'JWT signature verification failed';
-
-    if (error instanceof errors.JWTClaimValidationFailed) {
-      errorMessage = 'JWT claim(s) are invalid';
-    }
-
-    if (error instanceof errors.JWTExpired) {
-      errorMessage = 'JWT expired';
-    }
-
-    if (error instanceof errors.JWSSignatureVerificationFailed) {
-      errorMessage = 'JWT signature is invalid';
-    }
-
-    if (error instanceof errors.JOSEAlgNotAllowed) {
-      errorMessage = 'JWT algorithm is not allowed';
-    }
-
-    if (
-      error instanceof errors.JWTInvalid ||
-      error instanceof errors.JWSInvalid
-    ) {
-      errorMessage = 'JWT is malformed';
-    }
+    const errorMessage = getJwtVerifyErrorMessage(error);
 
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
@@ -141,4 +118,33 @@ export async function verifyJwt(
   }
 
   return emptySuccess();
+}
+
+function getJwtVerifyErrorMessage(error: unknown): string {
+  let errorMessage = 'JWT signature verification failed';
+
+  if (error instanceof errors.JWTClaimValidationFailed) {
+    errorMessage = 'JWT claim(s) are invalid';
+  }
+
+  if (error instanceof errors.JWTExpired) {
+    errorMessage = 'JWT expired';
+  }
+
+  if (error instanceof errors.JWSSignatureVerificationFailed) {
+    errorMessage = 'JWT signature is invalid';
+  }
+
+  if (error instanceof errors.JOSEAlgNotAllowed) {
+    errorMessage = 'JWT algorithm is not allowed';
+  }
+
+  if (
+    error instanceof errors.JWTInvalid ||
+    error instanceof errors.JWSInvalid
+  ) {
+    errorMessage = 'JWT is malformed';
+  }
+
+  return errorMessage;
 }
