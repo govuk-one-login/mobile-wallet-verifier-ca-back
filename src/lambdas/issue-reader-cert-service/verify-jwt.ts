@@ -92,7 +92,7 @@ export async function verifyJwt(
   }
 
   if (!payload.jti || !payload.jti.trim()) {
-    const errorMessage = 'JWT jti claim is missing'
+    const errorMessage = 'JWT jti claim is missing';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
