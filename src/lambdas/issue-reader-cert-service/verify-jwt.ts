@@ -75,6 +75,7 @@ export async function verifyJwt(
     const errorMessage = getJwtVerifyErrorMessage(error);
 
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      error,
       errorMessage,
     });
 
