@@ -66,10 +66,9 @@ export async function verifyJwt(
   });
 
   let payload: JWTPayload;
-
   try {
     const verifiedJwt = await jwtVerify(jwt, localJwks, {
-      // add alg
+      algorithms: ['RS256'],
       audience: expectedClaims.audience,
       issuer: expectedClaims.issuer,
     });
@@ -141,7 +140,6 @@ export async function verifyJwt(
     });
   }
 
-  // Jose jwtVerify function checks the type and expiration of exp claim automatically if it exists
   if (!payload.exp) {
     const errorMessage = 'JWT exp claim is missing';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
@@ -154,4 +152,45 @@ export async function verifyJwt(
   }
 
   return emptySuccess();
+}
+
+export interface TokenReplayCache {
+  consume(tokenId: string, tokenExpiryEpochSeconds: number): boolean;
+}
+
+export class InMemoryTokenReplayCache implements TokenReplayCache {
+  private static INSTANCE: TokenReplayCache;
+  private readonly tokenExpiriesById = new Map<string, number>();
+
+  static getSingletonInstance(
+    nowInMillis: () => number = Date.now,
+  ): TokenReplayCache {
+    if (!this.INSTANCE)
+      this.INSTANCE = new InMemoryTokenReplayCache(nowInMillis);
+    return this.INSTANCE;
+  }
+
+  constructor(private readonly nowInMillis: () => number = Date.now) {}
+
+  consume(tokenId: string, tokenExpiryEpochSeconds: number): boolean {
+    this.deleteExpiredEntries();
+
+    const now = this.nowInMillis();
+    const existingTokenExpiry = this.tokenExpiriesById.get(tokenId);
+    if (existingTokenExpiry !== undefined && existingTokenExpiry > now) {
+      return false;
+    }
+
+    this.tokenExpiriesById.set(tokenId, tokenExpiryEpochSeconds * 1000);
+    return true;
+  }
+
+  private deleteExpiredEntries() {
+    const now = this.nowInMillis();
+    for (const [tokenId, expiry] of this.tokenExpiriesById.entries()) {
+      if (expiry <= now) {
+        this.tokenExpiriesById.delete(tokenId);
+      }
+    }
+  }
 }
