@@ -18,10 +18,53 @@ import { LogMessage } from '../common/logger/log-message.ts';
 
 export interface VerifyJwtDependencies {
   jwksCache: JwksCache;
+  tokenReplayCache: TokenReplayCache;
+}
+
+export interface TokenReplayCache {
+  consume(tokenId: string, tokenExpiryEpochSeconds: number): boolean;
+}
+
+export class InMemoryTokenReplayCache implements TokenReplayCache {
+  private static INSTANCE: TokenReplayCache;
+  private readonly tokenExpiriesById = new Map<string, number>();
+
+  static getSingletonInstance(
+    nowInMillis: () => number = Date.now,
+  ): TokenReplayCache {
+    if (!this.INSTANCE)
+      this.INSTANCE = new InMemoryTokenReplayCache(nowInMillis);
+    return this.INSTANCE;
+  }
+
+  constructor(private readonly nowInMillis: () => number = Date.now) {}
+
+  consume(tokenId: string, tokenExpiryEpochSeconds: number): boolean {
+    this.deleteExpiredEntries();
+
+    const now = this.nowInMillis();
+    const existingTokenExpiry = this.tokenExpiriesById.get(tokenId);
+    if (existingTokenExpiry !== undefined && existingTokenExpiry > now) {
+      return false;
+    }
+
+    this.tokenExpiriesById.set(tokenId, tokenExpiryEpochSeconds * 1000);
+    return true;
+  }
+
+  private deleteExpiredEntries() {
+    const now = this.nowInMillis();
+    for (const [tokenId, expiry] of this.tokenExpiriesById.entries()) {
+      if (expiry <= now) {
+        this.tokenExpiriesById.delete(tokenId);
+      }
+    }
+  }
 }
 
 const defaultDependencies: VerifyJwtDependencies = {
   jwksCache: InMemoryJwksCache.getSingletonInstance(),
+  tokenReplayCache: InMemoryTokenReplayCache.getSingletonInstance(),
 };
 
 export interface ExpectedClaims {
@@ -109,6 +152,17 @@ export async function verifyJwt(
 
   if (!payload.jti || !payload.jti.trim()) {
     const errorMessage = 'JWT jti claim is missing';
+    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  if (!dependencies.tokenReplayCache.consume(payload.jti, payload.exp)) {
+    const errorMessage = 'JWT replay detected';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
