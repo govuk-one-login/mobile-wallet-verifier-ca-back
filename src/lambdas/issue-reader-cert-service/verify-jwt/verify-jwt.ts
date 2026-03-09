@@ -28,9 +28,10 @@ const defaultDependencies: VerifyJwtDependencies = {
 };
 
 export interface ExpectedJwtData {
-  issuer: string;
-  audience: string[];
+  algorithm: string
   allowedAppId: string[];
+  audience: string[];
+  issuer: string;
 }
 
 export async function verifyJwt(
@@ -69,7 +70,7 @@ export async function verifyJwt(
   let payload: JWTPayload;
   try {
     const verifiedJwt = await jwtVerify(jwt, localJwks, {
-      algorithms: ['RS256'],
+      algorithms: [expectedJwtData.algorithm],
       audience: expectedJwtData.audience,
       issuer: expectedJwtData.issuer,
     });

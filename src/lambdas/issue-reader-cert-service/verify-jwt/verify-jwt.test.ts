@@ -30,9 +30,10 @@ describe('Verify JWT', () => {
   let dependencies: VerifyJwtDependencies;
   const mockJwksUrl = 'https://mockJwksUrl.com';
   const validExpectedClaims = {
-    issuer: 'mockIssuer',
-    audience: ['mockAudience'],
+    algorithm: 'RS256',
     allowedAppId: ['mockSubject'],
+    audience: ['mockAudience'],
+    issuer: 'mockIssuer',
   };
   let consoleErrorSpy: MockInstance;
   beforeEach(async () => {
