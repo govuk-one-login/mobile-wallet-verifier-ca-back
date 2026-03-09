@@ -55,14 +55,17 @@ export async function verifyJwt(
     });
   }
 
-  const jwksResult = await dependencies.jwksCache.getJwks(jwksUrl, header.kid);
-  if (jwksResult.isError) {
+  const getJwksResult = await dependencies.jwksCache.getJwks(
+    jwksUrl,
+    header.kid,
+  );
+  if (getJwksResult.isError) {
     return errorResult({
       errorMessage: 'Unexpected error when fetching JWKS',
       errorCategory: ErrorCategory.SERVER_ERROR,
     });
   }
-  const jwks = jwksResult.value;
+  const jwks = getJwksResult.value;
   const localJwks = createLocalJWKSet({
     keys: jwks.keys,
   });
