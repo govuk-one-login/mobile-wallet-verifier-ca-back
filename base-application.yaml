@@ -29,14 +29,15 @@ Parameters:
     Default: account.gov.uk
 
   MockSubDomain:
-    Description: The mock/test root domain (e.g., mock.account.gov.uk)
+    Description: The mock/test root domain (e.g., mock.verifier-ca)
     Type: String
     Default: mock
 
-  MockDomainPrefix:
+  DomainPrefix:
     Description: >
-      Optional prefix to make mock domain unique per stack (e.g., 'demo' creates demo-mock.verifier-ca.dev...).
-      Leave empty for the canonical mock domain (mock.verifier-ca.dev...).
+      Optional prefix to make all custom domains unique per stack (e.g., 'demo' creates
+      demo-api.verifier-ca.dev..., demo-origin.api.verifier-ca.dev..., demo-mock.verifier-ca.dev...).
+      Leave empty for the canonical domain names.
     Type: String
     Default: ''
 
@@ -73,7 +74,7 @@ Conditions:
     - !Equals [!Ref Environment, dev]
     - !Equals [!Ref Environment, build]
 
-  HasMockDomainPrefix: !Not [!Equals [!Ref MockDomainPrefix, '']]
+  HasDomainPrefix: !Not [!Equals [!Ref DomainPrefix, '']]
 
   CreateMockDomain: !And
     - !Condition CreateCustomDomain
@@ -89,7 +90,10 @@ Resources:
       DomainName: !If
         - IsProduction
         - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - !If
+          - HasDomainPrefix
+          - !Sub '${DomainPrefix}-${OriginPrefix}-${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+          - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
       EndpointConfiguration:
         Types:
           - REGIONAL
@@ -101,7 +105,10 @@ Resources:
           Value: !If
             - IsProduction
             - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-            - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+            - !If
+              - HasDomainPrefix
+              - !Sub '${DomainPrefix}-${OriginPrefix}-${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+              - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
         - Key: Environment
           Value: !Ref Environment
 
@@ -112,7 +119,10 @@ Resources:
       DomainName: !If
         - IsProduction
         - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - !If
+          - HasDomainPrefix
+          - !Sub '${DomainPrefix}-${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+          - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
       EndpointConfiguration:
         Types:
           - REGIONAL
@@ -124,7 +134,10 @@ Resources:
           Value: !If
             - IsProduction
             - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
-            - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+            - !If
+              - HasDomainPrefix
+              - !Sub '${DomainPrefix}-${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+              - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
         - Key: Environment
           Value: !Ref Environment
 
@@ -133,8 +146,8 @@ Resources:
     Condition: CreateMockDomain
     Properties:
       DomainName: !If
-        - HasMockDomainPrefix
-        - !Sub '${MockDomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - HasDomainPrefix
+        - !Sub '${DomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
         - !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
       EndpointConfiguration:
         Types:
@@ -145,8 +158,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !If
-            - HasMockDomainPrefix
-            - !Sub '${MockDomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+            - HasDomainPrefix
+            - !Sub '${DomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
             - !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
         - Key: Environment
           Value: !Ref Environment
@@ -175,12 +188,38 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-ApiGatewayOriginDomainRegionalHostedZoneId'
 
+  OriginDomainFullName:
+    Condition: CreateCustomDomain
+    Description: The full origin domain name (includes prefix if set)
+    Value: !If
+      - IsProduction
+      - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+      - !If
+        - HasDomainPrefix
+        - !Sub '${DomainPrefix}-${OriginPrefix}-${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - !Sub '${OriginPrefix}.${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+    Export:
+      Name: !Sub '${AWS::StackName}-OriginDomainFullName'
+
   PublicDomainName:
     Condition: CreateCustomDomain
     Description: The public custom domain name (for base path mappings)
     Value: !Ref ApiGatewayPublicDomain
     Export:
       Name: !Sub '${AWS::StackName}-ApiGatewayPublicDomain'
+
+  PublicDomainFullName:
+    Condition: CreateCustomDomain
+    Description: The full public domain name (includes prefix if set)
+    Value: !If
+      - IsProduction
+      - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${BaseDomain}'
+      - !If
+        - HasDomainPrefix
+        - !Sub '${DomainPrefix}-${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - !Sub '${ApiSubdomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicDomainFullName'
 
   MockDomainName:
     Condition: CreateMockDomain
@@ -207,8 +246,8 @@ Outputs:
     Condition: CreateMockDomain
     Description: The full mock domain name (includes prefix if set)
     Value: !If
-      - HasMockDomainPrefix
-      - !Sub '${MockDomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      - HasDomainPrefix
+      - !Sub '${DomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
       - !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
     Export:
       Name: !Sub '${AWS::StackName}-MockDomainFullName'
