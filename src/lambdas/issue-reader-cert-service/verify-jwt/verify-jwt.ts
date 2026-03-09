@@ -120,7 +120,11 @@ export async function verifyJwt(
     });
   }
 
-  if (!dependencies.jwtReplayCache.consume(payload.jti, payload.exp)) {
+  const jwtReplayCacheResult = dependencies.jwtReplayCache.consume(
+    payload.jti,
+    payload.exp,
+  );
+  if (jwtReplayCacheResult.isError) {
     const errorMessage = 'JWT replay detected';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
