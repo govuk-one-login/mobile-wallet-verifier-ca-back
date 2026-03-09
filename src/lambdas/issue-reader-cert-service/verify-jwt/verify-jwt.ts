@@ -28,7 +28,7 @@ const defaultDependencies: VerifyJwtDependencies = {
 };
 
 export interface ExpectedJwtData {
-  algorithm: string
+  algorithm: string;
   allowedAppId: string[];
   audience: string[];
   issuer: string;

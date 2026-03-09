@@ -159,6 +159,7 @@ Conditions:
 Mappings:
   EnvironmentVariables:
     dev:
+      Algorithm: 'RS256'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
@@ -167,6 +168,7 @@ Mappings:
       LambdaLogLevel: DEBUG
 
     build:
+      Algorithm: 'RS256'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: mockProjectId
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
@@ -175,6 +177,7 @@ Mappings:
       LambdaLogLevel: INFO
 
     staging:
+      Algorithm: 'RS256'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
@@ -183,6 +186,7 @@ Mappings:
       LambdaLogLevel: INFO
 
     integration:
+      Algorithm: 'RS256'
       AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
@@ -191,12 +195,13 @@ Mappings:
       LambdaLogLevel: INFO
 
     prod:
-      LambdaLogLevel: INFO
+      Algorithm: 'RS256'
+      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
-      Audience: '["mockProjectId"]'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      LambdaLogLevel: INFO
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
@@ -615,6 +620,10 @@ Resources:
               - EnvironmentVariables
               - !Ref Environment
               - AllowedAppId
+          ALGORITHM: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - Algorithm
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup

@@ -23,10 +23,11 @@ describe('Handler', () => {
   let dependencies: IssueReaderCertDependencies;
   let result: APIGatewayProxyResult;
   const env = {
+    ALGORITHM: 'RS256',
+    ALLOWED_APP_ID: JSON.stringify(['mockAppId']),
+    AUDIENCE: JSON.stringify(['mockAudience']),
     FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
     ISSUER: 'https://mockIssuer.com/',
-    AUDIENCE: JSON.stringify(['mockAudience']),
-    ALLOWED_APP_ID: JSON.stringify(['mockAppId']),
   };
 
   beforeEach(() => {
