@@ -5,13 +5,9 @@ import {
   errorResult,
   Result,
   successResult,
-} from '../common/result/result';
+} from '../../common/result/result.ts';
 import { describe, it, beforeEach, expect, vi, MockInstance } from 'vitest';
-import {
-  InMemoryJwtReplayCache,
-  verifyJwt,
-  VerifyJwtDependencies,
-} from './verify-jwt.ts';
+import { verifyJwt, VerifyJwtDependencies } from './verify-jwt.ts';
 import {
   CompactSign,
   exportJWK,
@@ -21,9 +17,10 @@ import {
   type JWK,
   type JWTHeaderParameters,
 } from 'jose';
-import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
+import { JwksCache } from '../../common/jwks/jwks-cache/types.ts';
 import { randomUUID } from 'crypto';
-import '../../../tests/testUtils/matchers';
+import '../../../../tests/testUtils/matchers.ts';
+import { InMemoryJwtReplayCache } from './jwt-replay-cache.ts';
 
 describe('Verify JWT', () => {
   let result: Result<void, void>;
