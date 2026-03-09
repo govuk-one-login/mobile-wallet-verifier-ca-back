@@ -163,7 +163,7 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT claims are invalid',
+              errorMessage: 'JWT claim(s) are invalid',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -187,7 +187,7 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT claims are invalid',
+              errorMessage: 'JWT claim(s) are invalid',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -321,14 +321,14 @@ describe('Verify JWT', () => {
         it('logs invalid sub claim', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT sub is not in the list of allowed App IDs',
+            errorMessage: 'JWT sub claim is not in the list of allowed App IDs',
           });
         });
 
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT sub is not in the list of allowed App IDs',
+              errorMessage: 'JWT sub claim is not in the list of allowed App IDs',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );

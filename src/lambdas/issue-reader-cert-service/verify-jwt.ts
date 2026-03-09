@@ -43,7 +43,6 @@ export async function verifyJwt(
   }
 
   const header = decodeProtectedHeader(jwt);
-
   if (!header.kid || !header.kid.trim()) {
     return errorResult({
       errorMessage: 'JWT header does not include kid',
@@ -60,7 +59,6 @@ export async function verifyJwt(
   }
 
   const jwks = jwksResult.value;
-
   const localJwks = createLocalJWKSet({
     keys: jwks.keys,
   });
@@ -77,7 +75,7 @@ export async function verifyJwt(
     let errorMessage = 'JWT signature verification failed';
 
     if (error instanceof errors.JWTClaimValidationFailed) {
-      errorMessage = 'JWT claims are invalid';
+      errorMessage = 'JWT claim(s) are invalid';
     }
 
     if (error instanceof errors.JWTExpired) {
@@ -106,7 +104,7 @@ export async function verifyJwt(
   }
 
   if (!payload.sub || !expectedClaims.allowedAppId.includes(payload.sub)) {
-    const errorMessage = 'JWT sub is not in the list of allowed App IDs';
+    const errorMessage = 'JWT sub claim is not in the list of allowed App IDs';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
