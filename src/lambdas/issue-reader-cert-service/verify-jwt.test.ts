@@ -8,7 +8,7 @@ import {
 } from '../common/result/result';
 import { describe, it, beforeEach, expect, vi, MockInstance } from 'vitest';
 import {
-  InMemoryTokenReplayCache,
+  InMemoryJwtReplayCache,
   verifyJwt,
   VerifyJwtDependencies,
 } from './verify-jwt.ts';
@@ -22,7 +22,7 @@ import {
   type JWTHeaderParameters,
 } from 'jose';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
-import { randomUUID } from "crypto";
+import { randomUUID } from 'crypto';
 import '../../../tests/testUtils/matchers';
 
 describe('Verify JWT', () => {
@@ -54,7 +54,7 @@ describe('Verify JWT', () => {
     };
     dependencies = {
       jwksCache: mockJwksCache,
-      tokenReplayCache: new InMemoryTokenReplayCache,
+      jwtReplayCache: new InMemoryJwtReplayCache(),
     };
     consoleErrorSpy = vi.spyOn(console, 'error');
   });
@@ -348,7 +348,7 @@ describe('Verify JWT', () => {
   describe('Given JWT replay is detected', () => {
     beforeEach(async () => {
       const jwt = await createSignedJwt(privateKey, {
-        tokenId: 'mockTokenId'
+        tokenId: 'mockTokenId',
       });
       await verifyJwt(jwt, mockJwksUrl, validExpectedClaims, dependencies);
       result = await verifyJwt(
