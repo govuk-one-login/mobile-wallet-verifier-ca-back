@@ -278,7 +278,7 @@ describe('Verify JWT', () => {
         });
       });
 
-      describe('Given jwt is malformed', () => {
+      describe('Given JWT is malformed', () => {
         beforeEach(async () => {
           const jwtWithNonJsonPayload =
             await createSignedNonJsonJwt(privateKey);
@@ -308,7 +308,7 @@ describe('Verify JWT', () => {
         });
       });
 
-      describe('Given jws is malformed', () => {
+      describe('Given JWS is malformed', () => {
         beforeEach(async () => {
           const malformedJws = await createMalformedJws(privateKey);
 
