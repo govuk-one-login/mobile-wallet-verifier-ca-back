@@ -29,6 +29,7 @@ export interface ExpectedClaims {
   audience: string[];
   allowedAppId: string[];
 }
+
 export async function verifyJwt(
   jwt: string,
   jwksUrl: string,
@@ -57,7 +58,6 @@ export async function verifyJwt(
       errorCategory: ErrorCategory.SERVER_ERROR,
     });
   }
-
   const jwks = jwksResult.value;
   const localJwks = createLocalJWKSet({
     keys: jwks.keys,
