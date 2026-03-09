@@ -1,6 +1,4 @@
-import {
-  getRequiredEnvironmentVariables,
-} from '../common/config/environment';
+import { getRequiredEnvironmentVariables } from '../common/config/environment';
 import { logger } from '../common/logger/logger';
 import { LogMessage } from '../common/logger/log-message';
 import { Result, emptyFailure, successResult } from '../common/result/result';
@@ -17,7 +15,7 @@ export type IssueReaderCertConfig = {
   ISSUER: string;
   AUDIENCE: string[];
   ALLOWED_APP_ID: string[];
-}
+};
 
 export function getIssueReaderCertConfig(
   env: NodeJS.ProcessEnv,
@@ -54,9 +52,7 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
-  const parsedAudience = parseJsonStringArray(
-      envVarsResult.value.AUDIENCE,
-  );
+  const parsedAudience = parseJsonStringArray(envVarsResult.value.AUDIENCE);
   if (!parsedAudience) {
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
       errorMessage: 'AUDIENCE must be a JSON array of strings',

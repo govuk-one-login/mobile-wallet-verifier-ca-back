@@ -49,4 +49,10 @@ export class LogMessage implements LogAttributes {
     'MOBILE_CA_GET_JWKS_SUCCESS',
     'JWKS retrieved successfully.',
   );
+
+  //JWT validation logs
+  static readonly JWT_VERIFICATION_FAILURE = new LogMessage(
+    'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+    'JWT sub is not in the list of allowed App IDs',
+  );
 }

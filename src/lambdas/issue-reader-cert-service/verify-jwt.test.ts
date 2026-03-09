@@ -6,7 +6,7 @@ import {
   Result,
   successResult,
 } from '../common/result/result';
-import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { describe, it, beforeEach, expect, vi, MockInstance } from 'vitest';
 import { verifyJwt, VerifyJwtDependencies } from './verify-jwt.ts';
 import {
   exportJWK,
@@ -17,6 +17,7 @@ import {
   type JWTHeaderParameters,
 } from 'jose';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
+import '../../../tests/testUtils/matchers';
 
 describe('Verify JWT', () => {
   let result: Result<void, void>;
@@ -30,6 +31,7 @@ describe('Verify JWT', () => {
     audience: ['mockAudience'],
     allowedAppId: ['mockSubject'],
   };
+  let consoleErrorSpy: MockInstance;
   beforeEach(async () => {
     const generatedKeyPair = await generateKeyPair('RS256');
     privateKey = generatedKeyPair.privateKey;
@@ -48,6 +50,7 @@ describe('Verify JWT', () => {
       jwksCache: mockJwksCache,
     };
   });
+  consoleErrorSpy = vi.spyOn(console, 'error');
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
       result = await verifyJwt(
@@ -200,6 +203,13 @@ describe('Verify JWT', () => {
             validExpectedClaims,
             dependencies,
           );
+        });
+
+        it('logs invalid sub claim', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT sub is not in the list of allowed App IDs',
+          });
         });
 
         it('Returns error result with client error', () => {
