@@ -135,6 +135,13 @@ describe('Verify JWT', () => {
         );
       });
 
+      it('Logs error', async () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+          errorMessage: 'JWT signature is invalid',
+        });
+      });
+
       it('Returns error result with client error', () => {
         expect(result).toEqual(
           errorResult({
@@ -158,6 +165,13 @@ describe('Verify JWT', () => {
             validExpectedClaims,
             dependencies,
           );
+        });
+
+        it('Logs error', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT claim(s) are invalid',
+          });
         });
 
         it('Returns error result with client error', () => {
@@ -184,6 +198,13 @@ describe('Verify JWT', () => {
           );
         });
 
+        it('Logs error', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT claim(s) are invalid',
+          });
+        });
+
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
@@ -206,6 +227,13 @@ describe('Verify JWT', () => {
             validExpectedClaims,
             dependencies,
           );
+        });
+
+        it('Logs error', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT expired',
+          });
         });
 
         it('Returns error result with client error', () => {
@@ -250,6 +278,13 @@ describe('Verify JWT', () => {
           );
         });
 
+        it('Logs error', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT algorithm is not allowed',
+          });
+        });
+
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
@@ -273,6 +308,13 @@ describe('Verify JWT', () => {
           );
         });
 
+        it('Logs error', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT is malformed',
+          });
+        });
+
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
@@ -293,6 +335,13 @@ describe('Verify JWT', () => {
             validExpectedClaims,
             dependencies,
           );
+        });
+
+        it('Logs error', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT is malformed',
+          });
         });
 
         it('Returns error result with client error', () => {

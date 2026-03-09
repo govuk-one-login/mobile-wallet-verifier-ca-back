@@ -97,6 +97,10 @@ export async function verifyJwt(
       errorMessage = 'JWT is malformed';
     }
 
+    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+
     return errorResult({
       errorMessage,
       errorCategory: ErrorCategory.CLIENT_ERROR,
