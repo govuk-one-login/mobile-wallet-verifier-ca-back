@@ -74,46 +74,33 @@ export async function verifyJwt(
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
+    let errorMessage = 'JWT signature verification failed';
+
     if (error instanceof errors.JWTClaimValidationFailed) {
-      return errorResult({
-        errorMessage: 'JWT claims are invalid',
-        errorCategory: ErrorCategory.CLIENT_ERROR,
-      });
+      errorMessage = 'JWT claims are invalid';
     }
 
     if (error instanceof errors.JWTExpired) {
-      return errorResult({
-        errorMessage: 'JWT expired',
-        errorCategory: ErrorCategory.CLIENT_ERROR,
-      });
+      errorMessage = 'JWT expired';
     }
 
     if (error instanceof errors.JWSSignatureVerificationFailed) {
-      return errorResult({
-        errorMessage: 'JWT signature is invalid',
-        errorCategory: ErrorCategory.CLIENT_ERROR,
-      });
+      errorMessage = 'JWT signature is invalid';
     }
 
     if (error instanceof errors.JOSEAlgNotAllowed) {
-      return errorResult({
-        errorMessage: 'JWT algorithm is not allowed',
-        errorCategory: ErrorCategory.CLIENT_ERROR,
-      });
+      errorMessage = 'JWT algorithm is not allowed';
     }
 
     if (
       error instanceof errors.JWTInvalid ||
       error instanceof errors.JWSInvalid
     ) {
-      return errorResult({
-        errorMessage: 'JWT is malformed',
-        errorCategory: ErrorCategory.CLIENT_ERROR,
-      });
+      errorMessage = 'JWT is malformed';
     }
 
     return errorResult({
-      errorMessage: 'JWT signature verification failed',
+      errorMessage,
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
