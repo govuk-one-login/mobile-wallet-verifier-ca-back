@@ -49,8 +49,8 @@ describe('Verify JWT', () => {
     dependencies = {
       jwksCache: mockJwksCache,
     };
+    consoleErrorSpy = vi.spyOn(console, 'error');
   });
-  consoleErrorSpy = vi.spyOn(console, 'error');
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
       result = await verifyJwt(
@@ -234,6 +234,13 @@ describe('Verify JWT', () => {
             validExpectedClaims,
             dependencies,
           );
+        });
+
+        it('logs invalid jti claim', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT sub is not in the list of allowed App IDs',
+          });
         });
 
         it('Returns error result with client error', () => {
