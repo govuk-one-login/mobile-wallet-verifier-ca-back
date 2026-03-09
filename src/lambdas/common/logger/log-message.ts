@@ -53,6 +53,6 @@ export class LogMessage implements LogAttributes {
   //JWT validation logs
   static readonly JWT_VERIFICATION_FAILURE = new LogMessage(
     'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-    'JWT sub is not in the list of allowed App IDs',
+    'JWT verification failed',
   );
 }
