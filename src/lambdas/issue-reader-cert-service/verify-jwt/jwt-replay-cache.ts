@@ -1,5 +1,7 @@
+import { emptyFailure, emptySuccess, Result } from '../../common/result/result';
+
 export interface JwtReplayCache {
-  consume(jti: string, expEpochSeconds: number): boolean;
+  consume(jti: string, expEpochSeconds: number): Result<void, void>;
 }
 
 export class InMemoryJwtReplayCache implements JwtReplayCache {
@@ -15,17 +17,17 @@ export class InMemoryJwtReplayCache implements JwtReplayCache {
 
   constructor(private readonly nowInMillis: () => number = Date.now) {}
 
-  consume(jti: string, expEpochSeconds: number): boolean {
+  consume(jti: string, expEpochSeconds: number): Result<void, void> {
     this.deleteExpiredEntries();
 
     const now = this.nowInMillis();
     const existingExpEpochMillis = this.expEpochMillisByJti.get(jti);
     if (existingExpEpochMillis !== undefined && existingExpEpochMillis > now) {
-      return false;
+      return emptyFailure();
     }
 
     this.expEpochMillisByJti.set(jti, expEpochSeconds * 1000);
-    return true;
+    return emptySuccess();
   }
 
   private deleteExpiredEntries() {
