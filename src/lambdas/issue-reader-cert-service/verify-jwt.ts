@@ -12,6 +12,8 @@ import {
 } from 'jose';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 import { InMemoryJwksCache } from '../common/jwks/jwks-cache/jwks-cache.ts';
+import { logger } from '../common/logger/logger.ts';
+import { LogMessage } from '../common/logger/log-message.ts';
 
 export interface VerifyJwtDependencies {
   jwksCache: JwksCache;
@@ -72,7 +74,6 @@ export async function verifyJwt(
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
-    console.error('JWT verification failed:', error); // Will remove once we've added custom error type checking
     return errorResult({
       errorMessage: 'JWT signature or claims are invalid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
@@ -80,8 +81,12 @@ export async function verifyJwt(
   }
 
   if (!payload.sub || !expectedClaims.allowedAppId.includes(payload.sub)) {
+    const errorMessage = 'JWT sub is not in the list of allowed App IDs';
+    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
     return errorResult({
-      errorMessage: 'JWT sub is not in the list of allowed App IDs',
+      errorMessage,
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }

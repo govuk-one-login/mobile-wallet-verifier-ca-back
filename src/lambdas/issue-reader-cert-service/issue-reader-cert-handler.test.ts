@@ -169,8 +169,6 @@ describe('Handler', () => {
         });
       });
     });
-
-
   });
 
   describe('Event validation', () => {

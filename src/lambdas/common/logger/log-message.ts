@@ -50,6 +50,13 @@ export class LogMessage implements LogAttributes {
     'JWKS retrieved successfully.',
   );
 
+  // Verify JWT logs
+  static readonly JWT_VERIFICATION_FAILURE = new LogMessage(
+    'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+    'JWT sub is not in the list of allowed App IDs',
+  );
+
+  // Mock logs
   static readonly MOCK_ISSUE_CERT_REQUEST_INVALID_CONFIG = new LogMessage(
     'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
     'One or more required environment variables were missing or invalid.',
