@@ -153,42 +153,56 @@ describe('Verify JWT', () => {
     });
 
     describe('Given claim validation fails', () => {
-      describe('Given issue claim is invalid', () => {
-        beforeEach(async () => {
-          const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
+      describe.each([
+        {
+          scenario: 'Given iss claim is invalid',
+          jwtConfig: {
             issuer: 'invalidIssuer',
-          });
-
-          result = await verifyJwt(
-            jwtWithInvalidIssuer,
-            mockJwksUrl,
-            validExpectedClaims,
-            dependencies,
-          );
-        });
-
-        it('Logs error', async () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT claim(s) are invalid',
-          });
-        });
-
-        it('Returns error result with client error', () => {
-          expect(result).toEqual(
-            errorResult({
-              errorMessage: 'JWT claim(s) are invalid',
-              errorCategory: ErrorCategory.CLIENT_ERROR,
-            }),
-          );
-        });
-      });
-
-      describe('Given audience claim is invalid', () => {
-        beforeEach(async () => {
-          const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
+          },
+          expectedErrorMessage: 'JWT claim(s) are invalid',
+        },
+        {
+          scenario: 'Given aud claim is invalid',
+          jwtConfig: {
             audience: 'invalidAudience',
-          });
+          },
+          expectedErrorMessage: 'JWT claim(s) are invalid',
+        },
+        {
+          scenario: 'Given exp claim is expired',
+          jwtConfig: {
+            expOffsetSeconds: -10,
+          },
+          expectedErrorMessage: 'JWT expired',
+        },
+        {
+          scenario: 'Given sub claim is not in the list of App Ids',
+          jwtConfig: {
+            subject: 'invalidAppId',
+          },
+          expectedErrorMessage:
+            'JWT sub claim is not in the list of allowed App IDs',
+        },
+        {
+          scenario: 'Given jti claim is invalid',
+          jwtConfig: {
+            tokenId: '',
+          },
+          expectedErrorMessage: 'JWT jti claim is missing',
+        },
+        {
+          scenario: 'Given exp claim does not exist',
+          jwtConfig: {
+            includeExp: false,
+          },
+          expectedErrorMessage: 'JWT exp claim is missing',
+        },
+      ])('$scenario', ({ jwtConfig, expectedErrorMessage }) => {
+        beforeEach(async () => {
+          const jwtWithInvalidIssuer = await createSignedJwt(
+            privateKey,
+            jwtConfig,
+          );
 
           result = await verifyJwt(
             jwtWithInvalidIssuer,
@@ -201,45 +215,14 @@ describe('Verify JWT', () => {
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT claim(s) are invalid',
+            errorMessage: expectedErrorMessage,
           });
         });
 
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT claim(s) are invalid',
-              errorCategory: ErrorCategory.CLIENT_ERROR,
-            }),
-          );
-        });
-      });
-
-      describe('Given exp claim is expired', () => {
-        beforeEach(async () => {
-          const jwtWithExpiredExp = await createSignedJwt(privateKey, {
-            expOffsetSeconds: -10,
-          });
-
-          result = await verifyJwt(
-            jwtWithExpiredExp,
-            mockJwksUrl,
-            validExpectedClaims,
-            dependencies,
-          );
-        });
-
-        it('Logs error', async () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT expired',
-          });
-        });
-
-        it('Returns error result with client error', () => {
-          expect(result).toEqual(
-            errorResult({
-              errorMessage: 'JWT expired',
+              errorMessage: expectedErrorMessage,
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -348,99 +331,6 @@ describe('Verify JWT', () => {
           expect(result).toEqual(
             errorResult({
               errorMessage: 'JWT is malformed',
-              errorCategory: ErrorCategory.CLIENT_ERROR,
-            }),
-          );
-        });
-      });
-
-      describe('Given sub claim is not in the list of App Ids', () => {
-        beforeEach(async () => {
-          const jwtWithInvalidSubject = await createSignedJwt(privateKey, {
-            subject: 'invalidAppId',
-          });
-          result = await verifyJwt(
-            jwtWithInvalidSubject,
-            mockJwksUrl,
-            validExpectedClaims,
-            dependencies,
-          );
-        });
-
-        it('logs invalid sub claim', async () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT sub claim is not in the list of allowed App IDs',
-          });
-        });
-
-        it('Returns error result with client error', () => {
-          expect(result).toEqual(
-            errorResult({
-              errorMessage:
-                'JWT sub claim is not in the list of allowed App IDs',
-              errorCategory: ErrorCategory.CLIENT_ERROR,
-            }),
-          );
-        });
-      });
-
-      describe('Given jti claim is invalid', () => {
-        beforeEach(async () => {
-          const jwtInvalidJti = await createSignedJwt(privateKey, {
-            tokenId: '',
-          });
-
-          result = await verifyJwt(
-            jwtInvalidJti,
-            mockJwksUrl,
-            validExpectedClaims,
-            dependencies,
-          );
-        });
-
-        it('logs invalid jti claim', async () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT jti claim is missing',
-          });
-        });
-
-        it('Returns error result with client error', () => {
-          expect(result).toEqual(
-            errorResult({
-              errorMessage: 'JWT jti claim is missing',
-              errorCategory: ErrorCategory.CLIENT_ERROR,
-            }),
-          );
-        });
-      });
-
-      describe('Given exp claim does not exist', () => {
-        beforeEach(async () => {
-          const jwtMissingExp = await createSignedJwt(privateKey, {
-            includeExp: false,
-          });
-
-          result = await verifyJwt(
-            jwtMissingExp,
-            mockJwksUrl,
-            validExpectedClaims,
-            dependencies,
-          );
-        });
-
-        it('logs exp claim is missing', async () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT exp claim is missing',
-          });
-        });
-
-        it('Returns error result with client error', () => {
-          expect(result).toEqual(
-            errorResult({
-              errorMessage: 'JWT exp claim is missing',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
