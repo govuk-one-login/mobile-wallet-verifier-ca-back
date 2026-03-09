@@ -328,7 +328,8 @@ describe('Verify JWT', () => {
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT sub claim is not in the list of allowed App IDs',
+              errorMessage:
+                'JWT sub claim is not in the list of allowed App IDs',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
