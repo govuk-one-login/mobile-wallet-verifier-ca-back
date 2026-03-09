@@ -4,17 +4,19 @@ import { LogMessage } from '../common/logger/log-message';
 import { Result, emptyFailure, successResult } from '../common/result/result';
 
 const REQUIRED_ENVIRONMENT_VARIABLES = [
+  'ALGORITHM',
+  'ALLOWED_APP_ID',
+  'AUDIENCE',
   'FIREBASE_JWKS_URI',
   'ISSUER',
-  'AUDIENCE',
-  'ALLOWED_APP_ID',
 ] as const;
 
 export type IssueReaderCertConfig = {
-  FIREBASE_JWKS_URI: string;
-  ISSUER: string;
-  AUDIENCE: string[];
+  ALGORITHM: string;
   ALLOWED_APP_ID: string[];
+  AUDIENCE: string[];
+  ISSUER: string;
+  FIREBASE_JWKS_URI: string;
 };
 
 export function getIssueReaderCertConfig(
