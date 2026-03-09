@@ -239,7 +239,7 @@ describe('Verify JWT', () => {
         it('logs invalid jti claim', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT sub is not in the list of allowed App IDs',
+            errorMessage: 'JWT jti claim is missing',
           });
         });
 
@@ -265,6 +265,13 @@ describe('Verify JWT', () => {
             validExpectedClaims,
             dependencies,
           );
+        });
+
+        it('logs exp claim is missing', async () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            errorMessage: 'JWT exp claim is missing',
+          });
         });
 
         it('Returns error result with client error', () => {

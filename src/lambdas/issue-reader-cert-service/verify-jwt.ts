@@ -92,16 +92,24 @@ export async function verifyJwt(
   }
 
   if (!payload.jti || !payload.jti.trim()) {
+    const errorMessage = 'JWT jti claim is missing'
+    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
     return errorResult({
-      errorMessage: 'JWT jti claim is missing',
+      errorMessage,
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
 
   // Jose jwtVerify function checks the type and expiration of exp claim automatically if it exists
   if (!payload.exp) {
+    const errorMessage = 'JWT exp claim is missing';
+    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
     return errorResult({
-      errorMessage: 'JWT exp claim is missing',
+      errorMessage,
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
