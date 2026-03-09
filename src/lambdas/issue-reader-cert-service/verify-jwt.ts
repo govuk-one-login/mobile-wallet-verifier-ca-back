@@ -7,6 +7,7 @@ import {
 import {
   createLocalJWKSet,
   decodeProtectedHeader,
+  errors,
   JWTPayload,
   jwtVerify,
 } from 'jose';
@@ -68,14 +69,52 @@ export async function verifyJwt(
 
   try {
     const verifiedJwt = await jwtVerify(jwt, localJwks, {
-      // Add alg here
-      audience: expectedClaims.audience, // what is the type of audience? does this need to change?
+      // add alg
+      audience: expectedClaims.audience,
       issuer: expectedClaims.issuer,
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
+    if (error instanceof errors.JWTClaimValidationFailed) {
+      return errorResult({
+        errorMessage: 'JWT claims are invalid',
+        errorCategory: ErrorCategory.CLIENT_ERROR,
+      });
+    }
+
+    if (error instanceof errors.JWTExpired) {
+      return errorResult({
+        errorMessage: 'JWT expired',
+        errorCategory: ErrorCategory.CLIENT_ERROR,
+      });
+    }
+
+    if (error instanceof errors.JWSSignatureVerificationFailed) {
+      return errorResult({
+        errorMessage: 'JWT signature is invalid',
+        errorCategory: ErrorCategory.CLIENT_ERROR,
+      });
+    }
+
+    if (error instanceof errors.JOSEAlgNotAllowed) {
+      return errorResult({
+        errorMessage: 'JWT algorithm is not allowed',
+        errorCategory: ErrorCategory.CLIENT_ERROR,
+      });
+    }
+
+    if (
+      error instanceof errors.JWTInvalid ||
+      error instanceof errors.JWSInvalid
+    ) {
+      return errorResult({
+        errorMessage: 'JWT is malformed',
+        errorCategory: ErrorCategory.CLIENT_ERROR,
+      });
+    }
+
     return errorResult({
-      errorMessage: 'JWT signature or claims are invalid',
+      errorMessage: 'JWT signature verification failed',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
