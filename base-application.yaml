@@ -33,6 +33,13 @@ Parameters:
     Type: String
     Default: mock
 
+  MockDomainPrefix:
+    Description: >
+      Optional prefix to make mock domain unique per stack (e.g., 'demo' creates demo-mock.verifier-ca.dev...).
+      Leave empty for the canonical mock domain (mock.verifier-ca.dev...).
+    Type: String
+    Default: ''
+
   ServiceSubdomain:
     Description: The service-specific subdomain (e.g., verifier-ca)
     Type: String
@@ -65,6 +72,8 @@ Conditions:
   IsDevOrBuild: !Or
     - !Equals [!Ref Environment, dev]
     - !Equals [!Ref Environment, build]
+
+  HasMockDomainPrefix: !Not [!Equals [!Ref MockDomainPrefix, '']]
 
   CreateMockDomain: !And
     - !Condition CreateCustomDomain
@@ -123,7 +132,10 @@ Resources:
     Type: AWS::ApiGateway::DomainName
     Condition: CreateMockDomain
     Properties:
-      DomainName: !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      DomainName: !If
+        - HasMockDomainPrefix
+        - !Sub '${MockDomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+        - !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
       EndpointConfiguration:
         Types:
           - REGIONAL
@@ -132,7 +144,10 @@ Resources:
       SecurityPolicy: TLS_1_2
       Tags:
         - Key: Name
-          Value: !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+          Value: !If
+            - HasMockDomainPrefix
+            - !Sub '${MockDomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+            - !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
         - Key: Environment
           Value: !Ref Environment
 
@@ -187,3 +202,13 @@ Outputs:
     Value: !GetAtt ApiGatewayMockDomain.RegionalHostedZoneId
     Export:
       Name: !Sub '${AWS::StackName}-ApiGatewayMockDomainRegionalHostedZoneId'
+
+  MockDomainFullName:
+    Condition: CreateMockDomain
+    Description: The full mock domain name (includes prefix if set)
+    Value: !If
+      - HasMockDomainPrefix
+      - !Sub '${MockDomainPrefix}-${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+      - !Sub '${MockSubDomain}.${ServiceSubdomain}.${Environment}.${BaseDomain}'
+    Export:
+      Name: !Sub '${AWS::StackName}-MockDomainFullName'
