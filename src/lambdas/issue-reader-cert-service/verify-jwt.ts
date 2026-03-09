@@ -18,45 +18,44 @@ import { LogMessage } from '../common/logger/log-message.ts';
 
 export interface VerifyJwtDependencies {
   jwksCache: JwksCache;
-  tokenReplayCache: TokenReplayCache;
+  jwtReplayCache: JwtReplayCache;
 }
 
-export interface TokenReplayCache {
-  consume(tokenId: string, tokenExpiryEpochSeconds: number): boolean;
+export interface JwtReplayCache {
+  consume(jti: string, expEpochSeconds: number): boolean;
 }
 
-export class InMemoryTokenReplayCache implements TokenReplayCache {
-  private static INSTANCE: TokenReplayCache;
-  private readonly tokenExpiriesById = new Map<string, number>();
+export class InMemoryJwtReplayCache implements JwtReplayCache {
+  private static INSTANCE: JwtReplayCache;
+  private readonly expEpochMillisByJti = new Map<string, number>();
 
   static getSingletonInstance(
     nowInMillis: () => number = Date.now,
-  ): TokenReplayCache {
-    if (!this.INSTANCE)
-      this.INSTANCE = new InMemoryTokenReplayCache(nowInMillis);
+  ): JwtReplayCache {
+    if (!this.INSTANCE) this.INSTANCE = new InMemoryJwtReplayCache(nowInMillis);
     return this.INSTANCE;
   }
 
   constructor(private readonly nowInMillis: () => number = Date.now) {}
 
-  consume(tokenId: string, tokenExpiryEpochSeconds: number): boolean {
+  consume(jti: string, expEpochSeconds: number): boolean {
     this.deleteExpiredEntries();
 
     const now = this.nowInMillis();
-    const existingTokenExpiry = this.tokenExpiriesById.get(tokenId);
-    if (existingTokenExpiry !== undefined && existingTokenExpiry > now) {
+    const existingExpEpochMillis = this.expEpochMillisByJti.get(jti);
+    if (existingExpEpochMillis !== undefined && existingExpEpochMillis > now) {
       return false;
     }
 
-    this.tokenExpiriesById.set(tokenId, tokenExpiryEpochSeconds * 1000);
+    this.expEpochMillisByJti.set(jti, expEpochSeconds * 1000);
     return true;
   }
 
   private deleteExpiredEntries() {
     const now = this.nowInMillis();
-    for (const [tokenId, expiry] of this.tokenExpiriesById.entries()) {
-      if (expiry <= now) {
-        this.tokenExpiriesById.delete(tokenId);
+    for (const [jti, expEpochMillis] of this.expEpochMillisByJti.entries()) {
+      if (expEpochMillis <= now) {
+        this.expEpochMillisByJti.delete(jti);
       }
     }
   }
@@ -64,7 +63,7 @@ export class InMemoryTokenReplayCache implements TokenReplayCache {
 
 const defaultDependencies: VerifyJwtDependencies = {
   jwksCache: InMemoryJwksCache.getSingletonInstance(),
-  tokenReplayCache: InMemoryTokenReplayCache.getSingletonInstance(),
+  jwtReplayCache: InMemoryJwtReplayCache.getSingletonInstance(),
 };
 
 export interface ExpectedClaims {
@@ -161,7 +160,7 @@ export async function verifyJwt(
     });
   }
 
-  if (!dependencies.tokenReplayCache.consume(payload.jti, payload.exp)) {
+  if (!dependencies.jwtReplayCache.consume(payload.jti, payload.exp)) {
     const errorMessage = 'JWT replay detected';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
