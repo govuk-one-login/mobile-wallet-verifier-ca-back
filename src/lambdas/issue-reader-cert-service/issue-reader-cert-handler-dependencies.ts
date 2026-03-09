@@ -1,5 +1,5 @@
 export interface IssueReaderCertDependencies {
-  env: NodeJS.ProcessEnv | Record<string, string | string[]>;
+  env: NodeJS.ProcessEnv;
 }
 
 export const dependencies: IssueReaderCertDependencies = {
