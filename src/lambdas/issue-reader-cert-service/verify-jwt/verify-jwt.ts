@@ -39,7 +39,7 @@ export async function verifyJwt(
   jwksUrl: string,
   expectedJwtData: ExpectedJwtData,
   dependencies: VerifyJwtDependencies = defaultDependencies,
-): Promise<Result<void, void>> {
+): Promise<Result<void>> {
   if (jwt.split('.').length !== 3) {
     return errorResult({
       errorMessage: 'Invalid JWT format',

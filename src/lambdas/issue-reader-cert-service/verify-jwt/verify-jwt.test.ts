@@ -23,7 +23,7 @@ import '../../../../tests/testUtils/matchers.ts';
 import { InMemoryJwtReplayCache } from './jwt-replay-cache.ts';
 
 describe('Verify JWT', () => {
-  let result: Result<void, void>;
+  let result: Result<void>;
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let mockJwksCache: JwksCache;
