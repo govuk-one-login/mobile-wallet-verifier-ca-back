@@ -46,12 +46,7 @@ describe('Verify JWT', () => {
   let consoleErrorSpy: MockInstance;
 
   beforeEach(async () => {
-    const generatedKeyPair = await generateKeyPair('RS256');
-    privateKey = generatedKeyPair.privateKey;
-    publicJwk = await exportJWK(generatedKeyPair.publicKey);
-    publicJwk.kid = 'mockKeyId';
-    publicJwk.alg = 'RS256';
-    publicJwk.use = 'sig';
+    ({ privateKey, publicJwk } = await createKeyPair());
     mockJwksCache = {
       getJwks: vi.fn().mockResolvedValue(
         successResult({
@@ -497,3 +492,20 @@ async function createJwtWithInvalidProtectedHeader(
   const [, payload, signature] = jwt.split('.');
   return `not-base64!.${payload}.${signature}`;
 }
+
+const createKeyPair = async (): Promise<{
+  privateKey: CryptoKey;
+  publicJwk: JWK;
+}> => {
+  const generatedKeyPair = await generateKeyPair('RS256');
+  const privateKey = generatedKeyPair.privateKey;
+  const publicJwk = await exportJWK(generatedKeyPair.publicKey);
+  publicJwk.kid = 'mockKeyId';
+  publicJwk.alg = 'RS256';
+  publicJwk.use = 'sig';
+
+  return {
+    privateKey,
+    publicJwk,
+  };
+};
