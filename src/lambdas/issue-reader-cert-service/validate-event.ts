@@ -15,7 +15,7 @@ export function validateEvent(
     eventHeaders ?? {},
     'X-Firebase-AppCheck',
   );
-  if (!firebaseAppCheckHeader || !firebaseAppCheckHeader.trim()) {
+  if (!firebaseAppCheckHeader?.trim()) {
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage: 'X-Firebase-AppCheck header missing from event',
     });

@@ -61,7 +61,7 @@ export async function verifyJwt(
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
-  if (!header.kid || !header.kid.trim()) {
+  if (!header.kid?.trim()) {
     return errorResult({
       errorMessage: 'JWT header does not include kid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
@@ -125,7 +125,7 @@ export async function verifyJwt(
     });
   }
 
-  if (!payload.jti || !payload.jti.trim()) {
+  if (!payload.jti?.trim()) {
     const errorMessage = 'JWT jti claim is missing';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,
