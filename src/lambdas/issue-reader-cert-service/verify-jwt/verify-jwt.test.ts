@@ -6,7 +6,15 @@ import {
   Result,
   successResult,
 } from '../../common/result/result.ts';
-import { describe, it, beforeEach, expect, vi, MockInstance } from 'vitest';
+import {
+  describe,
+  it,
+  beforeEach,
+  expect,
+  vi,
+  MockInstance,
+  afterEach,
+} from 'vitest';
 import { verifyJwt, VerifyJwtDependencies } from './verify-jwt.ts';
 import {
   CompactSign,
@@ -36,6 +44,7 @@ describe('Verify JWT', () => {
     issuer: 'mockIssuer',
   };
   let consoleErrorSpy: MockInstance;
+
   beforeEach(async () => {
     const generatedKeyPair = await generateKeyPair('RS256');
     privateKey = generatedKeyPair.privateKey;
@@ -56,6 +65,11 @@ describe('Verify JWT', () => {
     };
     consoleErrorSpy = vi.spyOn(console, 'error');
   });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
       result = await verifyJwt(

@@ -3,7 +3,15 @@ import {
   APIGatewayProxyEvent,
   APIGatewayProxyResult,
 } from 'aws-lambda';
-import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
+import {
+  describe,
+  it,
+  beforeEach,
+  expect,
+  MockInstance,
+  vi,
+  afterEach,
+} from 'vitest';
 import { handlerConstructor } from './issue-reader-cert-handler';
 import { logger } from '../common/logger/logger';
 import '../../../tests/testUtils/matchers';
@@ -48,6 +56,10 @@ describe('Handler', () => {
       env,
       verifyJwt: vi.fn().mockResolvedValue(emptySuccess()),
     };
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
   });
 
   describe('On every invocation', () => {
