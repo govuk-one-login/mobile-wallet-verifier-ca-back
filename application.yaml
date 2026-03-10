@@ -170,7 +170,7 @@ Mappings:
     build:
       Algorithm: 'RS256'
       AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
-      Audience: mockProjectId
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
@@ -614,12 +614,10 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - Audience
-          ALLOWED_APP_IDS: !Join
-            - ','
-            - !FindInMap
-              - EnvironmentVariables
-              - !Ref Environment
-              - AllowedAppIds
+          ALLOWED_APP_IDS: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - AllowedAppIds
           ALGORITHM: !FindInMap
             - EnvironmentVariables
             - !Ref Environment
