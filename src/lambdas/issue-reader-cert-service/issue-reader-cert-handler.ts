@@ -13,6 +13,11 @@ import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
 import { validateEvent } from './validate-event.ts';
 import { ExpectedJwtData } from './verify-jwt/verify-jwt.ts';
 import { ErrorCategory } from '../common/result/result.ts';
+import {
+  okResponse,
+  serverErrorResponse,
+  unauthorizedResponse,
+} from '../common/lambda-responses/lambda-responses.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -24,32 +29,19 @@ export const handlerConstructor = async (
 
   const configResult = getIssueReaderCertConfig(dependencies.env);
   if (configResult.isError) {
-    return {
-      headers: { 'Content-Type': 'application/json' },
-      statusCode: 500,
-      body: JSON.stringify({
-        error: 'server_error',
-        error_description: 'Server Error',
-      }),
-    };
+    return serverErrorResponse;
   }
-
   const config = configResult.value;
 
   const validateEventResult = validateEvent(event.headers);
   if (validateEventResult.isError) {
-    return {
-      headers: { 'Content-Type': 'application/json' },
-      statusCode: 401,
-      body: JSON.stringify({
-        error: 'unauthorized',
-        error_description:
-          'Authentication failed (App Check token missing or invalid)',
-      }),
-    };
+    return unauthorizedResponse(
+      'Authentication failed (App Check token missing or invalid)',
+    );
   }
   const jwt = validateEventResult.value;
-  const jwtData: ExpectedJwtData = {
+
+  const expectedJwtData: ExpectedJwtData = {
     algorithm: config.ALGORITHM,
     allowedAppId: config.ALLOWED_APP_ID,
     audience: config.ALLOWED_APP_ID,
@@ -58,39 +50,17 @@ export const handlerConstructor = async (
   const verifyJwtResult = await dependencies.verifyJwt(
     jwt,
     config.FIREBASE_JWKS_URI,
-    jwtData,
+    expectedJwtData,
   );
   if (verifyJwtResult.isError) {
     if (verifyJwtResult.value.errorCategory === ErrorCategory.SERVER_ERROR) {
-      return {
-        headers: { 'Content-Type': 'application/json' },
-        statusCode: 500,
-        body: JSON.stringify({
-          error: 'server_error',
-          error_description: 'Server Error',
-        }),
-      };
+      return serverErrorResponse;
     }
-    return {
-      headers: { 'Content-Type': 'application/json' },
-      statusCode: 401,
-      body: JSON.stringify({
-        error: 'unauthorized',
-        error_description: verifyJwtResult.value.errorMessage,
-      }),
-    };
+    return unauthorizedResponse(verifyJwtResult.value.errorMessage);
   }
 
   logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
-
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Request-Id': context.awsRequestId,
-    },
-    body: 'Ok',
-  };
+  return okResponse(context.awsRequestId);
 };
 
 export const handler = handlerConstructor.bind(null, dependencies);
