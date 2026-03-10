@@ -27,7 +27,7 @@ import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 import {
   createKeyPair,
   createSignedJwt,
-} from '../../../tests/testUtils/createSignedJwt.ts';
+} from '../../../tests/testUtils/create-signed-jwt.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;

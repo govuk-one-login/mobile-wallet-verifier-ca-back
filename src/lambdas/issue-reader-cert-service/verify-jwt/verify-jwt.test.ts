@@ -26,7 +26,7 @@ import {
   createSignedJwt,
   createSignedNonJsonJwt,
   createMalformedJws,
-} from '../../../../tests/testUtils/createSignedJwt.ts';
+} from '../../../../tests/testUtils/create-signed-jwt.ts';
 
 describe('Verify JWT', () => {
   let result: Result<void>;
