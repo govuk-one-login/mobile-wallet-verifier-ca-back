@@ -292,6 +292,20 @@ describe('Handler', () => {
         result = await handlerConstructor(dependencies, validEvent, context);
       });
 
+      it('calls verifyJwt with correct parameters', () =>
+        expect(dependencies.verifyJwt).toBeCalledWith(
+          'mockXFirebaseAppCheckHeaderValue',
+          dependencies.env.FIREBASE_JWKS_URI,
+          {
+            algorithm: dependencies.env.ALGORITHM,
+            allowedAppIds: JSON.parse(
+              dependencies.env.ALLOWED_APP_IDS as string,
+            ),
+            audience: JSON.parse(dependencies.env.AUDIENCE as string),
+            issuer: dependencies.env.ISSUER,
+          },
+        ));
+
       it('Logs COMPLETED', () => {
         expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
