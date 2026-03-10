@@ -31,7 +31,7 @@ describe('Verify JWT', () => {
   const mockJwksUrl = 'https://mockJwksUrl.com';
   const validExpectedClaims = {
     algorithm: 'RS256',
-    allowedAppId: ['mockSubject'],
+    allowedAppIds: ['mockSubject'],
     audience: ['mockAudience'],
     issuer: 'mockIssuer',
   };

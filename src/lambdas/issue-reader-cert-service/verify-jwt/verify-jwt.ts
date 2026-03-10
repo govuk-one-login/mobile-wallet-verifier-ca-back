@@ -29,7 +29,7 @@ const defaultDependencies: VerifyJwtDependencies = {
 
 export interface ExpectedJwtData {
   algorithm: string;
-  allowedAppId: string[];
+  allowedAppIds: string[];
   audience: string[];
   issuer: string;
 }
@@ -101,7 +101,7 @@ export async function verifyJwt(
     });
   }
 
-  if (!payload.sub || !expectedJwtData.allowedAppId.includes(payload.sub)) {
+  if (!payload.sub || !expectedJwtData.allowedAppIds.includes(payload.sub)) {
     const errorMessage = 'JWT sub claim is not in the list of allowed App IDs';
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       errorMessage,

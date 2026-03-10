@@ -5,7 +5,7 @@ import { Result, emptyFailure, successResult } from '../common/result/result';
 
 const REQUIRED_ENVIRONMENT_VARIABLES = [
   'ALGORITHM',
-  'ALLOWED_APP_ID',
+  'ALLOWED_APP_IDS',
   'AUDIENCE',
   'FIREBASE_JWKS_URI',
   'ISSUER',
@@ -13,7 +13,7 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
 
 export type IssueReaderCertConfig = {
   ALGORITHM: string;
-  ALLOWED_APP_ID: string[];
+  ALLOWED_APP_IDS: string[];
   AUDIENCE: string[];
   ISSUER: string;
   FIREBASE_JWKS_URI: string;
@@ -43,13 +43,13 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
-  const parsedAllowedAppId = parseJsonStringArray(
-    envVarsResult.value.ALLOWED_APP_ID,
+  const parsedAllowedAppIds = parseJsonStringArray(
+    envVarsResult.value.ALLOWED_APP_IDS,
   );
 
-  if (!parsedAllowedAppId) {
+  if (!parsedAllowedAppIds) {
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
-      errorMessage: 'ALLOWED_APP_ID must be a JSON array of strings',
+      errorMessage: 'ALLOWED_APP_IDS must be a JSON array of strings',
     });
     return emptyFailure();
   }
@@ -64,7 +64,7 @@ export function getIssueReaderCertConfig(
 
   return successResult({
     ...envVarsResult.value, // Spread all basic string envVars
-    ALLOWED_APP_ID: parsedAllowedAppId,
+    ALLOWED_APP_IDS: parsedAllowedAppIds,
     AUDIENCE: parsedAudience,
   });
 }
