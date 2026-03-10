@@ -24,7 +24,6 @@ import {
   emptySuccess,
   ErrorCategory,
   errorResult,
-  Result,
 } from '../common/result/result.ts';
 
 let consoleInfoSpy: MockInstance;
