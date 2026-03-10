@@ -305,7 +305,7 @@ describe('Handler', () => {
             'Content-Type': 'application/json',
             'X-Request-Id': context.awsRequestId,
           },
-          body: 'Ok',
+          body: 'OK',
         });
       });
     });
