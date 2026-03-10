@@ -12,7 +12,12 @@ import {
   buildLambdaContext,
   buildRequest,
 } from '../../../tests/testUtils/buildRequest.ts';
-import { ErrorCategory, errorResult } from '../common/result/result.ts';
+import {
+  emptySuccess,
+  ErrorCategory,
+  errorResult,
+  Result,
+} from '../common/result/result.ts';
 
 let consoleInfoSpy: MockInstance;
 let consoleErrorSpy: MockInstance;
@@ -34,9 +39,14 @@ describe('Handler', () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
     consoleErrorSpy = vi.spyOn(console, 'error');
     context = buildLambdaContext();
-    event = buildRequest();
+    event = buildRequest({
+      headers: {
+        'X-Firebase-AppCheck': 'mockXFirebaseAppCheckHeaderValue',
+      },
+    });
     dependencies = {
       env,
+      verifyJwt: vi.fn().mockResolvedValue(emptySuccess()),
     };
   });
 
@@ -231,7 +241,7 @@ describe('Handler', () => {
         dependencies.verifyJwt = vi.fn().mockResolvedValue(
           errorResult({
             errorCategory: ErrorCategory.CLIENT_ERROR,
-            errorMessage: 'Mock Client Error Message',
+            errorMessage: 'Mock verifyJwt client error message',
           }),
         );
         result = await handlerConstructor(dependencies, event, context);
@@ -242,7 +252,7 @@ describe('Handler', () => {
           statusCode: 401,
           body: JSON.stringify({
             error: 'unauthorized',
-            error_description: 'Mock Client Error Message',
+            error_description: 'Mock verifyJwt client error message',
           }),
         });
       });
@@ -253,7 +263,7 @@ describe('Handler', () => {
         dependencies.verifyJwt = vi.fn().mockResolvedValue(
           errorResult({
             errorCategory: ErrorCategory.SERVER_ERROR,
-            errorMessage: 'Mock Server Error Message',
+            errorMessage: 'Mock verifyJwt server error message',
           }),
         );
         result = await handlerConstructor(dependencies, event, context);
