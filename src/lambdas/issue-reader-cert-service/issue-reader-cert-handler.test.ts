@@ -20,11 +20,14 @@ import {
   buildLambdaContext,
   buildRequest,
 } from '../../../tests/testUtils/buildRequest.ts';
+import { emptyFailure, successResult } from '../common/result/result.ts';
+import { ExpectedJwtData, verifyJwt } from './verify-jwt/verify-jwt.ts';
+import { InMemoryJwtReplayCache } from './verify-jwt/jwt-replay-cache.ts';
+import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 import {
-  emptySuccess,
-  ErrorCategory,
-  errorResult,
-} from '../common/result/result.ts';
+  createKeyPair,
+  createSignedJwt,
+} from '../../../tests/testUtils/createSignedJwt.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -40,19 +43,48 @@ describe('Handler', () => {
   };
   let consoleInfoSpy: MockInstance;
   let consoleErrorSpy: MockInstance;
+  let mockJwksCache: JwksCache;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
     consoleErrorSpy = vi.spyOn(console, 'error');
+
+    const { privateKey, publicJwk } = await createKeyPair();
+
+    mockJwksCache = {
+      getJwks: vi.fn().mockResolvedValue(
+        successResult({
+          keys: [publicJwk],
+        }),
+      ),
+    };
+
+    const verifyJwtWithMockedJwksCache: IssueReaderCertDependencies['verifyJwt'] =
+      vi.fn(
+        (jwt: string, jwksUrl: string, expectedJwtData: ExpectedJwtData) => {
+          return verifyJwt(jwt, jwksUrl, expectedJwtData, {
+            jwksCache: mockJwksCache,
+            jwtReplayCache: new InMemoryJwtReplayCache(),
+          });
+        },
+      );
+
+    const validFireBaseJwt = await createSignedJwt(privateKey, {
+      audience: JSON.parse(env.AUDIENCE)[0],
+      issuer: env.ISSUER,
+      subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
+    });
+
     context = buildLambdaContext();
     event = buildRequest({
       headers: {
-        'X-Firebase-AppCheck': 'mockXFirebaseAppCheckHeaderValue',
+        'X-Firebase-AppCheck': validFireBaseJwt,
       },
     });
+
     dependencies = {
       env,
-      verifyJwt: vi.fn().mockResolvedValue(emptySuccess()),
+      verifyJwt: verifyJwtWithMockedJwksCache,
     };
   });
 
@@ -248,21 +280,21 @@ describe('Handler', () => {
   describe('JWT verification', () => {
     describe('JWT verification failed with client error', () => {
       beforeEach(async () => {
-        dependencies.verifyJwt = vi.fn().mockResolvedValue(
-          errorResult({
-            errorCategory: ErrorCategory.CLIENT_ERROR,
-            errorMessage: 'Mock verifyJwt client error message',
-          }),
-        );
+        event = buildRequest({
+          headers: {
+            'X-Firebase-AppCheck': 'invalid.firebase.jwt',
+          },
+        });
         result = await handlerConstructor(dependencies, event, context);
       });
+
       it('Should return 401', () => {
         expect(result).toStrictEqual({
           headers: { 'Content-Type': 'application/json' },
           statusCode: 401,
           body: JSON.stringify({
             error: 'unauthorized',
-            error_description: 'Mock verifyJwt client error message',
+            error_description: 'Invalid JWT header format',
           }),
         });
       });
@@ -270,14 +302,10 @@ describe('Handler', () => {
 
     describe('JWT verification failed with server error', () => {
       beforeEach(async () => {
-        dependencies.verifyJwt = vi.fn().mockResolvedValue(
-          errorResult({
-            errorCategory: ErrorCategory.SERVER_ERROR,
-            errorMessage: 'Mock verifyJwt server error message',
-          }),
-        );
+        mockJwksCache.getJwks = vi.fn().mockResolvedValue(emptyFailure());
         result = await handlerConstructor(dependencies, event, context);
       });
+
       it('Should return 500', () => {
         expect(result).toStrictEqual({
           headers: { 'Content-Type': 'application/json' },
@@ -294,17 +322,12 @@ describe('Handler', () => {
   describe('WIP happy path tests', () => {
     describe('Given a valid event', () => {
       beforeEach(async () => {
-        const validEvent = buildRequest({
-          headers: {
-            'X-Firebase-AppCheck': 'mockXFirebaseAppCheckHeaderValue',
-          },
-        });
-        result = await handlerConstructor(dependencies, validEvent, context);
+        result = await handlerConstructor(dependencies, event, context);
       });
 
       it('calls verifyJwt with correct parameters', () =>
         expect(dependencies.verifyJwt).toBeCalledWith(
-          'mockXFirebaseAppCheckHeaderValue',
+          event.headers?.['X-Firebase-AppCheck'],
           dependencies.env.FIREBASE_JWKS_URI,
           {
             algorithm: dependencies.env.ALGORITHM,
