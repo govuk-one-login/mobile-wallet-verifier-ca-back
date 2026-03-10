@@ -155,7 +155,7 @@ export async function verifyJwt(
 }
 
 function getJwtVerifyErrorMessage(error: unknown): string {
-  let errorMessage = 'JWT signature verification failed';
+  let errorMessage = 'JWT verification failed';
 
   if (error instanceof errors.JWTClaimValidationFailed) {
     errorMessage = 'JWT claim(s) are invalid';

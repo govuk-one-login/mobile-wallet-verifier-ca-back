@@ -237,6 +237,14 @@ describe('Verify JWT', () => {
           },
           expectedErrorMessage: 'JWT jti claim is missing',
         },
+        {
+          scenario:
+            'Given other verification failure happens that is not explicitly handled',
+          jwtConfig: {
+            kid: 'invalidKid',
+          },
+          expectedErrorMessage: 'JWT verification failed',
+        },
       ])('$scenario', ({ jwtConfig, expectedErrorMessage }) => {
         beforeEach(async () => {
           const jwtWithInvalidIssuer = await createSignedJwt(
