@@ -144,7 +144,7 @@ Mappings:
   EnvironmentVariables:
     dev:
       Algorithm: 'RS256'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
@@ -153,7 +153,7 @@ Mappings:
 
     build:
       Algorithm: 'RS256'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: mockProjectId
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
@@ -162,7 +162,7 @@ Mappings:
 
     staging:
       Algorithm: 'RS256'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
@@ -171,7 +171,7 @@ Mappings:
 
     integration:
       Algorithm: 'RS256'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
@@ -180,7 +180,7 @@ Mappings:
 
     prod:
       Algorithm: 'RS256'
-      AllowedAppId: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
@@ -368,12 +368,12 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - Audience
-          ALLOWED_APP_ID: !Join
+          ALLOWED_APP_IDS: !Join
             - ','
             - !FindInMap
               - EnvironmentVariables
               - !Ref Environment
-              - AllowedAppId
+              - AllowedAppIds
           ALGORITHM: !FindInMap
             - EnvironmentVariables
             - !Ref Environment

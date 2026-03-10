@@ -29,7 +29,7 @@ describe('Handler', () => {
   let result: APIGatewayProxyResult;
   const env = {
     ALGORITHM: 'RS256',
-    ALLOWED_APP_ID: JSON.stringify(['mockAppId']),
+    ALLOWED_APP_IDS: JSON.stringify(['mockAppId']),
     AUDIENCE: JSON.stringify(['mockAudience']),
     FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
     ISSUER: 'https://mockIssuer.com/',
@@ -129,17 +129,17 @@ describe('Handler', () => {
       });
     });
 
-    describe('Given ALLOWED_APP_ID is not a JSON array of strings', () => {
+    describe('Given ALLOWED_APP_IDS is not a JSON array of strings', () => {
       beforeEach(async () => {
         dependencies.env = JSON.parse(JSON.stringify(env));
-        dependencies.env['ALLOWED_APP_ID'] = '100';
+        dependencies.env['ALLOWED_APP_IDS'] = '100';
         result = await handlerConstructor(dependencies, event, context);
       });
 
       it('logs INVALID_CONFIG', async () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_CONFIG',
-          errorMessage: 'ALLOWED_APP_ID must be a JSON array of strings',
+          errorMessage: 'ALLOWED_APP_IDS must be a JSON array of strings',
         });
       });
 

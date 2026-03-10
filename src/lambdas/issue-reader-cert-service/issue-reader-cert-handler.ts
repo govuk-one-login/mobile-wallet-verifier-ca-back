@@ -43,8 +43,8 @@ export const handlerConstructor = async (
 
   const expectedJwtData: ExpectedJwtData = {
     algorithm: config.ALGORITHM,
-    allowedAppId: config.ALLOWED_APP_ID,
-    audience: config.ALLOWED_APP_ID,
+    allowedAppIds: config.ALLOWED_APP_IDS,
+    audience: config.ALLOWED_APP_IDS,
     issuer: config.ISSUER,
   };
   const verifyJwtResult = await dependencies.verifyJwt(
