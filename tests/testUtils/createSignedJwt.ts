@@ -15,7 +15,7 @@ export async function createSignedJwt(
     issuer?: string;
     audience?: string;
     subject?: string;
-    tokenId?: string;
+    jti?: string;
     alg?: string;
     kid?: string;
     includeExp?: boolean;
@@ -36,7 +36,7 @@ export async function createSignedJwt(
     .setIssuer(options.issuer ?? 'mockIssuer')
     .setAudience(options.audience ?? 'mockAudience')
     .setSubject(options.subject ?? 'mockSubject')
-    .setJti(options.tokenId ?? randomUUID())
+    .setJti(options.jti ?? randomUUID())
     .setNotBefore(nowInSeconds - 5);
 
   if (options.includeExp !== false) {

@@ -233,7 +233,7 @@ describe('Verify JWT', () => {
         {
           scenario: 'Given jti claim is invalid',
           jwtConfig: {
-            tokenId: '',
+            jti: '',
           },
           expectedErrorMessage: 'JWT jti claim is missing',
         },
@@ -382,7 +382,7 @@ describe('Verify JWT', () => {
   describe('Given JWT replay is detected', () => {
     beforeEach(async () => {
       const jwt = await createSignedJwt(privateKey, {
-        tokenId: 'mockTokenId',
+        jti: 'mockJti',
       });
       await verifyJwt(jwt, mockJwksUrl, validExpectedClaims, dependencies);
       result = await verifyJwt(
