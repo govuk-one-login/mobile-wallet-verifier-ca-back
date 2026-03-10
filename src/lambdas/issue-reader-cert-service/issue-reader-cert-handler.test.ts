@@ -26,9 +26,6 @@ import {
   errorResult,
 } from '../common/result/result.ts';
 
-let consoleInfoSpy: MockInstance;
-let consoleErrorSpy: MockInstance;
-
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
   let context: Context;
@@ -41,6 +38,8 @@ describe('Handler', () => {
     FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
     ISSUER: 'https://mockIssuer.com/',
   };
+  let consoleInfoSpy: MockInstance;
+  let consoleErrorSpy: MockInstance;
 
   beforeEach(() => {
     consoleInfoSpy = vi.spyOn(console, 'info');
