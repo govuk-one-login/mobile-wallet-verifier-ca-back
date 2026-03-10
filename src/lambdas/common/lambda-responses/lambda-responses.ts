@@ -18,8 +18,8 @@ export const unauthorizedResponse = (
     headers: { 'Content-Type': 'application/json' },
     statusCode: 401,
     body: JSON.stringify({
-      error: 'unauthorized',
-      error_description: errorDescription,
+      code: 'unauthorized',
+      message: errorDescription,
     }),
   };
 };
@@ -28,7 +28,7 @@ export const serverErrorResponse: APIGatewayProxyResult = {
   headers: { 'Content-Type': 'application/json' },
   statusCode: 500,
   body: JSON.stringify({
-    error: 'server_error',
-    error_description: 'Server Error',
+    code: 'server_error',
+    message: 'Server Error',
   }),
 };

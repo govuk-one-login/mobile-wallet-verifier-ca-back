@@ -137,8 +137,8 @@ describe('Handler', () => {
             headers: { 'Content-Type': 'application/json' },
             statusCode: 500,
             body: JSON.stringify({
-              error: 'server_error',
-              error_description: 'Server Error',
+              code: 'server_error',
+              message: 'Server Error',
             }),
           });
         });
@@ -164,8 +164,8 @@ describe('Handler', () => {
           headers: { 'Content-Type': 'application/json' },
           statusCode: 500,
           body: JSON.stringify({
-            error: 'server_error',
-            error_description: 'Server Error',
+            code: 'server_error',
+            message: 'Server Error',
           }),
         });
       });
@@ -190,8 +190,8 @@ describe('Handler', () => {
           headers: { 'Content-Type': 'application/json' },
           statusCode: 500,
           body: JSON.stringify({
-            error: 'server_error',
-            error_description: 'Server Error',
+            code: 'server_error',
+            message: 'Server Error',
           }),
         });
       });
@@ -216,8 +216,8 @@ describe('Handler', () => {
           headers: { 'Content-Type': 'application/json' },
           statusCode: 500,
           body: JSON.stringify({
-            error: 'server_error',
-            error_description: 'Server Error',
+            code: 'server_error',
+            message: 'Server Error',
           }),
         });
       });
@@ -267,8 +267,8 @@ describe('Handler', () => {
             headers: { 'Content-Type': 'application/json' },
             statusCode: 401,
             body: JSON.stringify({
-              error: 'unauthorized',
-              error_description:
+              code: 'unauthorized',
+              message:
                 'Authentication failed (App Check token missing or invalid)',
             }),
           });
@@ -293,8 +293,8 @@ describe('Handler', () => {
           headers: { 'Content-Type': 'application/json' },
           statusCode: 401,
           body: JSON.stringify({
-            error: 'unauthorized',
-            error_description: 'Invalid JWT header format',
+            code: 'unauthorized',
+            message: 'Invalid JWT header format',
           }),
         });
       });
@@ -311,8 +311,8 @@ describe('Handler', () => {
           headers: { 'Content-Type': 'application/json' },
           statusCode: 500,
           body: JSON.stringify({
-            error: 'server_error',
-            error_description: 'Server Error',
+            code: 'server_error',
+            message: 'Server Error',
           }),
         });
       });
