@@ -76,6 +76,35 @@ describe('Verify JWT', () => {
     });
   });
 
+  describe('Given JWT header is invalid', () => {
+    beforeEach(async () => {
+      const jwtWithInvalidProtectedHeader =
+        await createJwtWithInvalidProtectedHeader(privateKey);
+      result = await verifyJwt(
+        jwtWithInvalidProtectedHeader,
+        mockJwksUrl,
+        validExpectedClaims,
+        dependencies,
+      );
+    });
+
+    it('Logs error', () => {
+      expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+        messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+        errorMessage: 'Invalid JWT header format',
+      });
+    });
+
+    it('Returns error result with client error', () => {
+      expect(result).toEqual(
+        errorResult({
+          errorMessage: 'Invalid JWT header format',
+          errorCategory: ErrorCategory.CLIENT_ERROR,
+        }),
+      );
+    });
+  });
+
   describe('Given JWT header does not include kid', () => {
     beforeEach(async () => {
       const jwtWithoutKid = await createSignedJwt(privateKey, {
@@ -445,4 +474,12 @@ async function createMalformedJws(privateKey: CryptoKey): Promise<string> {
   const jwt = await createSignedJwt(privateKey);
   const [header, payload] = jwt.split('.');
   return `${header}.${payload}.not-base64!`;
+}
+
+async function createJwtWithInvalidProtectedHeader(
+  privateKey: CryptoKey,
+): Promise<string> {
+  const jwt = await createSignedJwt(privateKey);
+  const [, payload, signature] = jwt.split('.');
+  return `not-base64!.${payload}.${signature}`;
 }

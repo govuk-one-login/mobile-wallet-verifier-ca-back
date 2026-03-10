@@ -10,6 +10,7 @@ import {
   errors,
   JWTPayload,
   jwtVerify,
+  ProtectedHeaderParameters,
 } from 'jose';
 import { JwksCache } from '../../common/jwks/jwks-cache/types.ts';
 import { InMemoryJwksCache } from '../../common/jwks/jwks-cache/jwks-cache.ts';
@@ -47,7 +48,19 @@ export async function verifyJwt(
     });
   }
 
-  const header = decodeProtectedHeader(jwt);
+  let header: ProtectedHeaderParameters;
+  try {
+    header = decodeProtectedHeader(jwt);
+  } catch {
+    const errorMessage = 'Invalid JWT header format';
+    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
   if (!header.kid || !header.kid.trim()) {
     return errorResult({
       errorMessage: 'JWT header does not include kid',
