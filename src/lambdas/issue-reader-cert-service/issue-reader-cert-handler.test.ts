@@ -268,8 +268,7 @@ describe('Handler', () => {
             statusCode: 401,
             body: JSON.stringify({
               code: 'unauthorized',
-              message:
-                'Authentication failed (App Check token missing or invalid)',
+              message: 'X-Firebase-AppCheck header missing from event',
             }),
           });
         });

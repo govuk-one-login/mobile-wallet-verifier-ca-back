@@ -35,9 +35,7 @@ export const handlerConstructor = async (
 
   const validateEventResult = validateEvent(event.headers);
   if (validateEventResult.isError) {
-    return unauthorizedResponse(
-      'Authentication failed (App Check token missing or invalid)',
-    );
+    return unauthorizedResponse(validateEventResult.value);
   }
   const jwt = validateEventResult.value;
 
