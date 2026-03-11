@@ -7,7 +7,6 @@ import {
 import {
   createLocalJWKSet,
   decodeProtectedHeader,
-  errors,
   JWTPayload,
   jwtVerify,
   ProtectedHeaderParameters,
@@ -17,6 +16,7 @@ import { InMemoryJwksCache } from '../../common/jwks/jwks-cache/jwks-cache.ts';
 import { logger } from '../../common/logger/logger.ts';
 import { LogMessage } from '../../common/logger/log-message.ts';
 import { InMemoryJwtReplayCache, JwtReplayCache } from './jwt-replay-cache.ts';
+import { getVerifyJwtErrorMessage } from './get-verify-jwt-error-message.ts';
 
 export interface VerifyJwtDependencies {
   jwksCache: JwksCache;
@@ -94,7 +94,7 @@ export async function verifyJwt(
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
-    const errorMessage = getJwtVerifyErrorMessage(error);
+    const errorMessage = getVerifyJwtErrorMessage(error);
     logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
       error,
       errorMessage,
@@ -154,38 +154,4 @@ export async function verifyJwt(
   }
 
   return emptySuccess();
-}
-
-function getJwtVerifyErrorMessage(error: unknown): string {
-  let errorMessage = 'JWT verification failed';
-
-  if (error instanceof errors.JWTClaimValidationFailed) {
-    const invalidClaim = error.claim;
-    if (invalidClaim) {
-      errorMessage = `JWT ${invalidClaim} claim is invalid`;
-    } else {
-      errorMessage = 'JWT claim(s) are invalid';
-    }
-  }
-
-  if (error instanceof errors.JWTExpired) {
-    errorMessage = 'JWT expired';
-  }
-
-  if (error instanceof errors.JWSSignatureVerificationFailed) {
-    errorMessage = 'JWT signature is invalid';
-  }
-
-  if (error instanceof errors.JOSEAlgNotAllowed) {
-    errorMessage = 'JWT algorithm is not allowed';
-  }
-
-  if (
-    error instanceof errors.JWTInvalid ||
-    error instanceof errors.JWSInvalid
-  ) {
-    errorMessage = 'JWT is malformed';
-  }
-
-  return errorMessage;
 }
