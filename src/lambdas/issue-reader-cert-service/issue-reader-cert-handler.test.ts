@@ -324,7 +324,7 @@ describe('Handler', () => {
     });
   });
 
-  describe('WIP happy path tests', () => {
+  describe('Happy path tests', () => {
     describe('Given a valid event', () => {
       beforeEach(async () => {
         result = await handlerConstructor(dependencies, event, context);
