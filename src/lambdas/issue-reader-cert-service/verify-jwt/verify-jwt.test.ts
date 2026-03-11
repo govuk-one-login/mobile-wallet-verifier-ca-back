@@ -76,7 +76,7 @@ describe('Verify JWT', () => {
     it('Returns error result with client error', () => {
       expect(result).toEqual(
         errorResult({
-          errorMessage: 'Invalid JWT format',
+          errorMessage: 'Invalid App Check JWT format',
           errorCategory: ErrorCategory.CLIENT_ERROR,
         }),
       );
@@ -98,14 +98,14 @@ describe('Verify JWT', () => {
     it('Logs error', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
         messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-        errorMessage: 'Invalid JWT header format',
+        errorMessage: 'Invalid App Check JWT header format',
       });
     });
 
     it('Returns error result with client error', () => {
       expect(result).toEqual(
         errorResult({
-          errorMessage: 'Invalid JWT header format',
+          errorMessage: 'Invalid App Check JWT header format',
           errorCategory: ErrorCategory.CLIENT_ERROR,
         }),
       );
@@ -128,7 +128,7 @@ describe('Verify JWT', () => {
     it('Returns error result with client error', () => {
       expect(result).toEqual(
         errorResult({
-          errorMessage: 'JWT header does not include kid',
+          errorMessage: 'App Check JWT header does not include kid',
           errorCategory: ErrorCategory.CLIENT_ERROR,
         }),
       );
@@ -178,14 +178,14 @@ describe('Verify JWT', () => {
       it('Logs error', async () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-          errorMessage: 'JWT signature is invalid',
+          errorMessage: 'App Check JWT signature is invalid',
         });
       });
 
       it('Returns error result with client error', () => {
         expect(result).toEqual(
           errorResult({
-            errorMessage: 'JWT signature is invalid',
+            errorMessage: 'App Check JWT signature is invalid',
             errorCategory: ErrorCategory.CLIENT_ERROR,
           }),
         );
@@ -199,50 +199,50 @@ describe('Verify JWT', () => {
           jwtConfig: {
             issuer: 'invalidIssuer',
           },
-          expectedErrorMessage: 'JWT iss claim is invalid',
+          expectedErrorMessage: 'App Check JWT iss claim is invalid',
         },
         {
           scenario: 'Given aud claim is invalid',
           jwtConfig: {
             audience: 'invalidAudience',
           },
-          expectedErrorMessage: 'JWT aud claim is invalid',
+          expectedErrorMessage: 'App Check JWT aud claim is invalid',
         },
         {
           scenario: 'Given nbf claim is in the future',
           jwtConfig: {
             nbfOffsetSeconds: 120,
           },
-          expectedErrorMessage: 'JWT nbf claim is invalid',
+          expectedErrorMessage: 'App Check JWT nbf claim is invalid',
         },
         {
           scenario: 'Given exp claim is expired',
           jwtConfig: {
             expOffsetSeconds: -10,
           },
-          expectedErrorMessage: 'JWT expired',
+          expectedErrorMessage: 'App Check JWT expired',
         },
         {
           scenario: 'Given exp claim does not exist',
           jwtConfig: {
             includeExp: false,
           },
-          expectedErrorMessage: 'JWT exp claim is missing',
+          expectedErrorMessage: 'App Check JWT exp claim is missing',
         },
         {
           scenario: 'Given sub claim is not in the list of App Ids',
           jwtConfig: {
-            subject: 'invalidAppId',
+            subject: 'App Check invalidAppId',
           },
           expectedErrorMessage:
-            'JWT sub claim is not in the list of allowed App IDs',
+            'App Check JWT sub claim is not in the list of allowed App IDs',
         },
         {
           scenario: 'Given jti claim is invalid',
           jwtConfig: {
             jti: '',
           },
-          expectedErrorMessage: 'JWT jti claim is missing',
+          expectedErrorMessage: 'App Check JWT jti claim is missing',
         },
         {
           scenario:
@@ -250,7 +250,7 @@ describe('Verify JWT', () => {
           jwtConfig: {
             kid: 'differentKid',
           },
-          expectedErrorMessage: 'JWT verification failed',
+          expectedErrorMessage: 'App Check JWT verification failed',
         },
       ])('$scenario', ({ jwtConfig, expectedErrorMessage }) => {
         beforeEach(async () => {
@@ -319,14 +319,14 @@ describe('Verify JWT', () => {
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT algorithm is not allowed',
+            errorMessage: 'App Check JWT algorithm is not allowed',
           });
         });
 
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT algorithm is not allowed',
+              errorMessage: 'App Check JWT algorithm is not allowed',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -349,14 +349,14 @@ describe('Verify JWT', () => {
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT is malformed',
+            errorMessage: 'App Check JWT is malformed',
           });
         });
 
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT is malformed',
+              errorMessage: 'App Check JWT is malformed',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -378,14 +378,14 @@ describe('Verify JWT', () => {
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-            errorMessage: 'JWT is malformed',
+            errorMessage: 'App Check JWT is malformed',
           });
         });
 
         it('Returns error result with client error', () => {
           expect(result).toEqual(
             errorResult({
-              errorMessage: 'JWT is malformed',
+              errorMessage: 'App Check JWT is malformed',
               errorCategory: ErrorCategory.CLIENT_ERROR,
             }),
           );
@@ -411,14 +411,14 @@ describe('Verify JWT', () => {
     it('Logs error', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
         messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-        errorMessage: 'JWT replay detected',
+        errorMessage: 'App Check JWT replay detected',
       });
     });
 
     it('Returns error result with client error', () => {
       expect(result).toEqual(
         errorResult({
-          errorMessage: 'JWT replay detected',
+          errorMessage: 'App Check JWT replay detected',
           errorCategory: ErrorCategory.CLIENT_ERROR,
         }),
       );

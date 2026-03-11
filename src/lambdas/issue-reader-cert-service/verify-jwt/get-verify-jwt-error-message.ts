@@ -1,34 +1,34 @@
 import { errors } from 'jose';
 
 export function getVerifyJwtErrorMessage(error: unknown): string {
-  let errorMessage = 'JWT verification failed';
+  let errorMessage = 'App Check JWT verification failed';
 
   if (error instanceof errors.JWTClaimValidationFailed) {
     const invalidClaim = error.claim;
     if (invalidClaim) {
-      errorMessage = `JWT ${invalidClaim} claim is invalid`;
+      errorMessage = `App Check JWT ${invalidClaim} claim is invalid`;
     } else {
-      errorMessage = 'JWT claim(s) are invalid';
+      errorMessage = 'App Check JWT claim(s) are invalid';
     }
   }
 
   if (error instanceof errors.JWTExpired) {
-    errorMessage = 'JWT expired';
+    errorMessage = 'App Check JWT expired';
   }
 
   if (error instanceof errors.JWSSignatureVerificationFailed) {
-    errorMessage = 'JWT signature is invalid';
+    errorMessage = 'App Check JWT signature is invalid';
   }
 
   if (error instanceof errors.JOSEAlgNotAllowed) {
-    errorMessage = 'JWT algorithm is not allowed';
+    errorMessage = 'App Check JWT algorithm is not allowed';
   }
 
   if (
     error instanceof errors.JWTInvalid ||
     error instanceof errors.JWSInvalid
   ) {
-    errorMessage = 'JWT is malformed';
+    errorMessage = 'App Check JWT is malformed';
   }
 
   return errorMessage;

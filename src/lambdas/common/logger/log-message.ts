@@ -51,9 +51,9 @@ export class LogMessage implements LogAttributes {
   );
 
   // Verify JWT logs
-  static readonly JWT_VERIFICATION_FAILURE = new LogMessage(
+  static readonly APP_CHECK_JWT_VERIFICATION_FAILURE = new LogMessage(
     'MOBILE_CA_JWT_VERIFICATION_FAILURE',
-    'JWT verification failed',
+    'App Check JWT verification failed',
   );
 
   // Mock logs

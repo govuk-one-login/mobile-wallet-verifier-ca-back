@@ -43,7 +43,7 @@ export async function verifyJwt(
 ): Promise<Result<void>> {
   if (jwt.split('.').length !== 3) {
     return errorResult({
-      errorMessage: 'Invalid JWT format',
+      errorMessage: 'Invalid App Check JWT format',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
@@ -52,8 +52,8 @@ export async function verifyJwt(
   try {
     header = decodeProtectedHeader(jwt);
   } catch {
-    const errorMessage = 'Invalid JWT header format';
-    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+    const errorMessage = 'Invalid App Check JWT header format';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
     return errorResult({
@@ -63,7 +63,7 @@ export async function verifyJwt(
   }
   if (!header.kid?.trim()) {
     return errorResult({
-      errorMessage: 'JWT header does not include kid',
+      errorMessage: 'App Check JWT header does not include kid',
       errorCategory: ErrorCategory.CLIENT_ERROR,
     });
   }
@@ -95,7 +95,7 @@ export async function verifyJwt(
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
     const errorMessage = getVerifyJwtErrorMessage(error);
-    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
       error,
       errorMessage,
     });
@@ -106,8 +106,8 @@ export async function verifyJwt(
   }
 
   if (!payload.exp) {
-    const errorMessage = 'JWT exp claim is missing';
-    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+    const errorMessage = 'App Check JWT exp claim is missing';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
     return errorResult({
@@ -117,8 +117,9 @@ export async function verifyJwt(
   }
 
   if (!payload.sub || !expectedJwtData.allowedAppIds.includes(payload.sub)) {
-    const errorMessage = 'JWT sub claim is not in the list of allowed App IDs';
-    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+    const errorMessage =
+      'App Check JWT sub claim is not in the list of allowed App IDs';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
     return errorResult({
@@ -128,8 +129,8 @@ export async function verifyJwt(
   }
 
   if (!payload.jti?.trim()) {
-    const errorMessage = 'JWT jti claim is missing';
-    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+    const errorMessage = 'App Check JWT jti claim is missing';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
     return errorResult({
@@ -143,8 +144,8 @@ export async function verifyJwt(
     payload.exp,
   );
   if (jwtReplayCacheResult.isError) {
-    const errorMessage = 'JWT replay detected';
-    logger.error(LogMessage.JWT_VERIFICATION_FAILURE, {
+    const errorMessage = 'App Check JWT replay detected';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
       errorMessage,
     });
     return errorResult({
