@@ -12,14 +12,14 @@ export const okResponse = (awsRequestId: string): APIGatewayProxyResult => {
 };
 
 export const unauthorizedResponse = (
-  errorDescription: string,
+  message: string,
 ): APIGatewayProxyResult => {
   return {
     headers: { 'Content-Type': 'application/json' },
     statusCode: 401,
     body: JSON.stringify({
       code: 'unauthorized',
-      message: errorDescription,
+      message,
     }),
   };
 };
