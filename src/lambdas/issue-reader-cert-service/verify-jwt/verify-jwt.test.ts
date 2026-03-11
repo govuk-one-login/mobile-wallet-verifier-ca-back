@@ -199,21 +199,21 @@ describe('Verify JWT', () => {
           jwtConfig: {
             issuer: 'invalidIssuer',
           },
-          expectedErrorMessage: 'JWT claim(s) are invalid',
+          expectedErrorMessage: 'JWT iss claim is invalid',
         },
         {
           scenario: 'Given aud claim is invalid',
           jwtConfig: {
             audience: 'invalidAudience',
           },
-          expectedErrorMessage: 'JWT claim(s) are invalid',
+          expectedErrorMessage: 'JWT aud claim is invalid',
         },
         {
           scenario: 'Given nbf claim is in the future',
           jwtConfig: {
             nbfOffsetSeconds: 120,
           },
-          expectedErrorMessage: 'JWT claim(s) are invalid',
+          expectedErrorMessage: 'JWT nbf claim is invalid',
         },
         {
           scenario: 'Given exp claim is expired',

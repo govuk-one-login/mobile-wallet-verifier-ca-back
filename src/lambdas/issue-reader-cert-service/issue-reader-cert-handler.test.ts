@@ -299,7 +299,7 @@ describe('Handler', () => {
           statusCode: 401,
           body: JSON.stringify({
             code: 'unauthorized',
-            message: 'JWT claim(s) are invalid',
+            message: 'JWT iss claim is invalid',
           }),
         });
       });
