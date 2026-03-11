@@ -160,11 +160,11 @@ Mappings:
   EnvironmentVariables:
     dev:
       Algorithm: 'RS256'
-      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
-      Audience: '["mockProjectId"]'
+      AllowedAppIds: '["1:1111:ios:org.multipaz.identityreader", "1:1111:android:org.multipaz.identityreader"]'
+      Audience: '["projects/mock-verifier-app"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
-      Issuer: https://mockIssuer.com/mockProjectId
+      FirebaseJwksUri: https://twmr4rs7hk.execute-api.eu-west-2.amazonaws.com/dev/mock-jwks
+      Issuer: https://firebaseappcheck.googleapis.com/v1/jwks
       LambdaLogLevel: DEBUG
 
     build:
