@@ -28,6 +28,7 @@ import {
   createKeyPair,
   createSignedJwt,
 } from '../../../tests/testUtils/create-signed-jwt.ts';
+import { JWK } from 'jose';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
