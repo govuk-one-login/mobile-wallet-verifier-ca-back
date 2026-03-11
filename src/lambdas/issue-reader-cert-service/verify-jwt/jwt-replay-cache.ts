@@ -22,7 +22,7 @@ export class InMemoryJwtReplayCache implements JwtReplayCache {
 
     const now = this.nowInMillis();
     const existingExpEpochMillis = this.expEpochMillisByJti.get(jti);
-    if (existingExpEpochMillis !== undefined && existingExpEpochMillis > now) {
+    if (existingExpEpochMillis !== undefined && existingExpEpochMillis >= now) {
       return emptyFailure();
     }
 
