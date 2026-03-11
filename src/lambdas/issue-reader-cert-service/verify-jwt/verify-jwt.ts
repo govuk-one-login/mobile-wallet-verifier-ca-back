@@ -85,6 +85,8 @@ export async function verifyJwt(
 
   let payload: JWTPayload;
   try {
+    // This function automatically verifies that
+    // exp and nbf values are valid if present
     const verifiedJwt = await jwtVerify(jwt, localJwks, {
       algorithms: [expectedJwtData.algorithm],
       audience: expectedJwtData.audience,
