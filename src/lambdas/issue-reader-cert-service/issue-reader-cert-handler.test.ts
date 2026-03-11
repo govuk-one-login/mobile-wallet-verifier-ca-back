@@ -292,7 +292,7 @@ describe('Handler', () => {
         result = await handlerConstructor(dependencies, event, context);
       });
 
-      it('Should return 401', () => {
+      it('Returns 401 unauthorized response', () => {
         expect(result).toStrictEqual({
           headers: { 'Content-Type': 'application/json' },
           statusCode: 401,
