@@ -209,6 +209,13 @@ describe('Verify JWT', () => {
           expectedErrorMessage: 'JWT claim(s) are invalid',
         },
         {
+          scenario: 'Given nbf claim is in the future',
+          jwtConfig: {
+            nbfOffsetSeconds: 120,
+          },
+          expectedErrorMessage: 'JWT claim(s) are invalid',
+        },
+        {
           scenario: 'Given exp claim is expired',
           jwtConfig: {
             expOffsetSeconds: -10,
@@ -241,7 +248,7 @@ describe('Verify JWT', () => {
           scenario:
             'Given other verification failure happens that is not explicitly handled',
           jwtConfig: {
-            kid: 'invalidKid',
+            kid: 'differentKid',
           },
           expectedErrorMessage: 'JWT verification failed',
         },

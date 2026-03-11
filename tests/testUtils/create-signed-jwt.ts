@@ -11,15 +11,16 @@ import { randomUUID } from 'crypto';
 export async function createSignedJwt(
   privateKey: CryptoKey,
   options: {
-    includeKid?: boolean;
-    issuer?: string;
-    audience?: string;
-    subject?: string;
-    jti?: string;
     alg?: string;
-    kid?: string;
-    includeExp?: boolean;
+    audience?: string;
     expOffsetSeconds?: number;
+    issuer?: string;
+    jti?: string;
+    kid?: string;
+    nbfOffsetSeconds?: number;
+    subject?: string;
+    includeExp?: boolean;
+    includeKid?: boolean;
   } = {},
 ): Promise<string> {
   const nowInSeconds = Math.floor(Date.now() / 1000);
@@ -37,7 +38,7 @@ export async function createSignedJwt(
     .setAudience(options.audience ?? 'mockAudience')
     .setSubject(options.subject ?? 'mockSubject')
     .setJti(options.jti ?? randomUUID())
-    .setNotBefore(nowInSeconds - 5);
+    .setNotBefore(nowInSeconds + (options.nbfOffsetSeconds ?? -5));
 
   if (options.includeExp !== false) {
     signedToken = signedToken.setExpirationTime(
