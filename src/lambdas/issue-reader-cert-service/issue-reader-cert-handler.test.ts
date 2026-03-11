@@ -44,12 +44,14 @@ describe('Handler', () => {
   let consoleInfoSpy: MockInstance;
   let consoleErrorSpy: MockInstance;
   let mockJwksCache: JwksCache;
+  let privateKey: CryptoKey;
+  let publicJwk: JWK;
 
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
     consoleErrorSpy = vi.spyOn(console, 'error');
 
-    const { privateKey, publicJwk } = await createKeyPair();
+    ({ privateKey, publicJwk } = await createKeyPair());
 
     mockJwksCache = {
       getJwks: vi.fn().mockResolvedValue(
@@ -279,9 +281,12 @@ describe('Handler', () => {
   describe('JWT verification', () => {
     describe('JWT verification failed with client error', () => {
       beforeEach(async () => {
+        const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
+          issuer: 'invalidIssuer',
+        });
         event = buildRequest({
           headers: {
-            'X-Firebase-AppCheck': 'invalid.firebase.jwt',
+            'X-Firebase-AppCheck': jwtWithInvalidIssuer,
           },
         });
         result = await handlerConstructor(dependencies, event, context);
@@ -293,7 +298,7 @@ describe('Handler', () => {
           statusCode: 401,
           body: JSON.stringify({
             code: 'unauthorized',
-            message: 'Invalid JWT header format',
+            message: 'JWT claim(s) are invalid',
           }),
         });
       });
