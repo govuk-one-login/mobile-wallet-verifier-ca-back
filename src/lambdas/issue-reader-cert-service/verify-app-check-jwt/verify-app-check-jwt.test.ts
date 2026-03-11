@@ -235,7 +235,7 @@ describe('Verify JWT', () => {
         {
           scenario: 'Given sub claim is not in the list of App Ids',
           jwtConfig: {
-            subject: 'App Check invalidAppId',
+            subject: 'invalidAppId',
           },
           expectedErrorMessage:
             'App Check JWT sub claim is not in the list of allowed App IDs',
