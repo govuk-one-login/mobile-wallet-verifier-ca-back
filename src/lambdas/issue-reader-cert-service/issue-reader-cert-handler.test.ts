@@ -65,7 +65,7 @@ describe('Handler', () => {
       ),
     };
 
-    const verifyJwtWithMockedJwksCache: IssueReaderCertDependencies['verifyAppCheckJwt'] =
+    const verifyAppCheckJwtWithMockedJwksCache: IssueReaderCertDependencies['verifyAppCheckJwt'] =
       vi.fn(
         (
           jwt: string,
@@ -94,7 +94,7 @@ describe('Handler', () => {
 
     dependencies = {
       env,
-      verifyAppCheckJwt: verifyJwtWithMockedJwksCache,
+      verifyAppCheckJwt: verifyAppCheckJwtWithMockedJwksCache,
     };
   });
 

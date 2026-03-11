@@ -45,16 +45,18 @@ export const handlerConstructor = async (
     audience: config.AUDIENCE,
     issuer: config.ISSUER,
   };
-  const verifyJwtResult = await dependencies.verifyAppCheckJwt(
+  const verifyAppCheckJwtResult = await dependencies.verifyAppCheckJwt(
     jwt,
     config.FIREBASE_JWKS_URI,
     expectedAppCheckJwtData,
   );
-  if (verifyJwtResult.isError) {
-    if (verifyJwtResult.value.errorCategory === ErrorCategory.SERVER_ERROR) {
+  if (verifyAppCheckJwtResult.isError) {
+    if (
+      verifyAppCheckJwtResult.value.errorCategory === ErrorCategory.SERVER_ERROR
+    ) {
       return serverErrorResponse;
     }
-    return unauthorizedResponse(verifyJwtResult.value.errorMessage);
+    return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
   }
 
   logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
