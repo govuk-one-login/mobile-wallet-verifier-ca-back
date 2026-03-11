@@ -581,20 +581,10 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
       DeploymentPreference:
-        Alarms: !If
-          - CreateAlarmsAndMonitoring
-          - - !Ref IssueReaderCertServiceErrorAlarm
-          - []
+        Enabled: false
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/issue-reader-cert-handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
-      VpcConfig:
-        SecurityGroupIds:
-          - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
-        SubnetIds:
-          - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdA
-          - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdB
-          - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdC
       Environment:
         Variables:
           ALLOW_TEST_TOKENS: !If
