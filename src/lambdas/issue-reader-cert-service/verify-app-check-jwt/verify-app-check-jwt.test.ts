@@ -100,7 +100,7 @@ describe('Verify JWT', () => {
 
     it('Logs error', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-        messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+        messageCode: 'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
         errorMessage: 'Invalid App Check JWT header format',
       });
     });
@@ -180,7 +180,7 @@ describe('Verify JWT', () => {
 
       it('Logs error', async () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+          messageCode: 'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
           errorMessage: 'App Check JWT signature is invalid',
         });
       });
@@ -272,7 +272,7 @@ describe('Verify JWT', () => {
 
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            messageCode: 'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
             errorMessage: expectedErrorMessage,
           });
         });
@@ -321,7 +321,7 @@ describe('Verify JWT', () => {
 
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            messageCode: 'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
             errorMessage: 'App Check JWT algorithm is not allowed',
           });
         });
@@ -351,7 +351,7 @@ describe('Verify JWT', () => {
 
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            messageCode: 'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
             errorMessage: 'App Check JWT is malformed',
           });
         });
@@ -380,7 +380,7 @@ describe('Verify JWT', () => {
 
         it('Logs error', async () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+            messageCode: 'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
             errorMessage: 'App Check JWT is malformed',
           });
         });
@@ -418,7 +418,7 @@ describe('Verify JWT', () => {
 
     it('Logs error', () => {
       expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-        messageCode: 'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+        messageCode: 'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
         errorMessage: 'App Check JWT replay detected',
       });
     });

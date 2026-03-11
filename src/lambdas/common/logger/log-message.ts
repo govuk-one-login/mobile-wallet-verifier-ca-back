@@ -50,9 +50,9 @@ export class LogMessage implements LogAttributes {
     'JWKS retrieved successfully.',
   );
 
-  // Verify JWT logs
+  // Verify App Check JWT logs
   static readonly APP_CHECK_JWT_VERIFICATION_FAILURE = new LogMessage(
-    'MOBILE_CA_JWT_VERIFICATION_FAILURE',
+    'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
     'App Check JWT verification failed',
   );
 
