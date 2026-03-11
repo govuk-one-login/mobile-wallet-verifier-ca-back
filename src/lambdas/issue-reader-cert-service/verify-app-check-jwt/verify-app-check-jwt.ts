@@ -15,8 +15,11 @@ import { JwksCache } from '../../common/jwks/jwks-cache/types.ts';
 import { InMemoryJwksCache } from '../../common/jwks/jwks-cache/jwks-cache.ts';
 import { logger } from '../../common/logger/logger.ts';
 import { LogMessage } from '../../common/logger/log-message.ts';
-import { InMemoryJwtReplayCache, JwtReplayCache } from './jwt-replay-cache.ts';
-import { getVerifyJwtErrorMessage } from './get-verify-jwt-error-message.ts';
+import {
+  InMemoryJwtReplayCache,
+  JwtReplayCache,
+} from './app-check-jwt-replay-cache.ts';
+import { getVerifyAppCheckJwtErrorMessage } from './get-verify-app-check-jwt-error-message.ts';
 
 export interface VerifyJwtDependencies {
   jwksCache: JwksCache;
@@ -94,7 +97,7 @@ export async function verifyJwt(
     });
     payload = verifiedJwt.payload;
   } catch (error: unknown) {
-    const errorMessage = getVerifyJwtErrorMessage(error);
+    const errorMessage = getVerifyAppCheckJwtErrorMessage(error);
     logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
       error,
       errorMessage,

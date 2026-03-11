@@ -21,8 +21,11 @@ import {
   buildRequest,
 } from '../../../tests/testUtils/buildRequest.ts';
 import { emptyFailure, successResult } from '../common/result/result.ts';
-import { ExpectedJwtData, verifyJwt } from './verify-jwt/verify-jwt.ts';
-import { InMemoryJwtReplayCache } from './verify-jwt/jwt-replay-cache.ts';
+import {
+  ExpectedJwtData,
+  verifyJwt,
+} from './verify-app-check-jwt/verify-app-check-jwt.ts';
+import { InMemoryJwtReplayCache } from './verify-app-check-jwt/app-check-jwt-replay-cache.ts';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
 import {
   createKeyPair,

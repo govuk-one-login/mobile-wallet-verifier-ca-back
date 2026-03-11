@@ -1,6 +1,6 @@
 import { errors } from 'jose';
 
-export function getVerifyJwtErrorMessage(error: unknown): string {
+export function getVerifyAppCheckJwtErrorMessage(error: unknown): string {
   let errorMessage = 'App Check JWT verification failed';
 
   if (error instanceof errors.JWTClaimValidationFailed) {

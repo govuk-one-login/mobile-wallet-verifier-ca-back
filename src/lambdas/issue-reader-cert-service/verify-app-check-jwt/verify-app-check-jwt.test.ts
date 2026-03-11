@@ -15,11 +15,11 @@ import {
   MockInstance,
   afterEach,
 } from 'vitest';
-import { verifyJwt, VerifyJwtDependencies } from './verify-jwt.ts';
+import { verifyJwt, VerifyJwtDependencies } from './verify-app-check-jwt.ts';
 import { exportJWK, generateKeyPair, type CryptoKey, type JWK } from 'jose';
 import { JwksCache } from '../../common/jwks/jwks-cache/types.ts';
 import '../../../../tests/testUtils/matchers.ts';
-import { InMemoryJwtReplayCache } from './jwt-replay-cache.ts';
+import { InMemoryJwtReplayCache } from './app-check-jwt-replay-cache.ts';
 import {
   createKeyPair,
   createJwtWithInvalidProtectedHeader,

@@ -11,7 +11,7 @@ import {
 } from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
 import { validateEvent } from './validate-event.ts';
-import { ExpectedJwtData } from './verify-jwt/verify-jwt.ts';
+import { ExpectedJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
 import { ErrorCategory } from '../common/result/result.ts';
 import {
   okResponse,

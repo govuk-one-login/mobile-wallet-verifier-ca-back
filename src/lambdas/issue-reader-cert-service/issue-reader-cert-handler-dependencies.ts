@@ -3,7 +3,7 @@ import {
   ExpectedJwtData,
   verifyJwt,
   VerifyJwtDependencies,
-} from './verify-jwt/verify-jwt.ts';
+} from './verify-app-check-jwt/verify-app-check-jwt.ts';
 
 export interface IssueReaderCertDependencies {
   env: NodeJS.ProcessEnv;
