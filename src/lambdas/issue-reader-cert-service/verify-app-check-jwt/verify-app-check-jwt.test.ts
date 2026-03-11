@@ -15,7 +15,10 @@ import {
   MockInstance,
   afterEach,
 } from 'vitest';
-import { verifyJwt, VerifyJwtDependencies } from './verify-app-check-jwt.ts';
+import {
+  verifyAppCheckJwt,
+  VerifyAppCheckJwtDependencies,
+} from './verify-app-check-jwt.ts';
 import { exportJWK, generateKeyPair, type CryptoKey, type JWK } from 'jose';
 import { JwksCache } from '../../common/jwks/jwks-cache/types.ts';
 import '../../../../tests/testUtils/matchers.ts';
@@ -33,7 +36,7 @@ describe('Verify JWT', () => {
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let mockJwksCache: JwksCache;
-  let dependencies: VerifyJwtDependencies;
+  let dependencies: VerifyAppCheckJwtDependencies;
   const mockJwksUrl = 'https://mockJwksUrl.com';
   const validExpectedClaims = {
     algorithm: 'RS256',
@@ -65,7 +68,7 @@ describe('Verify JWT', () => {
 
   describe('Given JWT is in invalid compact JWT format', () => {
     beforeEach(async () => {
-      result = await verifyJwt(
+      result = await verifyAppCheckJwt(
         'invalidFormatJwt',
         mockJwksUrl,
         validExpectedClaims,
@@ -87,7 +90,7 @@ describe('Verify JWT', () => {
     beforeEach(async () => {
       const jwtWithInvalidProtectedHeader =
         await createJwtWithInvalidProtectedHeader(privateKey);
-      result = await verifyJwt(
+      result = await verifyAppCheckJwt(
         jwtWithInvalidProtectedHeader,
         mockJwksUrl,
         validExpectedClaims,
@@ -117,7 +120,7 @@ describe('Verify JWT', () => {
       const jwtWithoutKid = await createSignedJwt(privateKey, {
         includeKid: false,
       });
-      result = await verifyJwt(
+      result = await verifyAppCheckJwt(
         jwtWithoutKid,
         mockJwksUrl,
         validExpectedClaims,
@@ -141,7 +144,7 @@ describe('Verify JWT', () => {
       dependencies.jwksCache.getJwks = vi
         .fn()
         .mockResolvedValue(emptyFailure());
-      result = await verifyJwt(
+      result = await verifyAppCheckJwt(
         jwt,
         mockJwksUrl,
         validExpectedClaims,
@@ -167,7 +170,7 @@ describe('Verify JWT', () => {
           differentKeyPair.privateKey,
         );
 
-        result = await verifyJwt(
+        result = await verifyAppCheckJwt(
           jwtWithInvalidSignature,
           mockJwksUrl,
           validExpectedClaims,
@@ -259,7 +262,7 @@ describe('Verify JWT', () => {
             jwtConfig,
           );
 
-          result = await verifyJwt(
+          result = await verifyAppCheckJwt(
             jwtWithInvalidIssuer,
             mockJwksUrl,
             validExpectedClaims,
@@ -308,7 +311,7 @@ describe('Verify JWT', () => {
             },
           );
 
-          result = await verifyJwt(
+          result = await verifyAppCheckJwt(
             jwtWithDisallowedAlg,
             mockJwksUrl,
             validExpectedClaims,
@@ -338,7 +341,7 @@ describe('Verify JWT', () => {
           const jwtWithNonJsonPayload =
             await createSignedNonJsonJwt(privateKey);
 
-          result = await verifyJwt(
+          result = await verifyAppCheckJwt(
             jwtWithNonJsonPayload,
             mockJwksUrl,
             validExpectedClaims,
@@ -367,7 +370,7 @@ describe('Verify JWT', () => {
         beforeEach(async () => {
           const malformedJws = await createMalformedJws(privateKey);
 
-          result = await verifyJwt(
+          result = await verifyAppCheckJwt(
             malformedJws,
             mockJwksUrl,
             validExpectedClaims,
@@ -399,8 +402,13 @@ describe('Verify JWT', () => {
       const jwt = await createSignedJwt(privateKey, {
         jti: 'mockJti',
       });
-      await verifyJwt(jwt, mockJwksUrl, validExpectedClaims, dependencies);
-      result = await verifyJwt(
+      await verifyAppCheckJwt(
+        jwt,
+        mockJwksUrl,
+        validExpectedClaims,
+        dependencies,
+      );
+      result = await verifyAppCheckJwt(
         jwt,
         mockJwksUrl,
         validExpectedClaims,
@@ -428,7 +436,7 @@ describe('Verify JWT', () => {
   describe('Given JWT is valid', () => {
     beforeEach(async () => {
       const jwt = await createSignedJwt(privateKey);
-      result = await verifyJwt(
+      result = await verifyAppCheckJwt(
         jwt,
         mockJwksUrl,
         validExpectedClaims,

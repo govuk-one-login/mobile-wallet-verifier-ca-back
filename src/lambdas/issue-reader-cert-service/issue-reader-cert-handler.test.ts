@@ -22,8 +22,8 @@ import {
 } from '../../../tests/testUtils/buildRequest.ts';
 import { emptyFailure, successResult } from '../common/result/result.ts';
 import {
-  ExpectedJwtData,
-  verifyJwt,
+  ExpectedAppCheckJwtData,
+  verifyAppCheckJwt,
 } from './verify-app-check-jwt/verify-app-check-jwt.ts';
 import { InMemoryJwtReplayCache } from './verify-app-check-jwt/app-check-jwt-replay-cache.ts';
 import { JwksCache } from '../common/jwks/jwks-cache/types.ts';
@@ -65,10 +65,14 @@ describe('Handler', () => {
       ),
     };
 
-    const verifyJwtWithMockedJwksCache: IssueReaderCertDependencies['verifyJwt'] =
+    const verifyJwtWithMockedJwksCache: IssueReaderCertDependencies['verifyAppCheckJwt'] =
       vi.fn(
-        (jwt: string, jwksUrl: string, expectedJwtData: ExpectedJwtData) => {
-          return verifyJwt(jwt, jwksUrl, expectedJwtData, {
+        (
+          jwt: string,
+          jwksUrl: string,
+          expectedJwtData: ExpectedAppCheckJwtData,
+        ) => {
+          return verifyAppCheckJwt(jwt, jwksUrl, expectedJwtData, {
             jwksCache: mockJwksCache,
             jwtReplayCache: new InMemoryJwtReplayCache(),
           });
@@ -90,7 +94,7 @@ describe('Handler', () => {
 
     dependencies = {
       env,
-      verifyJwt: verifyJwtWithMockedJwksCache,
+      verifyAppCheckJwt: verifyJwtWithMockedJwksCache,
     };
   });
 
@@ -282,8 +286,8 @@ describe('Handler', () => {
     });
   });
 
-  describe('JWT verification', () => {
-    describe('JWT verification failed with client error', () => {
+  describe('App Check JWT verification', () => {
+    describe('App Check JWT verification failed with client error', () => {
       beforeEach(async () => {
         const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
           issuer: 'invalidIssuer',
@@ -308,7 +312,7 @@ describe('Handler', () => {
       });
     });
 
-    describe('JWT verification failed with server error', () => {
+    describe('App check JWT verification failed with server error', () => {
       beforeEach(async () => {
         mockJwksCache.getJwks = vi.fn().mockResolvedValue(emptyFailure());
         result = await handlerConstructor(dependencies, event, context);
@@ -333,8 +337,8 @@ describe('Handler', () => {
         result = await handlerConstructor(dependencies, event, context);
       });
 
-      it('calls verifyJwt with correct parameters', () =>
-        expect(dependencies.verifyJwt).toBeCalledWith(
+      it('Calls verifyAppCheckJwt with correct parameters', () =>
+        expect(dependencies.verifyAppCheckJwt).toBeCalledWith(
           event.headers?.['X-Firebase-AppCheck'],
           dependencies.env.FIREBASE_JWKS_URI,
           {

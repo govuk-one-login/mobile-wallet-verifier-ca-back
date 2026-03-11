@@ -1,21 +1,21 @@
 import { Result } from '../common/result/result.ts';
 import {
-  ExpectedJwtData,
-  verifyJwt,
-  VerifyJwtDependencies,
+  ExpectedAppCheckJwtData,
+  verifyAppCheckJwt,
+  VerifyAppCheckJwtDependencies,
 } from './verify-app-check-jwt/verify-app-check-jwt.ts';
 
 export interface IssueReaderCertDependencies {
   env: NodeJS.ProcessEnv;
-  verifyJwt: (
+  verifyAppCheckJwt: (
     jwt: string,
     jwksUrl: string,
-    expectedJwtData: ExpectedJwtData,
-    dependencies?: VerifyJwtDependencies,
+    expectedJwtData: ExpectedAppCheckJwtData,
+    dependencies?: VerifyAppCheckJwtDependencies,
   ) => Promise<Result<void>>;
 }
 
 export const dependencies: IssueReaderCertDependencies = {
   env: process.env,
-  verifyJwt,
+  verifyAppCheckJwt,
 };

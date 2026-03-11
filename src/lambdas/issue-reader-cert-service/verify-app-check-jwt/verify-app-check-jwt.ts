@@ -21,28 +21,28 @@ import {
 } from './app-check-jwt-replay-cache.ts';
 import { getVerifyAppCheckJwtErrorMessage } from './get-verify-app-check-jwt-error-message.ts';
 
-export interface VerifyJwtDependencies {
+export interface VerifyAppCheckJwtDependencies {
   jwksCache: JwksCache;
   jwtReplayCache: JwtReplayCache;
 }
 
-const defaultDependencies: VerifyJwtDependencies = {
+const defaultDependencies: VerifyAppCheckJwtDependencies = {
   jwksCache: InMemoryJwksCache.getSingletonInstance(),
   jwtReplayCache: InMemoryJwtReplayCache.getSingletonInstance(),
 };
 
-export interface ExpectedJwtData {
+export interface ExpectedAppCheckJwtData {
   algorithm: string;
   allowedAppIds: string[];
   audience: string[];
   issuer: string;
 }
 
-export async function verifyJwt(
+export async function verifyAppCheckJwt(
   jwt: string,
   jwksUrl: string,
-  expectedJwtData: ExpectedJwtData,
-  dependencies: VerifyJwtDependencies = defaultDependencies,
+  expectedJwtData: ExpectedAppCheckJwtData,
+  dependencies: VerifyAppCheckJwtDependencies = defaultDependencies,
 ): Promise<Result<void>> {
   if (jwt.split('.').length !== 3) {
     return errorResult({

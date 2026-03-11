@@ -11,7 +11,7 @@ import {
 } from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
 import { validateEvent } from './validate-event.ts';
-import { ExpectedJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
+import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
 import { ErrorCategory } from '../common/result/result.ts';
 import {
   okResponse,
@@ -39,16 +39,16 @@ export const handlerConstructor = async (
   }
   const jwt = validateEventResult.value;
 
-  const expectedJwtData: ExpectedJwtData = {
+  const expectedAppCheckJwtData: ExpectedAppCheckJwtData = {
     algorithm: config.ALGORITHM,
     allowedAppIds: config.ALLOWED_APP_IDS,
     audience: config.AUDIENCE,
     issuer: config.ISSUER,
   };
-  const verifyJwtResult = await dependencies.verifyJwt(
+  const verifyJwtResult = await dependencies.verifyAppCheckJwt(
     jwt,
     config.FIREBASE_JWKS_URI,
-    expectedJwtData,
+    expectedAppCheckJwtData,
   );
   if (verifyJwtResult.isError) {
     if (verifyJwtResult.value.errorCategory === ErrorCategory.SERVER_ERROR) {
