@@ -585,6 +585,13 @@ Resources:
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/issue-reader-cert-handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
+      VpcConfig:
+        SecurityGroupIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
+        SubnetIds:
+          - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdA
+          - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdB
+          - Fn::ImportValue: !Sub ${VpcStackName}-ProtectedSubnetIdC
       Environment:
         Variables:
           ALLOW_TEST_TOKENS: !If
