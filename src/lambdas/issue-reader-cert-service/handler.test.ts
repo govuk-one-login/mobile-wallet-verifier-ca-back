@@ -18,8 +18,8 @@ import '../../../tests/testUtils/matchers.ts';
 import { IssueReaderCertDependencies } from './handler-dependencies.ts';
 import {
   buildLambdaContext,
-  buildRequest,
-} from '../../../tests/testUtils/buildRequest.ts';
+  buildEvent,
+} from '../../../tests/testUtils/build-event.ts';
 import { emptyFailure, successResult } from '../common/result/result.ts';
 import {
   ExpectedAppCheckJwtData,
@@ -86,7 +86,7 @@ describe('Handler', () => {
     });
 
     context = buildLambdaContext();
-    event = buildRequest({
+    event = buildEvent({
       headers: {
         'X-Firebase-AppCheck': validFireBaseJwt,
       },
@@ -257,7 +257,7 @@ describe('Handler', () => {
         },
       ])('$scenario', ({ headers }) => {
         beforeEach(async () => {
-          const invalidEvent = buildRequest({ headers });
+          const invalidEvent = buildEvent({ headers });
           result = await handlerConstructor(
             dependencies,
             invalidEvent,
@@ -292,7 +292,7 @@ describe('Handler', () => {
         const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
           issuer: 'invalidIssuer',
         });
-        event = buildRequest({
+        event = buildEvent({
           headers: {
             'X-Firebase-AppCheck': jwtWithInvalidIssuer,
           },

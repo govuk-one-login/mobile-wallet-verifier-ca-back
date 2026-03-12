@@ -10,8 +10,8 @@ import '../../../tests/testUtils/matchers';
 import { GenerateMockIssueCertDependencies } from './mock-issue-cert-handler-dependencies';
 import {
   buildLambdaContext,
-  buildRequest,
-} from '../../../tests/testUtils/buildRequest';
+  buildEvent,
+} from '../../../tests/testUtils/build-event';
 import * as certificateGenerator from './certificate-generator';
 import * as keyPairManager from '../common/mock-utils/key-pair-manager';
 import * as environment from '../common/config/environment';
@@ -61,7 +61,7 @@ describe('Mock Issue Reader Cert Request Handler', () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
     consoleErrorSpy = vi.spyOn(console, 'error');
     context = buildLambdaContext();
-    event = buildRequest();
+    event = buildEvent();
     dependencies = { env };
 
     mockGenerateDebugToken.mockClear();
