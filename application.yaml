@@ -361,7 +361,7 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-issue-cert-request'
       CodeUri: ./
-      Handler: src/lambdas/mock-issue-cert-request/mock-issue-cert-request-handler.handler
+      Handler: src/lambdas/mock-issue-cert-request/handler.handler
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
       DeploymentPreference:
