@@ -325,7 +325,7 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-jwks'
       CodeUri: ./
-      Handler: src/lambdas/mock-jwks/mock-jwks-handler.handler
+      Handler: src/lambdas/mock-jwks/handler.handler
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
       DeploymentPreference:

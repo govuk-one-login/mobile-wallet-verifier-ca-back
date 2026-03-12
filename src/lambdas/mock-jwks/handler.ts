@@ -9,8 +9,8 @@ import { generateJWKS } from './jwks-generator.ts';
 import {
   dependencies,
   MockJwksHandlerDependencies,
-} from './mock-jwks-handler-dependencies.ts';
-import { getMockJwksConfig } from './mock-jwks-config.ts';
+} from './handler-dependencies.ts';
+import { getMockJwksConfig } from './config.ts';
 
 export const handlerConstructor = async (
   dependencies: MockJwksHandlerDependencies,

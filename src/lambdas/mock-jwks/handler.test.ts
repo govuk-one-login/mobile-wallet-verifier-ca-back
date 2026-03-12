@@ -4,10 +4,10 @@ import {
   APIGatewayProxyResult,
 } from 'aws-lambda';
 import { describe, it, beforeEach, expect, MockInstance, vi } from 'vitest';
-import { handlerConstructor } from './mock-jwks-handler';
+import { handlerConstructor } from './handler';
 import { logger } from '../common/logger/logger';
 import '../../../tests/testUtils/matchers';
-import { MockJwksHandlerDependencies } from './mock-jwks-handler-dependencies';
+import { MockJwksHandlerDependencies } from './handler-dependencies';
 import {
   buildLambdaContext,
   buildEvent,
