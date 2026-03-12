@@ -19,6 +19,16 @@ export class LogMessage implements LogAttributes {
     'One or more required environment variables were missing or invalid.',
   );
 
+  static readonly ISSUE_READER_CERT_INVALID_EVENT = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+    'Incoming event invalid',
+  );
+
+  static readonly ISSUE_READER_CERT_COMPLETED = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
+    'Lambda handler processing has completed.',
+  );
+
   // Get JWKS logs
   static readonly GET_JWKS_ATTEMPT = new LogMessage(
     'MOBILE_CA_GET_JWKS_ATTEMPT',
@@ -40,6 +50,13 @@ export class LogMessage implements LogAttributes {
     'JWKS retrieved successfully.',
   );
 
+  // Verify App Check JWT logs
+  static readonly APP_CHECK_JWT_VERIFICATION_FAILURE = new LogMessage(
+    'MOBILE_CA_APP_CHECK_JWT_VERIFICATION_FAILURE',
+    'App Check JWT verification failed',
+  );
+
+  // Mock logs
   static readonly MOCK_ISSUE_CERT_REQUEST_INVALID_CONFIG = new LogMessage(
     'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
     'One or more required environment variables were missing or invalid.',

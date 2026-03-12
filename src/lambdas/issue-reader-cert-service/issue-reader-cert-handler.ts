@@ -3,17 +3,25 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
-import { setupLogger, logger } from '../common/logger/logger';
+import { logger, setupLogger } from '../common/logger/logger';
 import { LogMessage } from '../common/logger/log-message';
 import {
   dependencies,
   IssueReaderCertDependencies,
 } from './issue-reader-cert-handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
+import { validateEvent } from './validate-event.ts';
+import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
+import { ErrorCategory } from '../common/result/result.ts';
+import {
+  okResponse,
+  serverErrorResponse,
+  unauthorizedResponse,
+} from '../common/lambda-responses/lambda-responses.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
-  _event: APIGatewayProxyEvent,
+  event: APIGatewayProxyEvent,
   context: Context,
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
@@ -21,24 +29,38 @@ export const handlerConstructor = async (
 
   const configResult = getIssueReaderCertConfig(dependencies.env);
   if (configResult.isError) {
-    return {
-      headers: { 'Content-Type': 'application/json' },
-      statusCode: 500,
-      body: JSON.stringify({
-        error: 'server_error',
-        error_description: 'Server Error',
-      }),
-    };
+    return serverErrorResponse;
+  }
+  const config = configResult.value;
+
+  const validateEventResult = validateEvent(event.headers);
+  if (validateEventResult.isError) {
+    return unauthorizedResponse(validateEventResult.value);
+  }
+  const jwt = validateEventResult.value;
+
+  const expectedAppCheckJwtData: ExpectedAppCheckJwtData = {
+    algorithm: config.ALGORITHM,
+    allowedAppIds: config.ALLOWED_APP_IDS,
+    audience: config.AUDIENCE,
+    issuer: config.ISSUER,
+  };
+  const verifyAppCheckJwtResult = await dependencies.verifyAppCheckJwt(
+    jwt,
+    config.FIREBASE_JWKS_URI,
+    expectedAppCheckJwtData,
+  );
+  if (verifyAppCheckJwtResult.isError) {
+    if (
+      verifyAppCheckJwtResult.value.errorCategory === ErrorCategory.SERVER_ERROR
+    ) {
+      return serverErrorResponse;
+    }
+    return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
   }
 
-  return {
-    statusCode: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Request-Id': context.awsRequestId,
-    },
-    body: 'Ok',
-  };
+  logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
+  return okResponse(context.awsRequestId);
 };
 
 export const handler = handlerConstructor.bind(null, dependencies);

@@ -152,32 +152,56 @@ Conditions:
     - !Equals [!Ref Environment, dev]
     - !Equals [!Ref Environment, build]
 
+  DeployMockCustomDomainResources: !And
+    - !Condition CreateCustomDomain
+    - !Condition DeployMockResources
+
 Mappings:
   EnvironmentVariables:
     dev:
-      LambdaLogLevel: DEBUG
+      Algorithm: 'RS256'
+      AllowedAppIds: '["1:1111:ios:org.multipaz.identityreader", "1:1111:android:org.multipaz.identityreader"]'
+      Audience: '["projects/mock-verifier-app"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      FirebaseJwksUri: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
+      Issuer: https://firebaseappcheck.googleapis.com/v1/jwks
+      LambdaLogLevel: DEBUG
 
     build:
-      LambdaLogLevel: INFO
+      Algorithm: 'RS256'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      LambdaLogLevel: INFO
 
     staging:
-      LambdaLogLevel: INFO
+      Algorithm: 'RS256'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      LambdaLogLevel: INFO
 
     integration:
-      LambdaLogLevel: INFO
+      Algorithm: 'RS256'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      LambdaLogLevel: INFO
 
     prod:
-      LambdaLogLevel: INFO
+      Algorithm: 'RS256'
+      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
+      Audience: '["mockProjectId"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mockIssuer.com/mockProjectId
+      LambdaLogLevel: INFO
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
@@ -414,7 +438,7 @@ Resources:
    # Base Path Mapping for Public Domain - maps the same API to the public domain
   MockApiGatewayPublicBasePathMapping:
     Type: AWS::ApiGateway::BasePathMapping
-    Condition: DeployMockResources
+    Condition: DeployMockCustomDomainResources
     Properties:
       DomainName: !ImportValue
         Fn::Sub: '${MockBaseAppStack}-ApiGatewayMockDomain'
@@ -582,6 +606,22 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - FirebaseJwksUri
+          ISSUER: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - Issuer
+          AUDIENCE: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - Audience
+          ALLOWED_APP_IDS: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - AllowedAppIds
+          ALGORITHM: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - Algorithm
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup

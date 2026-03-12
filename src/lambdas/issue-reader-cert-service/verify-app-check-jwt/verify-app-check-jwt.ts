@@ -1,0 +1,161 @@
+import {
+  emptySuccess,
+  ErrorCategory,
+  errorResult,
+  Result,
+} from '../../common/result/result.ts';
+import {
+  createLocalJWKSet,
+  decodeProtectedHeader,
+  JWTPayload,
+  jwtVerify,
+  ProtectedHeaderParameters,
+} from 'jose';
+import { JwksCache } from '../../common/jwks/jwks-cache/types.ts';
+import { InMemoryJwksCache } from '../../common/jwks/jwks-cache/jwks-cache.ts';
+import { logger } from '../../common/logger/logger.ts';
+import { LogMessage } from '../../common/logger/log-message.ts';
+import {
+  InMemoryJwtReplayCache,
+  JwtReplayCache,
+} from './app-check-jwt-replay-cache.ts';
+import { getVerifyAppCheckJwtErrorMessage } from './get-verify-app-check-jwt-error-message.ts';
+
+export interface VerifyAppCheckJwtDependencies {
+  jwksCache: JwksCache;
+  jwtReplayCache: JwtReplayCache;
+}
+
+const defaultDependencies: VerifyAppCheckJwtDependencies = {
+  jwksCache: InMemoryJwksCache.getSingletonInstance(),
+  jwtReplayCache: InMemoryJwtReplayCache.getSingletonInstance(),
+};
+
+export interface ExpectedAppCheckJwtData {
+  algorithm: string;
+  allowedAppIds: string[];
+  audience: string[];
+  issuer: string;
+}
+
+export async function verifyAppCheckJwt(
+  jwt: string,
+  jwksUrl: string,
+  expectedJwtData: ExpectedAppCheckJwtData,
+  dependencies: VerifyAppCheckJwtDependencies = defaultDependencies,
+): Promise<Result<void>> {
+  if (jwt.split('.').length !== 3) {
+    return errorResult({
+      errorMessage: 'Invalid App Check JWT format',
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  let header: ProtectedHeaderParameters;
+  try {
+    header = decodeProtectedHeader(jwt);
+  } catch {
+    const errorMessage = 'Invalid App Check JWT header format';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+  if (!header.kid?.trim()) {
+    return errorResult({
+      errorMessage: 'App Check JWT header does not include kid',
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  const getJwksResult = await dependencies.jwksCache.getJwks(
+    jwksUrl,
+    header.kid,
+  );
+  if (getJwksResult.isError) {
+    return errorResult({
+      errorMessage: 'Unexpected error when fetching JWKS',
+      errorCategory: ErrorCategory.SERVER_ERROR,
+    });
+  }
+  const jwks = getJwksResult.value;
+  const localJwks = createLocalJWKSet({
+    keys: jwks.keys,
+  });
+
+  let payload: JWTPayload;
+  try {
+    // This function automatically verifies that
+    // exp and nbf values are valid if present
+    const verifiedJwt = await jwtVerify(jwt, localJwks, {
+      algorithms: [expectedJwtData.algorithm],
+      audience: expectedJwtData.audience,
+      issuer: expectedJwtData.issuer,
+    });
+    payload = verifiedJwt.payload;
+  } catch (error: unknown) {
+    const errorMessage = getVerifyAppCheckJwtErrorMessage(error);
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
+      error,
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  if (!payload.exp) {
+    const errorMessage = 'App Check JWT exp claim is missing';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  if (!payload.sub || !expectedJwtData.allowedAppIds.includes(payload.sub)) {
+    const errorMessage =
+      'App Check JWT sub claim is not in the list of allowed App IDs';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  if (!payload.jti?.trim()) {
+    const errorMessage = 'App Check JWT jti claim is missing';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  const jwtReplayCacheResult = dependencies.jwtReplayCache.consume(
+    payload.jti,
+    payload.exp,
+  );
+  if (jwtReplayCacheResult.isError) {
+    const errorMessage = 'App Check JWT replay detected';
+    logger.error(LogMessage.APP_CHECK_JWT_VERIFICATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult({
+      errorMessage,
+      errorCategory: ErrorCategory.CLIENT_ERROR,
+    });
+  }
+
+  return emptySuccess();
+}
