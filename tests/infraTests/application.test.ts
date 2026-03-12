@@ -139,6 +139,28 @@ describe('Application Infrastructure', () => {
     });
   });
 
+  describe('Custom domain mappings', () => {
+    let mockBasePathMapping: Record<string, unknown>;
+
+    beforeAll(() => {
+      mockBasePathMapping = template.Resources
+        .MockApiGatewayPublicBasePathMapping as Record<string, unknown>;
+    });
+
+    it('should only create the mock custom domain mapping when custom domains are enabled', () => {
+      expect(mockBasePathMapping).toBeDefined();
+      expect(mockBasePathMapping.Condition).toBe(
+        'DeployMockCustomDomainResources',
+      );
+      expect(template.Conditions?.DeployMockCustomDomainResources).toEqual({
+        'Fn::And': [
+          { Condition: 'CreateCustomDomain' },
+          { Condition: 'DeployMockResources' },
+        ],
+      });
+    });
+  });
+
   describe('Outputs', () => {
     it('should export API Gateway domain name', () => {
       const apiOutput = template.Outputs.ApiGatewayDomainName as Record<
