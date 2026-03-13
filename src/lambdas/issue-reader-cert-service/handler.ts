@@ -3,13 +3,13 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
-import { logger, setupLogger } from '../common/logger/logger';
-import { LogMessage } from '../common/logger/log-message';
+import { logger, setupLogger } from '../common/logger/logger.ts';
+import { LogMessage } from '../common/logger/log-message.ts';
 import {
   dependencies,
   IssueReaderCertDependencies,
-} from './issue-reader-cert-handler-dependencies.ts';
-import { getIssueReaderCertConfig } from './issue-reader-cert-config.ts';
+} from './handler-dependencies.ts';
+import { getIssueReaderCertConfig } from './config.ts';
 import { validateEvent } from './validate-event.ts';
 import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
 import { ErrorCategory } from '../common/result/result.ts';

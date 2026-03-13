@@ -10,8 +10,8 @@ import '../../../tests/testUtils/matchers';
 import { MockJwksHandlerDependencies } from './mock-jwks-handler-dependencies';
 import {
   buildLambdaContext,
-  buildRequest,
-} from '../../../tests/testUtils/buildRequest';
+  buildEvent,
+} from '../../../tests/testUtils/build-event';
 import * as jwksGenerator from './jwks-generator';
 
 vi.mock('./jwks-generator');
@@ -32,7 +32,7 @@ describe('Mock JWKS Handler', () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
     consoleErrorSpy = vi.spyOn(console, 'error');
     context = buildLambdaContext();
-    event = buildRequest();
+    event = buildEvent();
     dependencies = {
       env,
     };

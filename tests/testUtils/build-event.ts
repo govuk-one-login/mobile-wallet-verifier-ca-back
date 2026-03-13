@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, Context } from 'aws-lambda';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function buildRequest(overrides?: any): APIGatewayProxyEvent {
+export function buildEvent(overrides?: any): APIGatewayProxyEvent {
   const defaultRequest = {
     httpMethod: 'get',
     body: '',

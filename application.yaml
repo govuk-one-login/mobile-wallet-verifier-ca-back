@@ -164,7 +164,7 @@ Mappings:
       Audience: '["projects/mock-verifier-app"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
-      Issuer: https://firebaseappcheck.googleapis.com/v1/jwks
+      Issuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
       LambdaLogLevel: DEBUG
 
     build:
@@ -586,7 +586,7 @@ Resources:
           - - !Ref IssueReaderCertServiceErrorAlarm
           - []
       CodeUri: ./
-      Handler: src/lambdas/issue-reader-cert-service/issue-reader-cert-handler.handler
+      Handler: src/lambdas/issue-reader-cert-service/handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
       VpcConfig:
         SecurityGroupIds:
