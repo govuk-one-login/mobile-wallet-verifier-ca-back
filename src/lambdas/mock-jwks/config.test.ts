@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, MockInstance } from 'vitest';
-import { getMockJwksConfig } from './mock-jwks-config';
+import { getMockJwksConfig } from './config';
 import '../../../tests/testUtils/matchers';
 
 let consoleErrorSpy: MockInstance;

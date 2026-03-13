@@ -16,8 +16,8 @@ import { randomUUID } from 'node:crypto';
 import {
   dependencies,
   GenerateMockIssueCertDependencies,
-} from './mock-issue-cert-handler-dependencies.ts';
-import { getGenerateMockIssueCertRequestConfig } from './mock-issue-cert-config.ts';
+} from './handler-dependencies.ts';
+import { getGenerateMockIssueCertRequestConfig } from './config.ts';
 
 interface MockIssueReaderCertRequest {
   headers: {

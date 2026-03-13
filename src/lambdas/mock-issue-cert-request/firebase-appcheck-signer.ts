@@ -3,7 +3,7 @@ import {
   getOrCreateRSAKeys,
   FIREBASE_KID,
 } from '../common/mock-utils/key-pair-manager';
-import { getGenerateMockIssueCertRequestConfig } from './mock-issue-cert-config';
+import { getGenerateMockIssueCertRequestConfig } from './config';
 
 export interface FirebaseAppCheckPayload {
   sub: string;

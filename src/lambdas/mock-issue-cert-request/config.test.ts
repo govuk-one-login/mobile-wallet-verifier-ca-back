@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, MockInstance } from 'vitest';
-import { getGenerateMockIssueCertRequestConfig } from './mock-issue-cert-config';
+import { getGenerateMockIssueCertRequestConfig } from './config';
 import '../../../tests/testUtils/matchers';
 
 let consoleErrorSpy: MockInstance;
