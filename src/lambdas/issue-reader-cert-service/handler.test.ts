@@ -90,6 +90,10 @@ describe('Handler', () => {
       headers: {
         'X-Firebase-AppCheck': validFireBaseJwt,
       },
+      body: {
+        'csrPem':
+          '-----BEGIN CERTIFICATE REQUEST-----\nMIID...\n-----END CERTIFICATE REQUEST-----',
+      },
     });
 
     dependencies = {
@@ -279,6 +283,58 @@ describe('Handler', () => {
             body: JSON.stringify({
               code: 'unauthorized',
               message: 'X-Firebase-AppCheck header missing from event',
+            }),
+          });
+        });
+      });
+    });
+
+    describe('Given event body is invalid', () => {
+      describe.each([
+        {
+          scenario: 'Given there are no body in the event',
+          body: undefined,
+        },
+        {
+          scenario: 'Given csrPem is not present in the event body',
+          body: { 'mockCsrPem': 'mockValue' },
+        },
+        {
+          scenario: 'Given csrPem is malformed',
+          body: { 'csrPem': 'mockValue' },
+        },
+        {
+          scenario: 'Given csrPem is an empty string',
+          body: { 'csrPem': '' },
+        },
+        {
+          scenario: 'Given csrPem is an empty string with whitespace',
+          body: { 'csrPem': '  ' },
+        },
+      ])('$scenario', ({ body }) => {
+        beforeEach(async () => {
+          const invalidEvent = buildEvent({ body });
+          result = await handlerConstructor(
+            dependencies,
+            invalidEvent,
+            context,
+          );
+        });
+
+        it('Log an INVALID_EVENT error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+            errorMessage: 'csrPem missing from event',
+          });
+        });
+
+        it('Return 401 Unauthorized response', () => {
+          expect(result).toStrictEqual({
+            headers: { 'Content-Type': 'application/json' },
+            statusCode: 401,
+            body: JSON.stringify({
+              code: 'unauthorized',
+              message: 'csrPem missing from event',
             }),
           });
         });
