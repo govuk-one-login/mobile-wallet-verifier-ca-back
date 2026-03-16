@@ -33,7 +33,7 @@ export const handlerConstructor = async (
   }
   const config = configResult.value;
 
-  const validateEventResult = validateEvent(event.headers);
+  const validateEventResult = validateEvent(event.headers, event.body);
   if (validateEventResult.isError) {
     return unauthorizedResponse(validateEventResult.value);
   }

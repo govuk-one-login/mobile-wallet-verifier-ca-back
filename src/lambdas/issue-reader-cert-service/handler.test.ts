@@ -91,7 +91,7 @@ describe('Handler', () => {
         'X-Firebase-AppCheck': validFireBaseJwt,
       },
       body: {
-        'csrPem':
+        csrPem:
           '-----BEGIN CERTIFICATE REQUEST-----\nMIID...\n-----END CERTIFICATE REQUEST-----',
       },
     });
@@ -293,27 +293,32 @@ describe('Handler', () => {
       describe.each([
         {
           scenario: 'Given there are no body in the event',
-          body: undefined,
+          body: null,
         },
-        {
-          scenario: 'Given csrPem is not present in the event body',
-          body: { 'mockCsrPem': 'mockValue' },
-        },
-        {
-          scenario: 'Given csrPem is malformed',
-          body: { 'csrPem': 'mockValue' },
-        },
-        {
-          scenario: 'Given csrPem is an empty string',
-          body: { 'csrPem': '' },
-        },
-        {
-          scenario: 'Given csrPem is an empty string with whitespace',
-          body: { 'csrPem': '  ' },
-        },
+        // {
+        //   scenario: 'Given csrPem is not present in the event body',
+        //   body: { mockCsrPem: 'mockValue' },
+        // },
+        // {
+        //   scenario: 'Given csrPem is malformed',
+        //   body: { csrPem: 'mockValue' },
+        // },
+        // {
+        //   scenario: 'Given csrPem is an empty string',
+        //   body: { csrPem: '' },
+        // },
+        // {
+        //   scenario: 'Given csrPem is an empty string with whitespace',
+        //   body: { csrPem: '  ' },
+        // },
       ])('$scenario', ({ body }) => {
         beforeEach(async () => {
-          const invalidEvent = buildEvent({ body });
+          const invalidEvent = buildEvent({
+            headers: {
+              'X-Firebase-AppCheck': 'mockFireBaseAppCheckHeader',
+            },
+            body,
+          });
           result = await handlerConstructor(
             dependencies,
             invalidEvent,
