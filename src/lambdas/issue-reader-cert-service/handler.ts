@@ -37,7 +37,7 @@ export const handlerConstructor = async (
   if (validateEventResult.isError) {
     return unauthorizedResponse(validateEventResult.value);
   }
-  const jwt = validateEventResult.value;
+  const jwt = validateEventResult.value.firebaseAppCheckHeader;
 
   const expectedAppCheckJwtData: ExpectedAppCheckJwtData = {
     algorithm: config.ALGORITHM,

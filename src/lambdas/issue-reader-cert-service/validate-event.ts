@@ -7,7 +7,7 @@ import { LogMessage } from '../common/logger/log-message.ts';
 export function validateEvent(
   eventHeaders: APIGatewayProxyEventHeaders,
   eventBody: string | null,
-): Result<string, string> {
+): Result<{ firebaseAppCheckHeader: string; csrPem: string }, string> {
   const firebaseAppCheckHeader = getHeader(
     eventHeaders ?? {},
     'X-Firebase-AppCheck',
@@ -21,7 +21,7 @@ export function validateEvent(
   }
 
   if (!eventBody) {
-    const errorMessage = 'Body missing from event';
+    const errorMessage = 'Event body is null';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage,
     });
@@ -51,26 +51,29 @@ export function validateEvent(
   }
 
   if (!('csrPem' in parsedEventBody)) {
-    const errorMessage = 'csrPem missing from event body';
+    const errorMessage = 'Event body missing csrPem';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage,
     });
     return errorResult(errorMessage);
   }
   if (typeof parsedEventBody.csrPem !== 'string') {
-    const errorMessage = 'csrPem in body is not a string';
+    const errorMessage = 'Event body csrPem is not a string';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage,
     });
     return errorResult(errorMessage);
   }
   if (!parsedEventBody.csrPem.trim()) {
-    const errorMessage = 'csrPem in body is an empty string';
+    const errorMessage = 'Event body csrPem is an empty string';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage,
     });
     return errorResult(errorMessage);
   }
 
-  return successResult(firebaseAppCheckHeader);
+  return successResult({
+    firebaseAppCheckHeader,
+    csrPem: parsedEventBody.csrPem,
+  });
 }
