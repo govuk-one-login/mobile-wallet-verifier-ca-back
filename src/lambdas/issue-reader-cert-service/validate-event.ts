@@ -38,7 +38,13 @@ export function validateEvent(
     });
     return errorResult(errorMessage);
   }
-  console.log(parsedEventBody);
+  if(!parsedEventBody.csrPem) {
+    const errorMessage = 'csrPem missing from event body';
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
 
   return successResult(firebaseAppCheckHeader);
 }

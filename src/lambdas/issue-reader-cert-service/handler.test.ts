@@ -301,10 +301,11 @@ describe('Handler', () => {
           body: 'invalidJSON',
           expectedErrorMessage: 'Event body cannot be parsed',
         },
-        // {
-        //   scenario: 'Given csrPem is not present in the event body',
-        //   body: { mockCsrPem: 'mockValue' },
-        // },
+        {
+          scenario: 'Given csrPem is not present in the event body',
+          body: JSON.stringify({ mockKey: 'mockValue' }),
+          expectedErrorMessage: 'csrPem missing from event body',
+        },
         // {
         //   scenario: 'Given csrPem is malformed',
         //   body: { csrPem: 'mockValue' },
