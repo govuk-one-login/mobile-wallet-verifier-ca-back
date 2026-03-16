@@ -294,6 +294,12 @@ describe('Handler', () => {
         {
           scenario: 'Given there are no body in the event',
           body: null,
+          expectedErrorMessage: 'Body missing from event',
+        },
+        {
+          scenario: 'Given body cannot be parsed',
+          body: 'invalidJSON',
+          expectedErrorMessage: 'Event body cannot be parsed',
         },
         // {
         //   scenario: 'Given csrPem is not present in the event body',
@@ -311,7 +317,7 @@ describe('Handler', () => {
         //   scenario: 'Given csrPem is an empty string with whitespace',
         //   body: { csrPem: '  ' },
         // },
-      ])('$scenario', ({ body }) => {
+      ])('$scenario', ({ body, expectedErrorMessage }) => {
         beforeEach(async () => {
           const invalidEvent = buildEvent({
             headers: {
@@ -329,7 +335,7 @@ describe('Handler', () => {
         it('Log an INVALID_EVENT error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
-            errorMessage: 'csrPem missing from event',
+            errorMessage: expectedErrorMessage,
           });
         });
 
@@ -339,7 +345,7 @@ describe('Handler', () => {
             statusCode: 401,
             body: JSON.stringify({
               code: 'unauthorized',
-              message: 'csrPem missing from event',
+              message: expectedErrorMessage,
             }),
           });
         });

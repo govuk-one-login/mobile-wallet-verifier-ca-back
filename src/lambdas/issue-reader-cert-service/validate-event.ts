@@ -21,11 +21,24 @@ export function validateEvent(
   }
 
   if (!eventBody) {
-    const errorMessage = 'csrPem missing from event';
+    const errorMessage = 'Body missing from event';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage,
     });
     return errorResult(errorMessage);
   }
+
+  let parsedEventBody;
+  try {
+    parsedEventBody = JSON.parse(eventBody);
+  } catch {
+    const errorMessage = 'Event body cannot be parsed';
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+  console.log(parsedEventBody);
+
   return successResult(firebaseAppCheckHeader);
 }
