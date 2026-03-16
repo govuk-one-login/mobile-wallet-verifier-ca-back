@@ -24,6 +24,17 @@ export const unauthorizedResponse = (
   };
 };
 
+export const badRequestResponse = (message: string) => {
+  return {
+    headers: { 'Content-Type': 'application/json' },
+    statusCode: 400,
+    body: JSON.stringify({
+      code: 'bad_request',
+      message,
+    }),
+  };
+};
+
 export const serverErrorResponse: APIGatewayProxyResult = {
   headers: { 'Content-Type': 'application/json' },
   statusCode: 500,
