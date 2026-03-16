@@ -299,19 +299,29 @@ describe('Handler', () => {
           expectedErrorMessage: 'Event body cannot be parsed',
         },
         {
+          scenario: 'Given body is not a JSON object',
+          body: JSON.stringify([]),
+          expectedErrorMessage: 'Event body is not a JSON object',
+        },
+        {
           scenario: 'Given csrPem is not present in the event body',
           body: JSON.stringify({ mockKey: 'mockValue' }),
           expectedErrorMessage: 'csrPem missing from event body',
         },
         {
+          scenario: 'Given csrPem in body is not a string',
+          body: JSON.stringify({ csrPem: 123 }),
+          expectedErrorMessage: 'csrPem in body is not a string',
+        },
+        {
           scenario: 'Given csrPem is an empty string',
           body: JSON.stringify({ csrPem: '' }),
-          expectedErrorMessage: 'csrPem missing from event body',
+          expectedErrorMessage: 'csrPem in body is empty',
         },
         {
           scenario: 'Given csrPem is an empty string with whitespace',
           body: JSON.stringify({ csrPem: '  ' }),
-          expectedErrorMessage: 'csrPem missing from event body',
+          expectedErrorMessage: 'csrPem in body is empty',
         },
       ])('$scenario', ({ body, expectedErrorMessage }) => {
         beforeEach(async () => {
