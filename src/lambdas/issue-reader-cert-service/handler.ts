@@ -12,12 +12,19 @@ import {
 import { getIssueReaderCertConfig } from './config.ts';
 import { validateEvent } from './validate-event.ts';
 import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
-import { ErrorCategory } from '../common/result/result.ts';
 import {
+  emptySuccess,
+  ErrorCategory,
+  errorResult,
+  Result,
+} from '../common/result/result.ts';
+import {
+  badRequestResponse,
   okResponse,
   serverErrorResponse,
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
+import { Pkcs10CertificateRequest } from '@peculiar/x509';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -59,8 +66,27 @@ export const handlerConstructor = async (
     return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
   }
 
+  const validateCsrResult = validateCSR(validateEventResult.value.csrPem);
+  if (validateCsrResult.isError) {
+    return badRequestResponse(validateCsrResult.value);
+  }
+
   logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
   return okResponse(context.awsRequestId);
 };
 
 export const handler = handlerConstructor.bind(null, dependencies);
+
+export function validateCSR(csrPem: string): Result<void, string> {
+  let csr: Pkcs10CertificateRequest;
+  try {
+    csr = new Pkcs10CertificateRequest(csrPem);
+  } catch {
+    const errorMessage = 'CSR not valid PKCS#10 request';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+  return emptySuccess();
+}

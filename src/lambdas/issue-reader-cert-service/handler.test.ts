@@ -423,8 +423,8 @@ describe('Handler', () => {
 
       it('Logs INVALID_CSR', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_CSR',
-          errorMessage: 'CRS not valid PKCS#10 request',
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+          errorMessage: 'CSR not valid PKCS#10 request',
         });
       });
 
@@ -433,8 +433,8 @@ describe('Handler', () => {
           headers: { 'Content-Type': 'application/json' },
           statusCode: 400,
           body: JSON.stringify({
-            code: 'unauthorized',
-            message: 'CRS not valid PKCS#10 request',
+            code: 'bad_request',
+            message: 'CSR not valid PKCS#10 request',
           }),
         });
       });
