@@ -38,7 +38,7 @@ export function validateEvent(
     });
     return errorResult(errorMessage);
   }
-  if(!parsedEventBody.csrPem) {
+  if(!parsedEventBody.csrPem || !parsedEventBody.csrPem.trim()) {
     const errorMessage = 'csrPem missing from event body';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage,

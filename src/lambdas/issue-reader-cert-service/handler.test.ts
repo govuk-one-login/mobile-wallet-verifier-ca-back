@@ -306,17 +306,19 @@ describe('Handler', () => {
           body: JSON.stringify({ mockKey: 'mockValue' }),
           expectedErrorMessage: 'csrPem missing from event body',
         },
+        {
+          scenario: 'Given csrPem is an empty string',
+          body: JSON.stringify({ csrPem: '' }),
+          expectedErrorMessage: 'csrPem missing from event body',
+        },
+        {
+          scenario: 'Given csrPem is an empty string with whitespace',
+          body: JSON.stringify({ csrPem: '  ' }),
+          expectedErrorMessage: 'csrPem missing from event body',
+        },
         // {
         //   scenario: 'Given csrPem is malformed',
         //   body: { csrPem: 'mockValue' },
-        // },
-        // {
-        //   scenario: 'Given csrPem is an empty string',
-        //   body: { csrPem: '' },
-        // },
-        // {
-        //   scenario: 'Given csrPem is an empty string with whitespace',
-        //   body: { csrPem: '  ' },
         // },
       ])('$scenario', ({ body, expectedErrorMessage }) => {
         beforeEach(async () => {
