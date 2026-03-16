@@ -28,7 +28,7 @@ export function validateEvent(
     return errorResult(errorMessage);
   }
 
-  let parsedEventBody;
+  let parsedEventBody: unknown;
   try {
     parsedEventBody = JSON.parse(eventBody);
   } catch {
@@ -38,8 +38,34 @@ export function validateEvent(
     });
     return errorResult(errorMessage);
   }
-  if (!parsedEventBody.csrPem || !parsedEventBody.csrPem.trim()) {
+  if (
+    typeof parsedEventBody !== 'object' ||
+    parsedEventBody === null ||
+    Array.isArray(parsedEventBody)
+  ) {
+    const errorMessage = 'Event body is not a JSON object';
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+
+  if (!('csrPem' in parsedEventBody)) {
     const errorMessage = 'csrPem missing from event body';
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+  if (typeof parsedEventBody.csrPem !== 'string') {
+    const errorMessage = 'csrPem in body is not a string';
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+  if (!parsedEventBody.csrPem.trim()) {
+    const errorMessage = 'csrPem in body is an empty string';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
       errorMessage,
     });

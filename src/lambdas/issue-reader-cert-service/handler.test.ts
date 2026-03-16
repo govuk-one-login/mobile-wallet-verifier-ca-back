@@ -316,12 +316,12 @@ describe('Handler', () => {
         {
           scenario: 'Given csrPem is an empty string',
           body: JSON.stringify({ csrPem: '' }),
-          expectedErrorMessage: 'csrPem in body is empty',
+          expectedErrorMessage: 'csrPem in body is an empty string',
         },
         {
           scenario: 'Given csrPem is an empty string with whitespace',
           body: JSON.stringify({ csrPem: '  ' }),
-          expectedErrorMessage: 'csrPem in body is empty',
+          expectedErrorMessage: 'csrPem in body is an empty string',
         },
       ])('$scenario', ({ body, expectedErrorMessage }) => {
         beforeEach(async () => {
