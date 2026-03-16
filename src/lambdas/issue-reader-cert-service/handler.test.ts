@@ -50,6 +50,7 @@ describe('Handler', () => {
   let mockJwksCache: JwksCache;
   let privateKey: CryptoKey;
   let publicJwk: JWK;
+  let validFireBaseJwt: string;
 
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
@@ -79,7 +80,7 @@ describe('Handler', () => {
         },
       );
 
-    const validFireBaseJwt = await createSignedJwt(privateKey, {
+    validFireBaseJwt = await createSignedJwt(privateKey, {
       audience: JSON.parse(env.AUDIENCE)[0],
       issuer: env.ISSUER,
       subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
@@ -399,6 +400,41 @@ describe('Handler', () => {
           body: JSON.stringify({
             code: 'server_error',
             message: 'Server Error',
+          }),
+        });
+      });
+    });
+  });
+
+  describe('CSR Validation', () => {
+    describe('Given CSRPem is not valid PKCS#10', () => {
+      beforeEach(async () => {
+        event = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          body: JSON.stringify({
+            csrPem: 'invalidPKCS#10',
+          }),
+        });
+
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Logs INVALID_CSR', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_CSR',
+          errorMessage: 'CRS not valid PKCS#10 request',
+        });
+      });
+
+      it('Return 400 Bad Request response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 400,
+          body: JSON.stringify({
+            code: 'unauthorized',
+            message: 'CRS not valid PKCS#10 request',
           }),
         });
       });
