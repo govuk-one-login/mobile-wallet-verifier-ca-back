@@ -90,10 +90,7 @@ describe('Handler', () => {
       headers: {
         'X-Firebase-AppCheck': validFireBaseJwt,
       },
-      body: {
-        csrPem:
-          '-----BEGIN CERTIFICATE REQUEST-----\nMIID...\n-----END CERTIFICATE REQUEST-----',
-      },
+      body: JSON.stringify({ csrPem: 'MockCsrPemValue' }),
     });
 
     dependencies = {
@@ -316,10 +313,6 @@ describe('Handler', () => {
           body: JSON.stringify({ csrPem: '  ' }),
           expectedErrorMessage: 'csrPem missing from event body',
         },
-        // {
-        //   scenario: 'Given csrPem is malformed',
-        //   body: { csrPem: 'mockValue' },
-        // },
       ])('$scenario', ({ body, expectedErrorMessage }) => {
         beforeEach(async () => {
           const invalidEvent = buildEvent({
@@ -366,6 +359,7 @@ describe('Handler', () => {
           headers: {
             'X-Firebase-AppCheck': jwtWithInvalidIssuer,
           },
+          body: JSON.stringify({ csrPem: 'MockCsrPemValue' }),
         });
         result = await handlerConstructor(dependencies, event, context);
       });
