@@ -508,6 +508,40 @@ describe('Handler', () => {
         });
       });
     });
+
+    describe('Given CSR does not use P-256 curve', () => {
+      beforeEach(async () => {
+        const invalidCsr = await createCsrPem({ keyAlgorithm: 'ec-p384' });
+        event = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          body: JSON.stringify({
+            csrPem: invalidCsr,
+          }),
+        });
+
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Logs INVALID_CSR', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+          errorMessage: 'CSR public key does not use P-256 curve',
+        });
+      });
+
+      it('Return 400 Bad Request response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 400,
+          body: JSON.stringify({
+            code: 'bad_request',
+            message: 'CSR public key does not use P-256 curve',
+          }),
+        });
+      });
+    });
   });
 
   describe('Happy path tests', () => {
