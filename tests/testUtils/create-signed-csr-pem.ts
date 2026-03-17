@@ -5,7 +5,7 @@ import {
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 
-interface CreateCsrPemOptions {
+export interface CreateCsrPemOptions {
   keyAlgorithm?: CsrKeyAlgorithm;
   basicConstraintsCa?: boolean;
   invalidateSignature?: boolean;
@@ -38,6 +38,7 @@ export async function createCsrPem(
     // but it's self signature no longer verifies
     const derWithInvalidSignature = Buffer.from(csr.rawData);
     derWithInvalidSignature[derWithInvalidSignature.length - 10] ^= 0x01;
+    console.log('>>>> SHIRIN');
     return toPem(derWithInvalidSignature);
   }
 

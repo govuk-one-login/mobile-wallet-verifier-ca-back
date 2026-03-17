@@ -32,7 +32,10 @@ import {
   createSignedJwt,
 } from '../../../tests/testUtils/create-signed-jwt.ts';
 import { JWK } from 'jose';
-import { createCsrPem } from '../../../tests/testUtils/create-signed-csr-pem.ts';
+import {
+  createCsrPem,
+  CreateCsrPemOptions,
+} from '../../../tests/testUtils/create-signed-csr-pem.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -410,6 +413,60 @@ describe('Handler', () => {
   });
 
   describe('CSR Validation', () => {
+    describe.each([
+      {
+        scenario: 'Given CSR has invalid self signature',
+        csrPemConfig: { invalidateSignature: true },
+        expectedErrorMessage: 'CSR self signature verification failed',
+      },
+      {
+        scenario: 'Given CSR has non EC public key algorithm',
+        csrPemConfig: { keyAlgorithm: 'rsa' },
+        expectedErrorMessage: 'CSR public key not EC key',
+      },
+      {
+        scenario: 'Given CSR does not use P-256 curve',
+        csrPemConfig: { keyAlgorithm: 'ec-p384' },
+        expectedErrorMessage: 'CSR public key does not use P-256 curve',
+      },
+      {
+        scenario: 'Given CSR requests CA capabilities',
+        csrPemConfig: { basicConstraintsCa: true },
+        expectedErrorMessage: 'CSR requests CA capabilities',
+      },
+    ])('$scenario', ({ csrPemConfig, expectedErrorMessage }) => {
+      beforeEach(async () => {
+        const invalidCsrPem = await createCsrPem(
+          csrPemConfig as CreateCsrPemOptions,
+        );
+        const invalidEvent = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          body: JSON.stringify({
+            csrPem: invalidCsrPem,
+          }),
+        });
+        result = await handlerConstructor(dependencies, invalidEvent, context);
+      });
+      it('Logs INVALID_CSR', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+          errorMessage: expectedErrorMessage,
+        });
+      });
+      it('Return 400 Bad Request response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 400,
+          body: JSON.stringify({
+            code: 'bad_request',
+            message: expectedErrorMessage,
+          }),
+        });
+      });
+    });
+
     describe('Given CSRPem is not valid PKCS#10', () => {
       beforeEach(async () => {
         event = buildEvent({
@@ -438,142 +495,6 @@ describe('Handler', () => {
           body: JSON.stringify({
             code: 'bad_request',
             message: 'CSR not valid PKCS#10 request',
-          }),
-        });
-      });
-    });
-
-    describe('Given CSR has invalid self signature', () => {
-      beforeEach(async () => {
-        const invalidCsr = await createCsrPem({ invalidateSignature: true });
-        event = buildEvent({
-          headers: {
-            'X-Firebase-AppCheck': validFireBaseJwt,
-          },
-          body: JSON.stringify({
-            csrPem: invalidCsr,
-          }),
-        });
-
-        result = await handlerConstructor(dependencies, event, context);
-      });
-
-      it('Logs INVALID_CSR', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
-          errorMessage: 'CSR self signature verification failed',
-        });
-      });
-
-      it('Return 400 Bad Request response', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 400,
-          body: JSON.stringify({
-            code: 'bad_request',
-            message: 'CSR self signature verification failed',
-          }),
-        });
-      });
-    });
-
-    describe('Given CSR has non EC public key algorithm', () => {
-      beforeEach(async () => {
-        const invalidCsr = await createCsrPem({ keyAlgorithm: 'rsa' });
-        event = buildEvent({
-          headers: {
-            'X-Firebase-AppCheck': validFireBaseJwt,
-          },
-          body: JSON.stringify({
-            csrPem: invalidCsr,
-          }),
-        });
-
-        result = await handlerConstructor(dependencies, event, context);
-      });
-
-      it('Logs INVALID_CSR', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
-          errorMessage: 'CSR public key not EC key',
-        });
-      });
-
-      it('Return 400 Bad Request response', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 400,
-          body: JSON.stringify({
-            code: 'bad_request',
-            message: 'CSR public key not EC key',
-          }),
-        });
-      });
-    });
-
-    describe('Given CSR does not use P-256 curve', () => {
-      beforeEach(async () => {
-        const invalidCsr = await createCsrPem({ keyAlgorithm: 'ec-p384' });
-        event = buildEvent({
-          headers: {
-            'X-Firebase-AppCheck': validFireBaseJwt,
-          },
-          body: JSON.stringify({
-            csrPem: invalidCsr,
-          }),
-        });
-
-        result = await handlerConstructor(dependencies, event, context);
-      });
-
-      it('Logs INVALID_CSR', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
-          errorMessage: 'CSR public key does not use P-256 curve',
-        });
-      });
-
-      it('Return 400 Bad Request response', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 400,
-          body: JSON.stringify({
-            code: 'bad_request',
-            message: 'CSR public key does not use P-256 curve',
-          }),
-        });
-      });
-    });
-
-    describe('Given CSR requests CA capabilities', () => {
-      beforeEach(async () => {
-        const invalidCsr = await createCsrPem({ basicConstraintsCa: true });
-        event = buildEvent({
-          headers: {
-            'X-Firebase-AppCheck': validFireBaseJwt,
-          },
-          body: JSON.stringify({
-            csrPem: invalidCsr,
-          }),
-        });
-
-        result = await handlerConstructor(dependencies, event, context);
-      });
-
-      it('Logs INVALID_CSR', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
-          errorMessage: 'CSR requests CA capabilities',
-        });
-      });
-
-      it('Return 400 Bad Request response', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 400,
-          body: JSON.stringify({
-            code: 'bad_request',
-            message: 'CSR requests CA capabilities',
           }),
         });
       });
