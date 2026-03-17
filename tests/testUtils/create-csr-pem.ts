@@ -6,6 +6,7 @@ import {
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 
 export interface CreateCsrPemOptions {
+  invalidPkcs10?: boolean;
   keyAlgorithm?: CsrKeyAlgorithm;
   basicConstraintsCa?: boolean;
   invalidateSignature?: boolean;
@@ -14,6 +15,10 @@ export interface CreateCsrPemOptions {
 export async function createCsrPem(
   options: CreateCsrPemOptions = {},
 ): Promise<string> {
+  if (options.invalidPkcs10) {
+    return 'invalidPKCS#10';
+  }
+
   const keyAlgorithm = options.keyAlgorithm ?? 'ec-p256';
   const keyGenerationAlgorithm = getKeyGenerationAlgorithm(keyAlgorithm);
   const signingAlgorithm = getSigningAlgorithm(keyAlgorithm);
@@ -38,7 +43,6 @@ export async function createCsrPem(
     // but it's self signature no longer verifies
     const derWithInvalidSignature = Buffer.from(csr.rawData);
     derWithInvalidSignature[derWithInvalidSignature.length - 10] ^= 0x01;
-    console.log('>>>> SHIRIN');
     return toPem(derWithInvalidSignature);
   }
 
