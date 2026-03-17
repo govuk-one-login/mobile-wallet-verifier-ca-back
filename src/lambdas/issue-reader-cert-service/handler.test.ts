@@ -542,6 +542,40 @@ describe('Handler', () => {
         });
       });
     });
+
+    describe('Given CSR requests CA capabilities', () => {
+      beforeEach(async () => {
+        const invalidCsr = await createCsrPem({ basicConstraintsCa: true });
+        event = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          body: JSON.stringify({
+            csrPem: invalidCsr,
+          }),
+        });
+
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Logs INVALID_CSR', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+          errorMessage: 'CSR requests CA capabilities',
+        });
+      });
+
+      it('Return 400 Bad Request response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 400,
+          body: JSON.stringify({
+            code: 'bad_request',
+            message: 'CSR requests CA capabilities',
+          }),
+        });
+      });
+    });
   });
 
   describe('Happy path tests', () => {
