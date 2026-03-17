@@ -24,7 +24,7 @@ import {
   serverErrorResponse,
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
-import { Pkcs10CertificateRequest } from '@peculiar/x509';
+import {BasicConstraintsExtension, Pkcs10CertificateRequest} from '@peculiar/x509';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -77,6 +77,7 @@ export const handlerConstructor = async (
 
 export const handler = handlerConstructor.bind(null, dependencies);
 
+const BASIC_CONSTRAINTS_OID = '2.5.29.19';
 export async function validateCSR(
   csrPem: string,
 ): Promise<Result<void, string>> {
@@ -109,7 +110,7 @@ export async function validateCSR(
 
   const csrPublicKeyAlgorithm = csr.publicKey.algorithm;
 
-  if (csr.publicKey.algorithm.name !== 'ECDSA') {
+  if (csrPublicKeyAlgorithm.name !== 'ECDSA') {
     const errorMessage = 'CSR public key not EC key';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
@@ -119,6 +120,14 @@ export async function validateCSR(
 
   if (!('namedCurve' in csrPublicKeyAlgorithm) || csrPublicKeyAlgorithm.namedCurve !== 'P-256') {
     const errorMessage = 'CSR public key does not use P-256 curve';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+  const basicConstraints = csr.getExtension(BASIC_CONSTRAINTS_OID);
+  if ( basicConstraints instanceof BasicConstraintsExtension && basicConstraints.ca) {
+    const errorMessage = 'CSR requests CA capabilities';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
     });
