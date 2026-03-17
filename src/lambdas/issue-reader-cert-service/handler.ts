@@ -24,7 +24,10 @@ import {
   serverErrorResponse,
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
-import {BasicConstraintsExtension, Pkcs10CertificateRequest} from '@peculiar/x509';
+import {
+  BasicConstraintsExtension,
+  Pkcs10CertificateRequest,
+} from '@peculiar/x509';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -84,13 +87,15 @@ export async function validateCSR(
   let csr: Pkcs10CertificateRequest;
   try {
     csr = new Pkcs10CertificateRequest(csrPem);
-  } catch {
+  } catch (error: unknown) {
     const errorMessage = 'CSR not valid PKCS#10 request';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
+      error,
     });
     return errorResult(errorMessage);
   }
+
   try {
     const validSignedCsr = await csr.verify();
     if (!validSignedCsr) {
@@ -100,16 +105,16 @@ export async function validateCSR(
       });
       return errorResult(errorMessage);
     }
-  } catch {
+  } catch (error: unknown) {
     const errorMessage = 'CSR self signature verification failed';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
+      error,
     });
     return errorResult(errorMessage);
   }
 
   const csrPublicKeyAlgorithm = csr.publicKey.algorithm;
-
   if (csrPublicKeyAlgorithm.name !== 'ECDSA') {
     const errorMessage = 'CSR public key not EC key';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
@@ -118,15 +123,22 @@ export async function validateCSR(
     return errorResult(errorMessage);
   }
 
-  if (!('namedCurve' in csrPublicKeyAlgorithm) || csrPublicKeyAlgorithm.namedCurve !== 'P-256') {
+  if (
+    !('namedCurve' in csrPublicKeyAlgorithm) ||
+    csrPublicKeyAlgorithm.namedCurve !== 'P-256'
+  ) {
     const errorMessage = 'CSR public key does not use P-256 curve';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
     });
     return errorResult(errorMessage);
   }
+
   const basicConstraints = csr.getExtension(BASIC_CONSTRAINTS_OID);
-  if ( basicConstraints instanceof BasicConstraintsExtension && basicConstraints.ca) {
+  if (
+    basicConstraints instanceof BasicConstraintsExtension &&
+    basicConstraints.ca
+  ) {
     const errorMessage = 'CSR requests CA capabilities';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
