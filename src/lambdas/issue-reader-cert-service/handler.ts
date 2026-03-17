@@ -19,7 +19,7 @@ import {
   serverErrorResponse,
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
-import { validateCSR } from './validate-csr.ts';
+import { validateCsr } from './validate-csr.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -61,7 +61,7 @@ export const handlerConstructor = async (
     return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
   }
 
-  const validateCsrResult = await validateCSR(validateEventResult.value.csrPem);
+  const validateCsrResult = await validateCsr(validateEventResult.value.csrPem);
   if (validateCsrResult.isError) {
     return badRequestResponse(validateCsrResult.value);
   }

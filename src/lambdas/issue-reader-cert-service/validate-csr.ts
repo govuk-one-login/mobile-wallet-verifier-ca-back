@@ -8,7 +8,7 @@ import { Result, errorResult, emptySuccess } from '../common/result/result';
 
 const BASIC_CONSTRAINTS_OID = '2.5.29.19';
 
-export async function validateCSR(
+export async function validateCsr(
   csrPem: string,
 ): Promise<Result<void, string>> {
   let csr: Pkcs10CertificateRequest;
