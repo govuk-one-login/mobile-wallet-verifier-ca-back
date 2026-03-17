@@ -6,6 +6,10 @@ import { LogMessage } from '../common/logger/log-message';
 import { logger } from '../common/logger/logger';
 import { Result, errorResult, emptySuccess } from '../common/result/result';
 
+// basicConstraints is identified in X.509 by OID 2.5.29.19.
+// RFC 5280 defines it as id-ce-basicConstraints.
+// https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1
+// https://datatracker.ietf.org/doc/html/rfc5280#appendix-A
 const BASIC_CONSTRAINTS_OID = '2.5.29.19';
 
 export async function validateCsr(
