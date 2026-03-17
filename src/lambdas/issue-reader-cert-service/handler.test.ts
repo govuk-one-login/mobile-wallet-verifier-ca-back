@@ -439,6 +439,40 @@ describe('Handler', () => {
         });
       });
     });
+
+    describe('Given CSR gas invalid self signature', () => {
+      beforeEach(async () => {
+        // const invalidCsr = use helper func
+        event = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          // body: JSON.stringify({
+          //   csrPem: invalidCsr,
+          // }),
+        });
+
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Logs INVALID_CSR', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+          errorMessage: 'CSR self signature verification failed',
+        });
+      });
+
+      it('Return 400 Bad Request response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 400,
+          body: JSON.stringify({
+            code: 'bad_request',
+            message: 'CSR self signature verification failed',
+          }),
+        });
+      });
+    });
   });
 
   describe('Happy path tests', () => {
