@@ -87,12 +87,14 @@ describe('Handler', () => {
       subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
     });
 
+    const validrCsrPem = await createCsrPem();
+
     context = buildLambdaContext();
     event = buildEvent({
       headers: {
         'X-Firebase-AppCheck': validFireBaseJwt,
       },
-      body: JSON.stringify({ csrPem: 'MockCsrPemValue' }),
+      body: JSON.stringify({ csrPem: validrCsrPem }),
     });
 
     dependencies = {
