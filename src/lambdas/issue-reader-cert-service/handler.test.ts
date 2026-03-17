@@ -35,7 +35,7 @@ import { JWK } from 'jose';
 import {
   createCsrPem,
   CreateCsrPemOptions,
-} from '../../../tests/testUtils/create-signed-csr-pem.ts';
+} from '../../../tests/testUtils/create-csr-pem.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
