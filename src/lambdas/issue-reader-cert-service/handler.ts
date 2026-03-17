@@ -107,8 +107,18 @@ export async function validateCSR(
     return errorResult(errorMessage);
   }
 
+  const csrPublicKeyAlgorithm = csr.publicKey.algorithm;
+
   if (csr.publicKey.algorithm.name !== 'ECDSA') {
     const errorMessage = 'CSR public key not EC key';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+
+  if (!('namedCurve' in csrPublicKeyAlgorithm) || csrPublicKeyAlgorithm.namedCurve !== 'P-256') {
+    const errorMessage = 'CSR public key does not use P-256 curve';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
     });
