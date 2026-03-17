@@ -413,7 +413,12 @@ describe('Handler', () => {
   });
 
   describe('CSR Validation', () => {
-    describe.each([
+    type InvalidCsrTestCase = {
+      scenario: string;
+      csrPemConfig: CreateCsrPemOptions;
+      expectedErrorMessage: string;
+    };
+    const invalidCsrTestCases: InvalidCsrTestCase[] = [
       {
         scenario: 'Given CSRPem is not valid PKCS#10',
         csrPemConfig: { invalidPkcs10: true },
@@ -439,41 +444,47 @@ describe('Handler', () => {
         csrPemConfig: { basicConstraintsCa: true },
         expectedErrorMessage: 'CSR requests CA capabilities',
       },
-    ])('$scenario', ({ csrPemConfig, expectedErrorMessage }) => {
-      beforeEach(async () => {
-        const invalidCsrPem = await createCsrPem(
-          csrPemConfig as CreateCsrPemOptions,
-        );
-        const invalidEvent = buildEvent({
-          headers: {
-            'X-Firebase-AppCheck': validFireBaseJwt,
-          },
-          body: JSON.stringify({
-            csrPem: invalidCsrPem,
-          }),
+    ];
+    describe.each(invalidCsrTestCases)(
+      '$scenario',
+      ({ csrPemConfig, expectedErrorMessage }) => {
+        beforeEach(async () => {
+          const invalidCsrPem = await createCsrPem(csrPemConfig);
+          const invalidEvent = buildEvent({
+            headers: {
+              'X-Firebase-AppCheck': validFireBaseJwt,
+            },
+            body: JSON.stringify({
+              csrPem: invalidCsrPem,
+            }),
+          });
+
+          result = await handlerConstructor(
+            dependencies,
+            invalidEvent,
+            context,
+          );
         });
 
-        result = await handlerConstructor(dependencies, invalidEvent, context);
-      });
-
-      it('Logs INVALID_CSR', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
-          errorMessage: expectedErrorMessage,
+        it('Logs INVALID_CSR', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+            errorMessage: expectedErrorMessage,
+          });
         });
-      });
 
-      it('Return 400 Bad Request response', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 400,
-          body: JSON.stringify({
-            code: 'bad_request',
-            message: expectedErrorMessage,
-          }),
+        it('Return 400 Bad Request response', () => {
+          expect(result).toStrictEqual({
+            headers: { 'Content-Type': 'application/json' },
+            statusCode: 400,
+            body: JSON.stringify({
+              code: 'bad_request',
+              message: expectedErrorMessage,
+            }),
+          });
         });
-      });
-    });
+      },
+    );
   });
 
   describe('Happy path tests', () => {
