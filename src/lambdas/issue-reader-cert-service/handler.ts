@@ -66,7 +66,7 @@ export const handlerConstructor = async (
     return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
   }
 
-  const validateCsrResult = validateCSR(validateEventResult.value.csrPem);
+  const validateCsrResult = await validateCSR(validateEventResult.value.csrPem);
   if (validateCsrResult.isError) {
     return badRequestResponse(validateCsrResult.value);
   }
@@ -77,7 +77,9 @@ export const handlerConstructor = async (
 
 export const handler = handlerConstructor.bind(null, dependencies);
 
-export function validateCSR(csrPem: string): Result<void, string> {
+export async function validateCSR(
+  csrPem: string,
+): Promise<Result<void, string>> {
   let csr: Pkcs10CertificateRequest;
   try {
     csr = new Pkcs10CertificateRequest(csrPem);
@@ -88,5 +90,22 @@ export function validateCSR(csrPem: string): Result<void, string> {
     });
     return errorResult(errorMessage);
   }
+  try {
+    const validSignedCsr = await csr.verify();
+    if (!validSignedCsr) {
+      const errorMessage = 'CSR self signature verification failed';
+      logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+        errorMessage,
+      });
+      return errorResult(errorMessage);
+    }
+  } catch {
+    const errorMessage = 'CSR self signature verification failed';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+
   return emptySuccess();
 }

@@ -32,6 +32,7 @@ import {
   createSignedJwt,
 } from '../../../tests/testUtils/create-signed-jwt.ts';
 import { JWK } from 'jose';
+import { createCsrPem } from '../../../tests/testUtils/create-signed-csr-pem.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -440,16 +441,16 @@ describe('Handler', () => {
       });
     });
 
-    describe('Given CSR gas invalid self signature', () => {
+    describe('Given CSR has invalid self signature', () => {
       beforeEach(async () => {
-        // const invalidCsr = use helper func
+        const invalidCsr = await createCsrPem({ invalidateSignature: true });
         event = buildEvent({
           headers: {
             'X-Firebase-AppCheck': validFireBaseJwt,
           },
-          // body: JSON.stringify({
-          //   csrPem: invalidCsr,
-          // }),
+          body: JSON.stringify({
+            csrPem: invalidCsr,
+          }),
         });
 
         result = await handlerConstructor(dependencies, event, context);
