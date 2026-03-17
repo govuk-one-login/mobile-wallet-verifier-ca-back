@@ -415,6 +415,11 @@ describe('Handler', () => {
   describe('CSR Validation', () => {
     describe.each([
       {
+        scenario: 'Given CSRPem is not valid PKCS#10',
+        csrPemConfig: { invalidPkcs10: true },
+        expectedErrorMessage: 'CSR not valid PKCS#10 request',
+      },
+      {
         scenario: 'Given CSR has invalid self signature',
         csrPemConfig: { invalidateSignature: true },
         expectedErrorMessage: 'CSR self signature verification failed',
@@ -447,14 +452,17 @@ describe('Handler', () => {
             csrPem: invalidCsrPem,
           }),
         });
+
         result = await handlerConstructor(dependencies, invalidEvent, context);
       });
+
       it('Logs INVALID_CSR', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
           errorMessage: expectedErrorMessage,
         });
       });
+
       it('Return 400 Bad Request response', () => {
         expect(result).toStrictEqual({
           headers: { 'Content-Type': 'application/json' },
@@ -462,39 +470,6 @@ describe('Handler', () => {
           body: JSON.stringify({
             code: 'bad_request',
             message: expectedErrorMessage,
-          }),
-        });
-      });
-    });
-
-    describe('Given CSRPem is not valid PKCS#10', () => {
-      beforeEach(async () => {
-        event = buildEvent({
-          headers: {
-            'X-Firebase-AppCheck': validFireBaseJwt,
-          },
-          body: JSON.stringify({
-            csrPem: 'invalidPKCS#10',
-          }),
-        });
-
-        result = await handlerConstructor(dependencies, event, context);
-      });
-
-      it('Logs INVALID_CSR', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
-          errorMessage: 'CSR not valid PKCS#10 request',
-        });
-      });
-
-      it('Return 400 Bad Request response', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 400,
-          body: JSON.stringify({
-            code: 'bad_request',
-            message: 'CSR not valid PKCS#10 request',
           }),
         });
       });
