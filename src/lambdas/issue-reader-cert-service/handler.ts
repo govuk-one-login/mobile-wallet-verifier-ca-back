@@ -107,5 +107,13 @@ export async function validateCSR(
     return errorResult(errorMessage);
   }
 
+  if (csr.publicKey.algorithm.name !== 'ECDSA') {
+    const errorMessage = 'CSR public key not EC key';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+
   return emptySuccess();
 }

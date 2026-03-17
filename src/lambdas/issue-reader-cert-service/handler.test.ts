@@ -475,7 +475,7 @@ describe('Handler', () => {
       });
     });
 
-    describe('Given CSR has non EC public key algorithm', () =>{
+    describe('Given CSR has non EC public key algorithm', () => {
       beforeEach(async () => {
         const invalidCsr = await createCsrPem({ keyAlgorithm: 'rsa' });
         event = buildEvent({
