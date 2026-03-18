@@ -8,16 +8,10 @@ export function validateEvent(
   eventHeaders: APIGatewayProxyEventHeaders,
   eventBody: string | null,
 ): Result<{ firebaseAppCheckHeader: string; csrPem: string }, string> {
-  const firebaseAppCheckHeader = getHeader(
-    eventHeaders ?? {},
-    'X-Firebase-AppCheck',
-  );
-  if (!firebaseAppCheckHeader?.trim()) {
-    const errorMessage = 'X-Firebase-AppCheck header missing from event';
-    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
-      errorMessage,
-    });
-    return errorResult(errorMessage);
+  const validateAppCheckHeaderResult =
+    validateEventAppCheckHeader(eventHeaders);
+  if (validateAppCheckHeaderResult.isError) {
+    return validateAppCheckHeaderResult;
   }
 
   if (!eventBody) {
@@ -73,7 +67,25 @@ export function validateEvent(
   }
 
   return successResult({
-    firebaseAppCheckHeader,
+    firebaseAppCheckHeader: validateAppCheckHeaderResult.value,
     csrPem: parsedEventBody.csrPem,
   });
+}
+
+function validateEventAppCheckHeader(
+  eventHeaders: APIGatewayProxyEventHeaders,
+): Result<string, string> {
+  const firebaseAppCheckHeader = getHeader(
+    eventHeaders ?? {},
+    'X-Firebase-AppCheck',
+  );
+  if (!firebaseAppCheckHeader?.trim()) {
+    const errorMessage = 'X-Firebase-AppCheck header missing from event';
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+
+  return successResult(firebaseAppCheckHeader);
 }
