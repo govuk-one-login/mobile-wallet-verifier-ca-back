@@ -39,7 +39,7 @@ export const handlerConstructor = async (
   if (validateEventResult.isError) {
     return unauthorizedResponse(validateEventResult.value);
   }
-  const jwt = validateEventResult.value.firebaseAppCheckHeader;
+  const { firebaseAppCheckJwt, csrPem } = validateEventResult.value;
 
   const expectedAppCheckJwtData: ExpectedAppCheckJwtData = {
     algorithm: config.ALGORITHM,
@@ -48,7 +48,7 @@ export const handlerConstructor = async (
     issuer: config.ISSUER,
   };
   const verifyAppCheckJwtResult = await dependencies.verifyAppCheckJwt(
-    jwt,
+    firebaseAppCheckJwt,
     config.FIREBASE_JWKS_URI,
     expectedAppCheckJwtData,
   );
@@ -61,7 +61,7 @@ export const handlerConstructor = async (
     return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
   }
 
-  const validateCsrResult = await validateCsr(validateEventResult.value.csrPem);
+  const validateCsrResult = await validateCsr(csrPem);
   if (validateCsrResult.isError) {
     return badRequestResponse(validateCsrResult.value);
   }

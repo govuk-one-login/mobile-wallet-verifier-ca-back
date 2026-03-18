@@ -5,7 +5,7 @@ import { logger } from '../common/logger/logger.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
 
 interface ValidEventData {
-  firebaseAppCheckHeader: string;
+  firebaseAppCheckJwt: string;
   csrPem: string;
 }
 export function validateEvent(
@@ -17,7 +17,7 @@ export function validateEvent(
   if (validateAppCheckHeaderResult.isError) {
     return validateAppCheckHeaderResult;
   }
-  const firebaseAppCheckHeader = validateAppCheckHeaderResult.value;
+  const firebaseAppCheckJwt = validateAppCheckHeaderResult.value;
 
   const validateEventBodyResult = validateEventBody(eventBody);
   if (validateEventBodyResult.isError) {
@@ -26,7 +26,7 @@ export function validateEvent(
   const csrPem = validateEventBodyResult.value;
 
   return successResult({
-    firebaseAppCheckHeader,
+    firebaseAppCheckJwt,
     csrPem,
   });
 }
