@@ -92,13 +92,24 @@ export async function validateCsr(
   }
 
   const subjectOrganisationNames = csr.subjectName.getField('O');
-  if (subjectOrganisationNames.length !== 1 || subjectOrganisationNames[0] !== 'Government Digital Service') {
+  if (
+    subjectOrganisationNames.length !== 1 ||
+    subjectOrganisationNames[0] !== 'Government Digital Service'
+  ) {
     const errorMessage = 'CSR subject O is not Government Digital Service';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
     });
     return errorResult(errorMessage);
+  }
 
+  const subjectCommonNames = csr.subjectName.getField('CN');
+  if (subjectCommonNames.length !== 1 || !subjectCommonNames[0].trim()) {
+    const errorMessage = 'CSR subject CN is not present';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
   }
 
   return emptySuccess();
