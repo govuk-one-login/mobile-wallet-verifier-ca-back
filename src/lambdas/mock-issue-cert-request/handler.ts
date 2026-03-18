@@ -100,7 +100,7 @@ async function generateMockRequest(
     publicKeyPem: keyPair.publicKeyPem,
     subject: {
       countryName: 'GB',
-      organizationName: 'Example Verifier Org Ltd',
+      organizationName: 'Government Digital Service',
       organizationalUnitName: 'Reader Certification Authority',
       commonName: 'Example Verifier Org Reader Sub-CA',
       serialNumber,
