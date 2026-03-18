@@ -5,22 +5,10 @@ import {
 import { LogMessage } from '../common/logger/log-message';
 import { logger } from '../common/logger/logger';
 import { Result, errorResult, emptySuccess } from '../common/result/result';
-
-/*
-X.509 extensions are identified by OIDs (Object Identifiers),
-The basicConstraints extension uses the OID 2.5.29.19,
-so we use that value to look it up in the CSR.
-RFC 5280 section 4.2.1 defines the base id-ce value (2.5.29), and
-Appendix A defines basicConstraints as id-ce-basicConstraints = { id-ce 19 }.
-https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1
-https://datatracker.ietf.org/doc/html/rfc5280#appendix-A
-*/
-const BASIC_CONSTRAINTS_OID = '2.5.29.19';
-
-const EXPECTED_CSR_SUBJECT_DATA = {
-  C: 'GB',
-  O: 'Government Digital Service',
-};
+import {
+  BASIC_CONSTRAINTS_OID,
+  CSR_SUBJECT_POLICY,
+} from '../common/csr-policy';
 
 export async function validateCsr(
   csrPem: string,
@@ -90,7 +78,7 @@ export async function validateCsr(
   const subjectCountryNames = csr.subjectName.getField('C');
   if (
     subjectCountryNames.length !== 1 ||
-    subjectCountryNames[0] !== EXPECTED_CSR_SUBJECT_DATA.C
+    subjectCountryNames[0] !== CSR_SUBJECT_POLICY.C
   ) {
     const errorMessage = 'CSR subject C is not GB';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
@@ -102,7 +90,7 @@ export async function validateCsr(
   const subjectOrganisationNames = csr.subjectName.getField('O');
   if (
     subjectOrganisationNames.length !== 1 ||
-    subjectOrganisationNames[0] !== EXPECTED_CSR_SUBJECT_DATA.O
+    subjectOrganisationNames[0] !== CSR_SUBJECT_POLICY.O
   ) {
     const errorMessage = 'CSR subject O is not Government Digital Service';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {

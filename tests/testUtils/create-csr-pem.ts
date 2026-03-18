@@ -2,6 +2,7 @@ import {
   BasicConstraintsExtension,
   Pkcs10CertificateRequestGenerator,
 } from '@peculiar/x509';
+import { CSR_SUBJECT_POLICY } from '../../src/lambdas/common/csr-policy';
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {
@@ -109,8 +110,8 @@ function toPem(der: Buffer): string {
 
 function buildSubjectName(subject: SubjectEntries = {}): string {
   const {
-    C = 'GB',
-    O = 'Government Digital Service',
+    C = CSR_SUBJECT_POLICY.C,
+    O = CSR_SUBJECT_POLICY.O,
     CN = 'MockCN',
     additionalAttributes = ['OU=Ignored Subject Attribute'],
   } = subject;
