@@ -91,5 +91,15 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
+  const subjectOrganisationNames = csr.subjectName.getField('O');
+  if (subjectOrganisationNames.length !== 1 || subjectOrganisationNames[0] !== 'Government Digital Service') {
+    const errorMessage = 'CSR subject O is not Government Digital Service';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+
+  }
+
   return emptySuccess();
 }
