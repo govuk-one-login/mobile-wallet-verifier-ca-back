@@ -82,5 +82,14 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
+  const subjectCountryNames = csr.subjectName.getField('C');
+  if (subjectCountryNames.length !== 1 || subjectCountryNames[0] !== 'GB') {
+    const errorMessage = 'CSR subject C is not GB';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+    });
+    return errorResult(errorMessage);
+  }
+
   return emptySuccess();
 }
