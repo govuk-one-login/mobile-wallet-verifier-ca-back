@@ -1,10 +1,17 @@
 import {
   Pkcs10CertificateRequest,
   BasicConstraintsExtension,
+  Extension,
+  Name,
 } from '@peculiar/x509';
 import { LogMessage } from '../common/logger/log-message';
 import { logger } from '../common/logger/logger';
-import { Result, errorResult, emptySuccess } from '../common/result/result';
+import {
+  Result,
+  errorResult,
+  emptySuccess,
+  successResult,
+} from '../common/result/result';
 import {
   BASIC_CONSTRAINTS_OID,
   CSR_SUBJECT_POLICY,
@@ -13,6 +20,42 @@ import {
 export async function validateCsr(
   csrPem: string,
 ): Promise<Result<void, string>> {
+  const parseCsrResult = parsePkcs10CertificateRequest(csrPem);
+  if (parseCsrResult.isError) {
+    return parseCsrResult;
+  }
+  const csr = parseCsrResult.value;
+
+  const validateSignatureResult = await validateCsrSignature(csr);
+  if (validateSignatureResult.isError) {
+    return validateSignatureResult;
+  }
+
+  const validatePublicKeyAlgorithmResult = validateCsrPublicKeyAlgorithm(
+    csr.publicKey.algorithm,
+  );
+  if (validatePublicKeyAlgorithmResult.isError) {
+    return validatePublicKeyAlgorithmResult;
+  }
+
+  const basicConstraints = csr.getExtension(BASIC_CONSTRAINTS_OID);
+  const validateBasicConstraintsResult =
+    validateCsrBasicConstraints(basicConstraints);
+  if (validateBasicConstraintsResult.isError) {
+    return validateBasicConstraintsResult;
+  }
+
+  const validateSubjectResult = validateCsrSubject(csr.subjectName);
+  if (validateSubjectResult.isError) {
+    return validateSubjectResult;
+  }
+
+  return emptySuccess();
+}
+
+function parsePkcs10CertificateRequest(
+  csrPem: string,
+): Result<Pkcs10CertificateRequest, string> {
   let csr: Pkcs10CertificateRequest;
   try {
     csr = new Pkcs10CertificateRequest(csrPem);
@@ -25,9 +68,15 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
+  return successResult(csr);
+}
+
+async function validateCsrSignature(
+  csr: Pkcs10CertificateRequest,
+): Promise<Result<void, string>> {
   try {
-    const validSignedCsr = await csr.verify();
-    if (!validSignedCsr) {
+    const isSignatureValid = await csr.verify();
+    if (!isSignatureValid) {
       const errorMessage = 'CSR self signature verification failed';
       logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
         errorMessage,
@@ -43,8 +92,13 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
-  const csrPublicKeyAlgorithm = csr.publicKey.algorithm;
-  if (csrPublicKeyAlgorithm.name !== 'ECDSA') {
+  return emptySuccess();
+}
+
+function validateCsrPublicKeyAlgorithm(
+  publicKeyAlgorithm: Algorithm,
+): Result<void, string> {
+  if (publicKeyAlgorithm.name !== 'ECDSA') {
     const errorMessage = 'CSR public key not EC key';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
@@ -53,8 +107,8 @@ export async function validateCsr(
   }
 
   if (
-    !('namedCurve' in csrPublicKeyAlgorithm) ||
-    csrPublicKeyAlgorithm.namedCurve !== 'P-256'
+    !('namedCurve' in publicKeyAlgorithm) ||
+    publicKeyAlgorithm.namedCurve !== 'P-256'
   ) {
     const errorMessage = 'CSR public key does not use P-256 curve';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
@@ -63,7 +117,12 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
-  const basicConstraints = csr.getExtension(BASIC_CONSTRAINTS_OID);
+  return emptySuccess();
+}
+
+function validateCsrBasicConstraints(
+  basicConstraints: Extension | null,
+): Result<void, string> {
   if (
     basicConstraints instanceof BasicConstraintsExtension &&
     basicConstraints.ca
@@ -75,7 +134,11 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
-  const subjectCountryNames = csr.subjectName.getField('C');
+  return emptySuccess();
+}
+
+function validateCsrSubject(subjectName: Name): Result<void, string> {
+  const subjectCountryNames = subjectName.getField('C');
   if (
     subjectCountryNames.length !== 1 ||
     subjectCountryNames[0] !== CSR_SUBJECT_POLICY.C
@@ -87,7 +150,7 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
-  const subjectOrganisationNames = csr.subjectName.getField('O');
+  const subjectOrganisationNames = subjectName.getField('O');
   if (
     subjectOrganisationNames.length !== 1 ||
     subjectOrganisationNames[0] !== CSR_SUBJECT_POLICY.O
@@ -99,7 +162,7 @@ export async function validateCsr(
     return errorResult(errorMessage);
   }
 
-  const subjectCommonNames = csr.subjectName.getField('CN');
+  const subjectCommonNames = subjectName.getField('CN');
   if (subjectCommonNames.length !== 1 || !subjectCommonNames[0].trim()) {
     const errorMessage = 'CSR subject CN is not present';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
