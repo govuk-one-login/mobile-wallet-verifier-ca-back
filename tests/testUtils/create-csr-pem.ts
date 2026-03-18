@@ -5,9 +5,9 @@ import {
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {
-  C?: string;
-  O?: string;
-  CN?: string;
+  C?: string | null;
+  O?: string | null;
+  CN?: string | null;
   additionalAttributes?: string[];
 };
 
