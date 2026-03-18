@@ -449,6 +449,11 @@ describe('Handler', () => {
         csrPemConfig: { subject: { C: 'FR' } },
         expectedErrorMessage: 'CSR subject C is not GB',
       },
+      {
+        scenario: 'Given CSR subject 0 is not Government Digital Service',
+        csrPemConfig: { subject: { O: 'Invalid Service' } },
+        expectedErrorMessage: 'CSR subject O is not Government Digital Service',
+      },
     ];
     describe.each(invalidCsrTestCases)(
       '$scenario',
