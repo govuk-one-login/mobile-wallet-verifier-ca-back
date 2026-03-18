@@ -18,7 +18,7 @@ import {
   GenerateMockIssueCertDependencies,
 } from './handler-dependencies.ts';
 import { getGenerateMockIssueCertRequestConfig } from './config.ts';
-import { CSR_SUBJECT_POLICY } from '../common/csr-policy.ts';
+import { CSR_SUBJECT_POLICY } from '../common/csr-policy/csr-policy.ts';
 
 interface MockIssueReaderCertRequest {
   headers: {

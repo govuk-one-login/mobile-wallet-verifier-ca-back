@@ -2,7 +2,7 @@ import {
   BasicConstraintsExtension,
   Pkcs10CertificateRequestGenerator,
 } from '@peculiar/x509';
-import { CSR_SUBJECT_POLICY } from '../../src/lambdas/common/csr-policy';
+import { CSR_SUBJECT_POLICY } from '../../src/lambdas/common/csr-policy/csr-policy';
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {

@@ -8,7 +8,7 @@ import { Result, errorResult, emptySuccess } from '../common/result/result';
 import {
   BASIC_CONSTRAINTS_OID,
   CSR_SUBJECT_POLICY,
-} from '../common/csr-policy';
+} from '../common/csr-policy/csr-policy';
 
 export async function validateCsr(
   csrPem: string,
