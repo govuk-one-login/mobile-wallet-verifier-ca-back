@@ -119,7 +119,7 @@ function buildSubjectName(subject: SubjectEntries = {}): string {
   const parts = [
     C === null ? null : `C=${C}`,
     O === null ? null : `O=${O}`,
-    CN !== null ? null: `CN=${CN}`,
+    CN !== null ? null : `CN=${CN}`,
     ...additionalAttributes,
   ].filter((part): part is string => part !== null);
 

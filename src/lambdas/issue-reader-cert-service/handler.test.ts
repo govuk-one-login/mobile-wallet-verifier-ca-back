@@ -444,6 +444,11 @@ describe('Handler', () => {
         csrPemConfig: { basicConstraintsCa: true },
         expectedErrorMessage: 'CSR requests CA capabilities',
       },
+      {
+        scenario: 'Given CSR subject country is not GB',
+        csrPemConfig: { subject: { C: 'FR' } },
+        expectedErrorMessage: 'CSR subject C is not GB',
+      },
     ];
     describe.each(invalidCsrTestCases)(
       '$scenario',
