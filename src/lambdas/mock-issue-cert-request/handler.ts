@@ -18,6 +18,7 @@ import {
   GenerateMockIssueCertDependencies,
 } from './handler-dependencies.ts';
 import { getGenerateMockIssueCertRequestConfig } from './config.ts';
+import { CSR_SUBJECT_POLICY } from '../common/csr-policy.ts';
 
 interface MockIssueReaderCertRequest {
   headers: {
@@ -99,8 +100,8 @@ async function generateMockRequest(
     privateKeyPem: keyPair.privateKeyPem,
     publicKeyPem: keyPair.publicKeyPem,
     subject: {
-      countryName: 'GB',
-      organizationName: 'Government Digital Service',
+      countryName: CSR_SUBJECT_POLICY.C,
+      organizationName: CSR_SUBJECT_POLICY.O,
       organizationalUnitName: 'Reader Certification Authority',
       commonName: 'Example Verifier Org Reader Sub-CA',
       serialNumber,
