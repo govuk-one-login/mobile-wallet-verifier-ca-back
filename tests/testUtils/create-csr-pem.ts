@@ -2,7 +2,6 @@ import {
   BasicConstraintsExtension,
   Pkcs10CertificateRequestGenerator,
 } from '@peculiar/x509';
-import { CSRSubject } from '../../src/lambdas/mock-issue-cert-request/certificate-generator.ts';
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {
@@ -119,7 +118,7 @@ function buildSubjectName(subject: SubjectEntries = {}): string {
   const parts = [
     C === null ? null : `C=${C}`,
     O === null ? null : `O=${O}`,
-    CN !== null ? null : `CN=${CN}`,
+    CN === null ? null : `CN=${CN}`,
     ...additionalAttributes,
   ].filter((part): part is string => part !== null);
 
