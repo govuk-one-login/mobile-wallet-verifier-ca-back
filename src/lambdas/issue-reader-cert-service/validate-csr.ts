@@ -17,6 +17,11 @@ https://datatracker.ietf.org/doc/html/rfc5280#appendix-A
 */
 const BASIC_CONSTRAINTS_OID = '2.5.29.19';
 
+const EXPECTED_CSR_SUBJECT_DATA = {
+  C: 'GB',
+  O: 'Government Digital Service',
+};
+
 export async function validateCsr(
   csrPem: string,
 ): Promise<Result<void, string>> {
@@ -83,7 +88,10 @@ export async function validateCsr(
   }
 
   const subjectCountryNames = csr.subjectName.getField('C');
-  if (subjectCountryNames.length !== 1 || subjectCountryNames[0] !== 'GB') {
+  if (
+    subjectCountryNames.length !== 1 ||
+    subjectCountryNames[0] !== EXPECTED_CSR_SUBJECT_DATA.C
+  ) {
     const errorMessage = 'CSR subject C is not GB';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
@@ -94,7 +102,7 @@ export async function validateCsr(
   const subjectOrganisationNames = csr.subjectName.getField('O');
   if (
     subjectOrganisationNames.length !== 1 ||
-    subjectOrganisationNames[0] !== 'Government Digital Service'
+    subjectOrganisationNames[0] !== EXPECTED_CSR_SUBJECT_DATA.O
   ) {
     const errorMessage = 'CSR subject O is not Government Digital Service';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
