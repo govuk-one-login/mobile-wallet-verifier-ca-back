@@ -2,14 +2,22 @@ import {
   BasicConstraintsExtension,
   Pkcs10CertificateRequestGenerator,
 } from '@peculiar/x509';
+import { CSRSubject } from '../../src/lambdas/mock-issue-cert-request/certificate-generator.ts';
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
+type SubjectEntries = {
+  C?: string;
+  O?: string;
+  CN?: string;
+  additionalAttributes?: string[];
+};
 
 export interface CreateCsrPemOptions {
   invalidPkcs10?: boolean;
   keyAlgorithm?: CsrKeyAlgorithm;
   basicConstraintsCa?: boolean;
   invalidateSignature?: boolean;
+  subject?: SubjectEntries;
 }
 
 export async function createCsrPem(
@@ -32,7 +40,7 @@ export async function createCsrPem(
     : [];
 
   const csr = await Pkcs10CertificateRequestGenerator.create({
-    name: 'CN=Test',
+    name: buildSubjectName(options.subject),
     keys,
     signingAlgorithm,
     extensions,
@@ -98,4 +106,22 @@ function toPem(der: Buffer): string {
   const base64 = der.toString('base64');
   const body = base64.match(/.{1,64}/g)?.join('\n') ?? base64;
   return `-----BEGIN CERTIFICATE REQUEST-----\n${body}\n-----END CERTIFICATE REQUEST-----\n`;
+}
+
+function buildSubjectName(subject: SubjectEntries = {}): string {
+  const {
+    C = 'GB',
+    O = 'Government Digital Service',
+    CN = 'MockCN',
+    additionalAttributes = ['OU=Ignored Subject Attribute'],
+  } = subject;
+
+  const parts = [
+    C === null ? null : `C=${C}`,
+    O === null ? null : `O=${O}`,
+    CN !== null ? null: `CN=${CN}`,
+    ...additionalAttributes,
+  ].filter((part): part is string => part !== null);
+
+  return parts.join(', ');
 }
