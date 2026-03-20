@@ -116,13 +116,15 @@ function validateCsrPublicKeyAlgorithm(
     return errorResult(errorMessage);
   }
 
-  if (
-    !('namedCurve' in publicKeyAlgorithm) ||
-    publicKeyAlgorithm.namedCurve !== CSR_EC_CURVE
-  ) {
+  const publicKeyAlgorithmCurve =
+    'namedCurve' in publicKeyAlgorithm ? publicKeyAlgorithm.namedCurve : null;
+  if (publicKeyAlgorithmCurve !== CSR_EC_CURVE) {
     const errorMessage = `CSR public key does not use ${CSR_EC_CURVE} curve`;
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
-      errorMessage, //TODO add data
+      errorMessage,
+      data: {
+        publicKeyAlgorithmCurve,
+      },
     });
     return errorResult(errorMessage);
   }

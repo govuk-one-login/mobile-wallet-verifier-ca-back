@@ -443,6 +443,9 @@ describe('Handler', () => {
         scenario: 'Given CSR does not use P-384 curve',
         csrPemConfig: { keyAlgorithm: 'ec-p256' },
         expectedErrorMessage: 'CSR public key does not use P-384 curve',
+        expectedLogData: {
+          publicKeyAlgorithmCurve: 'P-256',
+        },
       },
       {
         scenario: 'Given CSR requests CA capabilities',
