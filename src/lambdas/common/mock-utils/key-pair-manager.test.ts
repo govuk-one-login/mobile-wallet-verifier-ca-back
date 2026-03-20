@@ -132,7 +132,7 @@ describe('key-pair-manager', () => {
       // Generate a real ECDSA key pair for testing
       const { generateKeyPairSync } = await import('node:crypto');
       const { privateKey, publicKey } = generateKeyPairSync('ec', {
-        namedCurve: 'secp384r1',
+        namedCurve: 'P-384',
         publicKeyEncoding: { type: 'spki', format: 'pem' },
         privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
       });
