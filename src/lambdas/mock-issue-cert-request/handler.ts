@@ -88,7 +88,7 @@ async function generateMockRequest(
 
   const keyPair = await getOrGenerateECDSAKeyPair(
     configResult.value.DEVICE_KEYS_SECRET,
-    'prime256v1',
+    'P-384',
   );
 
   // Generate UUID for serial number

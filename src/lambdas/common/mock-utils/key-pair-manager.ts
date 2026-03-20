@@ -14,7 +14,7 @@ export const FIREBASE_KID = 'firebase-appcheck-debug';
  */
 export async function getOrGenerateECDSAKeyPair(
   secretName: string,
-  curve: string = 'prime256v1',
+  curve: string = 'P-384',
 ): Promise<KeyPair> {
   const keyStore = new SecretsManagerKeyStore();
   let keyPair = await keyStore.getKeyPair(secretName);
@@ -85,7 +85,7 @@ export async function importECDSAKeyPair(
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
     privateKeyBuffer,
-    { name: 'ECDSA', namedCurve: 'P-256' },
+    { name: 'ECDSA', namedCurve: 'P-384' },
     true,
     ['sign'],
   );
@@ -93,7 +93,7 @@ export async function importECDSAKeyPair(
   const publicKey = await crypto.subtle.importKey(
     'spki',
     publicKeyBuffer,
-    { name: 'ECDSA', namedCurve: 'P-256' },
+    { name: 'ECDSA', namedCurve: 'P-384' },
     true,
     ['verify'],
   );
