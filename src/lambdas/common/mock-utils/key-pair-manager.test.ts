@@ -82,9 +82,7 @@ describe('key-pair-manager', () => {
   });
 
   describe('getOrCreateRSAKeys', () => {
-    beforeEach(() => {
-      process.env.FIREBASE_APPCHECK_JWKS_SECRET = 'test-firebase-secret';
-    });
+    const firebaseJwksSecret = 'test-firebase-secret';
 
     it('should return existing RSA key pair if found', async () => {
       const mockKeyPair = {
@@ -103,7 +101,7 @@ describe('key-pair-manager', () => {
         'updateKeyPair',
       ).mockResolvedValue();
 
-      const result = await getOrCreateRSAKeys();
+      const result = await getOrCreateRSAKeys(firebaseJwksSecret);
 
       expect(result).toEqual(mockKeyPair);
       expect(
@@ -121,7 +119,7 @@ describe('key-pair-manager', () => {
         'updateKeyPair',
       ).mockResolvedValue();
 
-      const result = await getOrCreateRSAKeys();
+      const result = await getOrCreateRSAKeys(firebaseJwksSecret);
 
       expect(result.privateKeyPem).toContain('BEGIN PRIVATE KEY');
       expect(result.publicKeyPem).toContain('BEGIN PUBLIC KEY');
@@ -130,11 +128,11 @@ describe('key-pair-manager', () => {
   });
 
   describe('importECDSAKeyPair', () => {
-    it('should import valid ECDSA key pair', async () => {
+    it('should import valid P-384 ECDSA key pair', async () => {
       // Generate a real ECDSA key pair for testing
       const { generateKeyPairSync } = await import('node:crypto');
       const { privateKey, publicKey } = generateKeyPairSync('ec', {
-        namedCurve: 'prime256v1',
+        namedCurve: 'P-384',
         publicKeyEncoding: { type: 'spki', format: 'pem' },
         privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
       });
@@ -150,6 +148,14 @@ describe('key-pair-manager', () => {
       expect(result.publicKey).toBeDefined();
       expect(result.privateKey.type).toBe('private');
       expect(result.publicKey.type).toBe('public');
+      expect(result.privateKey.algorithm).toMatchObject({
+        name: 'ECDSA',
+        namedCurve: 'P-384',
+      });
+      expect(result.publicKey.algorithm).toMatchObject({
+        name: 'ECDSA',
+        namedCurve: 'P-384',
+      });
     });
   });
 });

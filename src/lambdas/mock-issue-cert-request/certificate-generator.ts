@@ -51,7 +51,7 @@ export async function generateCSR(
   const csr = await Pkcs10CertificateRequestGenerator.create({
     name: subject,
     keys: cryptoKeys,
-    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-256' },
+    signingAlgorithm: { name: 'ECDSA', hash: 'SHA-384' },
   });
 
   return {

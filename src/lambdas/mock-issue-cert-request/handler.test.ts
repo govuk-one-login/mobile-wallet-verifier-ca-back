@@ -123,6 +123,11 @@ describe('Mock Issue Reader Cert Request Handler', () => {
         },
       });
 
+      expect(keyPairManager.getOrGenerateECDSAKeyPair).toHaveBeenCalledWith(
+        'mock-device-keys',
+        'P-384',
+      );
+
       expect(mockGenerateDebugToken).toHaveBeenCalledWith(
         'org.multipaz.identityreader',
         undefined,
