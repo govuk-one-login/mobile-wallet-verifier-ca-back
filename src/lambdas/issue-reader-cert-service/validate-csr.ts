@@ -64,7 +64,10 @@ function parsePkcs10CertificateRequest(
     const errorMessage = 'CSR not valid PKCS#10 request';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
-      error,
+      data: {
+        csrPem,
+        error,
+      },
     });
     return errorResult(errorMessage);
   }
@@ -85,10 +88,13 @@ async function validateCsrSignature(
       return errorResult(errorMessage);
     }
   } catch (error: unknown) {
+    // not testing this currently
     const errorMessage = 'CSR self signature verification failed';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
-      error,
+      data: {
+        error,
+      },
     });
     return errorResult(errorMessage);
   }
@@ -103,6 +109,9 @@ function validateCsrPublicKeyAlgorithm(
     const errorMessage = 'CSR public key not EC key';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
+      data: {
+        csrPublicKeyAlgorithm: publicKeyAlgorithm.name,
+      },
     });
     return errorResult(errorMessage);
   }
@@ -113,7 +122,7 @@ function validateCsrPublicKeyAlgorithm(
   ) {
     const errorMessage = `CSR public key does not use ${CSR_EC_CURVE} curve`;
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
-      errorMessage,
+      errorMessage, //TODO add data
     });
     return errorResult(errorMessage);
   }
@@ -131,6 +140,9 @@ function validateCsrBasicConstraints(
     const errorMessage = 'CSR requests CA capabilities';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
+      data: {
+        basicConstraintsCa: basicConstraints.ca,
+      },
     });
     return errorResult(errorMessage);
   }
@@ -147,6 +159,9 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
     const errorMessage = 'CSR subject C is not GB';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
+      data: {
+        subjectC: subjectCountryNames,
+      },
     });
     return errorResult(errorMessage);
   }
@@ -159,6 +174,9 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
     const errorMessage = 'CSR subject O is not Government Digital Service';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
+      data: {
+        subjectO: subjectOrganisationNames,
+      },
     });
     return errorResult(errorMessage);
   }
@@ -168,6 +186,9 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
     const errorMessage = 'CSR subject CN is not present';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
+      data: {
+        subjectCN: subjectCommonNames,
+      },
     });
     return errorResult(errorMessage);
   }

@@ -417,12 +417,14 @@ describe('Handler', () => {
       scenario: string;
       csrPemConfig: CreateCsrPemOptions;
       expectedErrorMessage: string;
+      expectedLogData?: Record<string, unknown>;
     };
     const invalidCsrTestCases: InvalidCsrTestCase[] = [
       {
         scenario: 'Given CSRPem is not valid PKCS#10',
         csrPemConfig: { invalidPkcs10: true },
         expectedErrorMessage: 'CSR not valid PKCS#10 request',
+        expectedLogData: { csrPem: 'invalidPKCS#10' },
       },
       {
         scenario: 'Given CSR has invalid self signature',
@@ -433,6 +435,9 @@ describe('Handler', () => {
         scenario: 'Given CSR has non EC public key algorithm',
         csrPemConfig: { keyAlgorithm: 'rsa' },
         expectedErrorMessage: 'CSR public key not EC key',
+        expectedLogData: {
+          csrPublicKeyAlgorithm: 'RSASSA-PKCS1-v1_5',
+        },
       },
       {
         scenario: 'Given CSR does not use P-384 curve',
@@ -443,26 +448,38 @@ describe('Handler', () => {
         scenario: 'Given CSR requests CA capabilities',
         csrPemConfig: { basicConstraintsCa: true },
         expectedErrorMessage: 'CSR requests CA capabilities',
+        expectedLogData: {
+          basicConstraintsCa: true,
+        },
       },
       {
         scenario: 'Given CSR subject country is not GB',
         csrPemConfig: { subject: { C: 'FR' } },
         expectedErrorMessage: 'CSR subject C is not GB',
+        expectedLogData: {
+          subjectC: ['FR'],
+        },
       },
       {
         scenario: 'Given CSR subject 0 is not Government Digital Service',
         csrPemConfig: { subject: { O: 'Invalid Service' } },
         expectedErrorMessage: 'CSR subject O is not Government Digital Service',
+        expectedLogData: {
+          subjectO: ['Invalid Service'],
+        },
       },
       {
         scenario: 'Given CSR subject CN is not present',
         csrPemConfig: { subject: { CN: null } },
         expectedErrorMessage: 'CSR subject CN is not present',
+        expectedLogData: {
+          subjectCN: [],
+        },
       },
     ];
     describe.each(invalidCsrTestCases)(
       '$scenario',
-      ({ csrPemConfig, expectedErrorMessage }) => {
+      ({ csrPemConfig, expectedErrorMessage, expectedLogData }) => {
         beforeEach(async () => {
           const invalidCsrPem = await createCsrPem(csrPemConfig);
           const invalidEvent = buildEvent({
@@ -485,6 +502,7 @@ describe('Handler', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
             errorMessage: expectedErrorMessage,
+            data: expectedLogData,
           });
         });
 
