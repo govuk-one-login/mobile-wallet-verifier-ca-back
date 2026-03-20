@@ -254,7 +254,7 @@ Resources:
     UpdateReplacePolicy: Delete
     Properties:
       Name: !Sub '${AWS::StackName}-mock-device-keys'
-      Description: 'ECDSA P-256 key pair for mobile device CSR generation (mock - shared across iOS/Android)'
+      Description: 'ECDSA P-384 key pair for mobile device CSR generation (mock - shared across iOS/Android)'
       SecretString: !Sub |
         {
           "keyPair": {
