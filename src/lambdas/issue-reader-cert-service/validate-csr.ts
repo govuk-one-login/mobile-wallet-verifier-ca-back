@@ -14,6 +14,7 @@ import {
 } from '../common/result/result';
 import {
   BASIC_CONSTRAINTS_OID,
+  CSR_EC_CURVE,
   CSR_SUBJECT_POLICY,
 } from '../common/csr-policy/csr-policy';
 
@@ -108,9 +109,9 @@ function validateCsrPublicKeyAlgorithm(
 
   if (
     !('namedCurve' in publicKeyAlgorithm) ||
-    publicKeyAlgorithm.namedCurve !== 'P-256'
+    publicKeyAlgorithm.namedCurve !== CSR_EC_CURVE
   ) {
-    const errorMessage = 'CSR public key does not use P-256 curve';
+    const errorMessage = `CSR public key does not use ${CSR_EC_CURVE} curve`;
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
     });

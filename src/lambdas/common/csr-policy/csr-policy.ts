@@ -9,6 +9,8 @@ https://datatracker.ietf.org/doc/html/rfc5280#appendix-A
 */
 export const BASIC_CONSTRAINTS_OID = '2.5.29.19';
 
+export const CSR_EC_CURVE = 'P-384';
+
 export const CSR_SUBJECT_POLICY = {
   C: 'GB',
   O: 'Government Digital Service',

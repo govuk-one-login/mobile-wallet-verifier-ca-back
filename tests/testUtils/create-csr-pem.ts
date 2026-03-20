@@ -27,7 +27,7 @@ export async function createCsrPem(
     return 'invalidPKCS#10';
   }
 
-  const keyAlgorithm = options.keyAlgorithm ?? 'ec-p256';
+  const keyAlgorithm = options.keyAlgorithm ?? 'ec-p384';
   const keyGenerationAlgorithm = getKeyGenerationAlgorithm(keyAlgorithm);
   const signingAlgorithm = getSigningAlgorithm(keyAlgorithm);
   const keys = await crypto.subtle.generateKey(keyGenerationAlgorithm, true, [
