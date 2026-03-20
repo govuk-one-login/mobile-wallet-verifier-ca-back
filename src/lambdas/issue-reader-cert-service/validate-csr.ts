@@ -14,9 +14,8 @@ import {
 } from '../common/result/result';
 import {
   BASIC_CONSTRAINTS_OID,
-  CSR_EC_CURVE,
-  CSR_SUBJECT_POLICY,
-} from '../common/csr-policy/csr-policy';
+  CSR_POLICY,
+} from '../common/csr-constants/csr-constants';
 
 export async function validateCsr(
   csrPem: string,
@@ -117,8 +116,8 @@ function validateCsrPublicKeyAlgorithm(
 
   const publicKeyAlgorithmCurve =
     'namedCurve' in publicKeyAlgorithm ? publicKeyAlgorithm.namedCurve : null;
-  if (publicKeyAlgorithmCurve !== CSR_EC_CURVE) {
-    const errorMessage = `CSR public key does not use ${CSR_EC_CURVE} curve`;
+  if (publicKeyAlgorithmCurve !== CSR_POLICY.curve) {
+    const errorMessage = `CSR public key does not use ${CSR_POLICY.curve} curve`;
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
       data: {
@@ -155,7 +154,7 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
   const subjectCountryNames = subjectName.getField('C');
   if (
     subjectCountryNames.length !== 1 ||
-    subjectCountryNames[0] !== CSR_SUBJECT_POLICY.C
+    subjectCountryNames[0] !== CSR_POLICY.subject.C
   ) {
     const errorMessage = 'CSR subject C is not GB';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
@@ -170,7 +169,7 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
   const subjectOrganisationNames = subjectName.getField('O');
   if (
     subjectOrganisationNames.length !== 1 ||
-    subjectOrganisationNames[0] !== CSR_SUBJECT_POLICY.O
+    subjectOrganisationNames[0] !== CSR_POLICY.subject.O
   ) {
     const errorMessage = 'CSR subject O is not Government Digital Service';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
