@@ -88,7 +88,6 @@ async function validateCsrSignature(
       return errorResult(errorMessage);
     }
   } catch (error: unknown) {
-    // not testing this currently
     const errorMessage = 'CSR self signature verification failed';
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,

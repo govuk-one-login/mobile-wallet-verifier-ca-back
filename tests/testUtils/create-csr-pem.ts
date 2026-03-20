@@ -3,6 +3,8 @@ import {
   Pkcs10CertificateRequestGenerator,
 } from '@peculiar/x509';
 import { CSR_SUBJECT_POLICY } from '../../src/lambdas/common/csr-policy/csr-policy';
+import { AsnConvert } from '@peculiar/asn1-schema';
+import { CertificationRequest } from '@peculiar/asn1-csr';
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {
@@ -17,6 +19,7 @@ export interface CreateCsrPemOptions {
   keyAlgorithm?: CsrKeyAlgorithm;
   basicConstraintsCa?: boolean;
   invalidateSignature?: boolean;
+  unsupportedSignatureAlgorithm?: boolean;
   subject?: SubjectEntries;
 }
 
@@ -52,6 +55,12 @@ export async function createCsrPem(
     const derWithInvalidSignature = Buffer.from(csr.rawData);
     derWithInvalidSignature[derWithInvalidSignature.length - 10] ^= 0x01;
     return toPem(derWithInvalidSignature);
+  }
+
+  if (options.unsupportedSignatureAlgorithm) {
+    const csrAsn = AsnConvert.parse(csr.rawData, CertificationRequest);
+    csrAsn.signatureAlgorithm.algorithm = '1.2.3.4';
+    return toPem(Buffer.from(AsnConvert.serialize(csrAsn)));
   }
 
   return csr.toString('pem');

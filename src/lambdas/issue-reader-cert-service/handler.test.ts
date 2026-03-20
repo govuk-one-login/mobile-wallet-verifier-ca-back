@@ -424,7 +424,19 @@ describe('Handler', () => {
         scenario: 'Given CSRPem is not valid PKCS#10',
         csrPemConfig: { invalidPkcs10: true },
         expectedErrorMessage: 'CSR not valid PKCS#10 request',
-        expectedLogData: { csrPem: 'invalidPKCS#10' },
+        expectedLogData: {
+          csrPem: 'invalidPKCS#10',
+          error: { name: 'TypeError' },
+        },
+      },
+      {
+        scenario:
+          'Given unexpected error occurs during self signature verification',
+        csrPemConfig: { unsupportedSignatureAlgorithm: true },
+        expectedErrorMessage: 'CSR self signature verification failed',
+        expectedLogData: {
+          error: { name: 'NotSupportedError' },
+        },
       },
       {
         scenario: 'Given CSR has invalid self signature',
