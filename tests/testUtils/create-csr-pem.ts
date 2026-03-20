@@ -51,7 +51,7 @@ export async function createCsrPem(
 
   if (options.invalidateSignature) {
     // flip a byte near the end of DER so the csr still passes
-    // but it's self signature no longer verifies
+    // but its self signature no longer verifies
     const derWithInvalidSignature = Buffer.from(csr.rawData);
     derWithInvalidSignature[derWithInvalidSignature.length - 10] ^= 0x01;
     return toPem(derWithInvalidSignature);
