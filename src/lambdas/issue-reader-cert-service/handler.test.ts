@@ -448,7 +448,7 @@ describe('Handler', () => {
         csrPemConfig: { keyAlgorithm: 'rsa' },
         expectedErrorMessage: 'CSR public key not EC key',
         expectedLogData: {
-          csrPublicKeyAlgorithm: 'RSASSA-PKCS1-v1_5',
+          publicKeyAlgorithm: 'RSASSA-PKCS1-v1_5',
         },
       },
       {

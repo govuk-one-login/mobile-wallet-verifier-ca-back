@@ -108,7 +108,7 @@ function validateCsrPublicKeyAlgorithm(
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
       data: {
-        csrPublicKeyAlgorithm: publicKeyAlgorithm.name,
+        publicKeyAlgorithm: publicKeyAlgorithm.name,
       },
     });
     return errorResult(errorMessage);
