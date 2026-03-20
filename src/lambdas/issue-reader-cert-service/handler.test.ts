@@ -491,6 +491,14 @@ describe('Handler', () => {
           subjectCN: [],
         },
       },
+      {
+        scenario: 'Given CSR subject CN is not present',
+        csrPemConfig: { subject: { CN: '' } },
+        expectedErrorMessage: 'CSR subject CN is not present',
+        expectedLogData: {
+          subjectCN: [''],
+        },
+      },
     ];
     describe.each(invalidCsrTestCases)(
       '$scenario',
