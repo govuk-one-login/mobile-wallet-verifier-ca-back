@@ -176,7 +176,7 @@ The service automatically configures:
 
 The mock infrastructure stores keys in AWS Secrets Manager:
 
-- `<stack-name>-mock-device-keys`: ECDSA P-256 key pair for CSR generation
+- `<stack-name>-mock-device-keys`: ECDSA P-384 key pair for CSR generation
 - `<stack-name>-mock-firebase-appcheck-keys`: RSA 2048 key pair for Firebase App Check JWT signing
 
 **Note**: Ensure your AWS credentials have access to Secrets Manager in the `eu-west-2` region.
