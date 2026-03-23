@@ -18,6 +18,7 @@ import {
   GenerateMockIssueCertDependencies,
 } from './handler-dependencies.ts';
 import { getGenerateMockIssueCertRequestConfig } from './config.ts';
+import { CSR_POLICY } from '../common/csr-constants/csr-constants.ts';
 
 interface MockIssueReaderCertRequest {
   headers: {
@@ -88,7 +89,7 @@ async function generateMockRequest(
 
   const keyPair = await getOrGenerateECDSAKeyPair(
     configResult.value.DEVICE_KEYS_SECRET,
-    'P-384',
+    CSR_POLICY.curve,
   );
 
   // Generate UUID for serial number
@@ -99,8 +100,8 @@ async function generateMockRequest(
     privateKeyPem: keyPair.privateKeyPem,
     publicKeyPem: keyPair.publicKeyPem,
     subject: {
-      countryName: 'GB',
-      organizationName: 'Government Digital Service',
+      countryName: CSR_POLICY.subject.C,
+      organizationName: CSR_POLICY.subject.O,
       organizationalUnitName: 'Reader Certification Authority',
       commonName: 'Example Verifier Org Reader Sub-CA',
       serialNumber,

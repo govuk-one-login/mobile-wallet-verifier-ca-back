@@ -1,5 +1,6 @@
 import { generateKeyPairSync } from 'node:crypto';
 import { SecretsManagerKeyStore } from './secrets-manager';
+import { CSR_POLICY } from '../csr-constants/csr-constants';
 
 export interface KeyPair {
   privateKeyPem: string;
@@ -14,7 +15,7 @@ export const FIREBASE_KID = 'firebase-appcheck-debug';
  */
 export async function getOrGenerateECDSAKeyPair(
   secretName: string,
-  curve: string = 'P-384',
+  curve: string = CSR_POLICY.curve,
 ): Promise<KeyPair> {
   const keyStore = new SecretsManagerKeyStore();
   let keyPair = await keyStore.getKeyPair(secretName);
@@ -85,7 +86,7 @@ export async function importECDSAKeyPair(
   const privateKey = await crypto.subtle.importKey(
     'pkcs8',
     privateKeyBuffer,
-    { name: 'ECDSA', namedCurve: 'P-384' },
+    { name: 'ECDSA', namedCurve: CSR_POLICY.curve },
     true,
     ['sign'],
   );
@@ -93,7 +94,7 @@ export async function importECDSAKeyPair(
   const publicKey = await crypto.subtle.importKey(
     'spki',
     publicKeyBuffer,
-    { name: 'ECDSA', namedCurve: 'P-384' },
+    { name: 'ECDSA', namedCurve: CSR_POLICY.curve },
     true,
     ['verify'],
   );

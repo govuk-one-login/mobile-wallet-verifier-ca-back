@@ -14,10 +14,12 @@ import { validateEvent } from './validate-event.ts';
 import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
 import { ErrorCategory } from '../common/result/result.ts';
 import {
+  badRequestResponse,
   okResponse,
   serverErrorResponse,
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
+import { validateCsr } from './validate-csr.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -33,11 +35,11 @@ export const handlerConstructor = async (
   }
   const config = configResult.value;
 
-  const validateEventResult = validateEvent(event.headers);
+  const validateEventResult = validateEvent(event.headers, event.body);
   if (validateEventResult.isError) {
     return unauthorizedResponse(validateEventResult.value);
   }
-  const jwt = validateEventResult.value;
+  const { firebaseAppCheckJwt, csrPem } = validateEventResult.value;
 
   const expectedAppCheckJwtData: ExpectedAppCheckJwtData = {
     algorithm: config.ALGORITHM,
@@ -46,7 +48,7 @@ export const handlerConstructor = async (
     issuer: config.ISSUER,
   };
   const verifyAppCheckJwtResult = await dependencies.verifyAppCheckJwt(
-    jwt,
+    firebaseAppCheckJwt,
     config.FIREBASE_JWKS_URI,
     expectedAppCheckJwtData,
   );
@@ -57,6 +59,11 @@ export const handlerConstructor = async (
       return serverErrorResponse;
     }
     return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
+  }
+
+  const validateCsrResult = await validateCsr(csrPem);
+  if (validateCsrResult.isError) {
+    return badRequestResponse(validateCsrResult.value);
   }
 
   logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);

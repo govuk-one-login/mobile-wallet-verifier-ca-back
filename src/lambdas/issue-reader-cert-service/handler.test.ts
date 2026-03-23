@@ -32,6 +32,10 @@ import {
   createSignedJwt,
 } from '../../../tests/testUtils/create-signed-jwt.ts';
 import { JWK } from 'jose';
+import {
+  createCsrPem,
+  CreateCsrPemOptions,
+} from '../../../tests/testUtils/create-csr-pem.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -50,6 +54,7 @@ describe('Handler', () => {
   let mockJwksCache: JwksCache;
   let privateKey: CryptoKey;
   let publicJwk: JWK;
+  let validFireBaseJwt: string;
 
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
@@ -79,17 +84,20 @@ describe('Handler', () => {
         },
       );
 
-    const validFireBaseJwt = await createSignedJwt(privateKey, {
+    validFireBaseJwt = await createSignedJwt(privateKey, {
       audience: JSON.parse(env.AUDIENCE)[0],
       issuer: env.ISSUER,
       subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
     });
+
+    const validCsrPem = await createCsrPem();
 
     context = buildLambdaContext();
     event = buildEvent({
       headers: {
         'X-Firebase-AppCheck': validFireBaseJwt,
       },
+      body: JSON.stringify({ csrPem: validCsrPem }),
     });
 
     dependencies = {
@@ -284,6 +292,78 @@ describe('Handler', () => {
         });
       });
     });
+
+    describe('Given event body is invalid', () => {
+      describe.each([
+        {
+          scenario: 'Given there are no body in the event',
+          body: null,
+          expectedErrorMessage: 'Event body is null',
+        },
+        {
+          scenario: 'Given body cannot be parsed',
+          body: 'invalidJSON',
+          expectedErrorMessage: 'Event body cannot be parsed',
+        },
+        {
+          scenario: 'Given body is not a JSON object',
+          body: JSON.stringify([]),
+          expectedErrorMessage: 'Event body is not a JSON object',
+        },
+        {
+          scenario: 'Given csrPem is not present in the event body',
+          body: JSON.stringify({ mockKey: 'mockValue' }),
+          expectedErrorMessage: 'Event body missing csrPem',
+        },
+        {
+          scenario: 'Given csrPem in body is not a string',
+          body: JSON.stringify({ csrPem: 123 }),
+          expectedErrorMessage: 'Event body csrPem is not a string',
+        },
+        {
+          scenario: 'Given csrPem is an empty string',
+          body: JSON.stringify({ csrPem: '' }),
+          expectedErrorMessage: 'Event body csrPem is an empty string',
+        },
+        {
+          scenario: 'Given csrPem is an empty string with whitespace',
+          body: JSON.stringify({ csrPem: '  ' }),
+          expectedErrorMessage: 'Event body csrPem is an empty string',
+        },
+      ])('$scenario', ({ body, expectedErrorMessage }) => {
+        beforeEach(async () => {
+          const invalidEvent = buildEvent({
+            headers: {
+              'X-Firebase-AppCheck': 'mockFireBaseAppCheckHeader',
+            },
+            body,
+          });
+          result = await handlerConstructor(
+            dependencies,
+            invalidEvent,
+            context,
+          );
+        });
+
+        it('Log an INVALID_EVENT error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+            errorMessage: expectedErrorMessage,
+          });
+        });
+
+        it('Return 401 Unauthorized response', () => {
+          expect(result).toStrictEqual({
+            headers: { 'Content-Type': 'application/json' },
+            statusCode: 401,
+            body: JSON.stringify({
+              code: 'unauthorized',
+              message: expectedErrorMessage,
+            }),
+          });
+        });
+      });
+    });
   });
 
   describe('App Check JWT verification', () => {
@@ -296,6 +376,7 @@ describe('Handler', () => {
           headers: {
             'X-Firebase-AppCheck': jwtWithInvalidIssuer,
           },
+          body: JSON.stringify({ csrPem: 'MockCsrPemValue' }),
         });
         result = await handlerConstructor(dependencies, event, context);
       });
@@ -329,6 +410,137 @@ describe('Handler', () => {
         });
       });
     });
+  });
+
+  describe('CSR Validation', () => {
+    type InvalidCsrTestCase = {
+      scenario: string;
+      csrPemConfig: CreateCsrPemOptions;
+      expectedErrorMessage: string;
+      expectedLogData?: Record<string, unknown>;
+    };
+    const invalidCsrTestCases: InvalidCsrTestCase[] = [
+      {
+        scenario: 'Given CSRPem is not valid PKCS#10',
+        csrPemConfig: { invalidPkcs10: true },
+        expectedErrorMessage: 'CSR not valid PKCS#10 request',
+        expectedLogData: {
+          csrPem: 'invalidPKCS#10',
+          error: { name: 'TypeError' },
+        },
+      },
+      {
+        scenario:
+          'Given unexpected error occurs during self signature verification',
+        csrPemConfig: { unsupportedSignatureAlgorithm: true },
+        expectedErrorMessage: 'CSR self signature verification failed',
+        expectedLogData: {
+          error: { name: 'NotSupportedError' },
+        },
+      },
+      {
+        scenario: 'Given CSR has invalid self signature',
+        csrPemConfig: { invalidateSignature: true },
+        expectedErrorMessage: 'CSR self signature verification failed',
+      },
+      {
+        scenario: 'Given CSR has non EC public key algorithm',
+        csrPemConfig: { keyAlgorithm: 'rsa' },
+        expectedErrorMessage: 'CSR public key not EC key',
+        expectedLogData: {
+          publicKeyAlgorithm: 'RSASSA-PKCS1-v1_5',
+        },
+      },
+      {
+        scenario: 'Given CSR does not use P-384 curve',
+        csrPemConfig: { keyAlgorithm: 'ec-p256' },
+        expectedErrorMessage: 'CSR public key does not use P-384 curve',
+        expectedLogData: {
+          publicKeyAlgorithmCurve: 'P-256',
+        },
+      },
+      {
+        scenario: 'Given CSR requests CA capabilities',
+        csrPemConfig: { basicConstraintsCa: true },
+        expectedErrorMessage: 'CSR requests CA capabilities',
+        expectedLogData: {
+          basicConstraintsCa: true,
+        },
+      },
+      {
+        scenario: 'Given CSR subject country is not GB',
+        csrPemConfig: { subject: { C: 'FR' } },
+        expectedErrorMessage: 'CSR subject C is not GB',
+        expectedLogData: {
+          subjectC: ['FR'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject 0 is not Government Digital Service',
+        csrPemConfig: { subject: { O: 'Invalid Service' } },
+        expectedErrorMessage: 'CSR subject O is not Government Digital Service',
+        expectedLogData: {
+          subjectO: ['Invalid Service'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject CN is not present',
+        csrPemConfig: { subject: { CN: null } },
+        expectedErrorMessage: 'CSR subject CN is not present',
+        expectedLogData: {
+          subjectCN: [],
+        },
+      },
+      {
+        scenario: 'Given CSR subject CN is not present',
+        csrPemConfig: { subject: { CN: '' } },
+        expectedErrorMessage: 'CSR subject CN is not present',
+        expectedLogData: {
+          subjectCN: [''],
+        },
+      },
+    ];
+    describe.each(invalidCsrTestCases)(
+      '$scenario',
+      ({ csrPemConfig, expectedErrorMessage, expectedLogData }) => {
+        beforeEach(async () => {
+          const invalidCsrPem = await createCsrPem(csrPemConfig);
+          const invalidEvent = buildEvent({
+            headers: {
+              'X-Firebase-AppCheck': validFireBaseJwt,
+            },
+            body: JSON.stringify({
+              csrPem: invalidCsrPem,
+            }),
+          });
+
+          result = await handlerConstructor(
+            dependencies,
+            invalidEvent,
+            context,
+          );
+        });
+
+        it('Logs INVALID_CSR', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+            errorMessage: expectedErrorMessage,
+            data: expectedLogData,
+          });
+        });
+
+        it('Return 400 Bad Request response', () => {
+          expect(result).toStrictEqual({
+            headers: { 'Content-Type': 'application/json' },
+            statusCode: 400,
+            body: JSON.stringify({
+              code: 'bad_request',
+              message: expectedErrorMessage,
+            }),
+          });
+        });
+      },
+    );
   });
 
   describe('Happy path tests', () => {
