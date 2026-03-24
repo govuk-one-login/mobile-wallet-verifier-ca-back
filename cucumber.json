@@ -1,0 +1,7 @@
+{
+  "default": {
+    "paths": ["tests/integrationTests/features/**/*.feature"],
+    "requireModule": ["tsx/cjs"],
+    "require": ["tests/integrationTests/step-definitions/**/*.steps.ts"]
+  }
+}
