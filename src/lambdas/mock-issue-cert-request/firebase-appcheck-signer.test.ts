@@ -55,9 +55,7 @@ describe('FirebaseAppCheckSigner', () => {
       expect(payload.sub).toBe('1:1111:ios:org.multipaz.identityreader');
       expect(payload.aud).toEqual(['projects/mock-verifier-app']);
       expect(payload.provider).toBe('custom');
-      expect(payload.iss).toBe(
-        'https://firebaseappcheck.googleapis.com/v1/jwks',
-      );
+      expect(payload.iss).toBe('https://mock-jwt-issuer.com/');
       expect(payload.exp).toBeGreaterThan(payload.iat);
       expect(payload.jti).toBe('mock-uuid');
       expect(keyPairManager.getOrCreateRSAKeys).toHaveBeenCalledWith(
