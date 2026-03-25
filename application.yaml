@@ -166,6 +166,7 @@ Mappings:
       FirebaseJwksUri: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
       Issuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
       LambdaLogLevel: DEBUG
+      MockJwtIssuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
 
     build:
       Algorithm: 'RS256'
@@ -175,6 +176,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       LambdaLogLevel: INFO
+      MockJwtIssuer: https://mock.verifier-ca.build.account.gov.uk/mock-jwks
 
     staging:
       Algorithm: 'RS256'
@@ -184,6 +186,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       LambdaLogLevel: INFO
+      MockJwtIssuer: ''
 
     integration:
       Algorithm: 'RS256'
@@ -193,6 +196,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       LambdaLogLevel: INFO
+      MockJwtIssuer: ''
 
     prod:
       Algorithm: 'RS256'
@@ -202,6 +206,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       LambdaLogLevel: INFO
+      MockJwtIssuer: ''
 
     CslsEgress:
       build: arn:aws:logs:eu-west-2:885513274347:destination:csls_cw_logs_destination_prodpython-2
@@ -381,6 +386,10 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - FirebaseJwksUri
+          MOCK_JWT_ISSUER: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - MockJwtIssuer
 
   MockIssueCertRequestFunctionLogGroup:
     Type: AWS::Logs::LogGroup
