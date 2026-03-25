@@ -9,7 +9,7 @@ import { Result, emptyFailure } from '../common/result/result';
 const REQUIRED_ENVIRONMENT_VARIABLES = [
   'FIREBASE_APPCHECK_JWKS_SECRET',
   'DEVICE_KEYS_SECRET',
-  'FIREBASE_JWKS_URI',
+  'MOCK_JWT_ISSUER',
 ] as const;
 
 export type GenerateMockIssueCertRequestConfig = Config<

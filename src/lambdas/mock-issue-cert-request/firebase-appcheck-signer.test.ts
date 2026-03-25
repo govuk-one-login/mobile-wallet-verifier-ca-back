@@ -27,7 +27,7 @@ describe('FirebaseAppCheckSigner', () => {
     signer = new FirebaseAppCheckSigner({
       FIREBASE_APPCHECK_JWKS_SECRET: 'mock-secret',
       DEVICE_KEYS_SECRET: 'mock-device-secret',
-      FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks',
+      MOCK_JWT_ISSUER: 'https://mock-jwt-issuer.com/',
     });
     vi.spyOn(keyPairManager, 'getOrCreateRSAKeys').mockResolvedValue(
       mockKeyPair,

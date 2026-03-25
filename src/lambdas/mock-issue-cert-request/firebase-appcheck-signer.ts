@@ -41,7 +41,7 @@ export class FirebaseAppCheckSigner {
       sub,
       aud: ['projects/mock-verifier-app'],
       provider: 'custom',
-      iss: configResult.value.FIREBASE_JWKS_URI,
+      iss: configResult.value.MOCK_JWT_ISSUER,
       exp: now + 3600,
       iat: now,
       jti: randomUUID(),

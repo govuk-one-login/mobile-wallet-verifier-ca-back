@@ -382,10 +382,6 @@ Resources:
         Variables:
           DEVICE_KEYS_SECRET: !Sub '${AWS::StackName}-mock-device-keys'
           FIREBASE_APPCHECK_JWKS_SECRET: !Sub '${AWS::StackName}-mock-firebase-appcheck-keys'
-          FIREBASE_JWKS_URI: !FindInMap
-            - EnvironmentVariables
-            - !Ref Environment
-            - FirebaseJwksUri
           MOCK_JWT_ISSUER: !FindInMap
             - EnvironmentVariables
             - !Ref Environment
