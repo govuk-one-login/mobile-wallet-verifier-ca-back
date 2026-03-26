@@ -54,7 +54,7 @@ describe('Mock Issue Reader Cert Request Handler', () => {
   const env = {
     FIREBASE_APPCHECK_JWKS_SECRET: 'mock-firebase-appcheck-keys',
     DEVICE_KEYS_SECRET: 'mock-device-keys',
-    FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks',
+    MOCK_JWT_ISSUER: 'https://mock-jwt-issuer.com/',
   };
 
   beforeEach(() => {

@@ -13,7 +13,7 @@ describe('getGenerateMockIssueCertRequestConfig', () => {
     const env = {
       FIREBASE_APPCHECK_JWKS_SECRET: 'mock-firebase-secret',
       DEVICE_KEYS_SECRET: 'mock-device-secret',
-      FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks',
+      MOCK_JWT_ISSUER: 'https://mock-jwt-issuer.com/',
     };
 
     const result = getGenerateMockIssueCertRequestConfig(env);
@@ -23,7 +23,7 @@ describe('getGenerateMockIssueCertRequestConfig', () => {
       expect(result.value).toEqual({
         FIREBASE_APPCHECK_JWKS_SECRET: 'mock-firebase-secret',
         DEVICE_KEYS_SECRET: 'mock-device-secret',
-        FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks',
+        MOCK_JWT_ISSUER: 'https://mock-jwt-issuer.com/',
       });
     }
   });
@@ -31,7 +31,7 @@ describe('getGenerateMockIssueCertRequestConfig', () => {
   it('should return error result when FIREBASE_APPCHECK_JWKS_SECRET is missing', () => {
     const env = {
       DEVICE_KEYS_SECRET: 'mock-device-secret',
-      FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks',
+      MOCK_JWT_ISSUER: 'https://mock-jwt-issuer.com/',
     };
 
     const result = getGenerateMockIssueCertRequestConfig(env);
@@ -48,7 +48,7 @@ describe('getGenerateMockIssueCertRequestConfig', () => {
   it('should return error result when DEVICE_KEYS_SECRET is missing', () => {
     const env = {
       FIREBASE_APPCHECK_JWKS_SECRET: 'mock-firebase-secret',
-      FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks',
+      MOCK_JWT_ISSUER: 'https://mock-jwt-issuer.com/',
     };
 
     const result = getGenerateMockIssueCertRequestConfig(env);
@@ -62,7 +62,7 @@ describe('getGenerateMockIssueCertRequestConfig', () => {
     });
   });
 
-  it('should return error result when FIREBASE_JWKS_URI is missing', () => {
+  it('should return error result when MOCK_JWT_ISSUER is missing', () => {
     const env = {
       FIREBASE_APPCHECK_JWKS_SECRET: 'mock-firebase-secret',
       DEVICE_KEYS_SECRET: 'mock-device-secret',
@@ -74,7 +74,7 @@ describe('getGenerateMockIssueCertRequestConfig', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
       messageCode: 'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
       data: {
-        missingEnvironmentVariables: ['FIREBASE_JWKS_URI'],
+        missingEnvironmentVariables: ['MOCK_JWT_ISSUER'],
       },
     });
   });

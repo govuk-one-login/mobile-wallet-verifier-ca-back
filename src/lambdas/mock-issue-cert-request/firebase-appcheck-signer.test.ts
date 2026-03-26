@@ -27,7 +27,7 @@ describe('FirebaseAppCheckSigner', () => {
     signer = new FirebaseAppCheckSigner({
       FIREBASE_APPCHECK_JWKS_SECRET: 'mock-secret',
       DEVICE_KEYS_SECRET: 'mock-device-secret',
-      FIREBASE_JWKS_URI: 'https://firebaseappcheck.googleapis.com/v1/jwks',
+      MOCK_JWT_ISSUER: 'https://mock-jwt-issuer.com/',
     });
     vi.spyOn(keyPairManager, 'getOrCreateRSAKeys').mockResolvedValue(
       mockKeyPair,
@@ -55,9 +55,7 @@ describe('FirebaseAppCheckSigner', () => {
       expect(payload.sub).toBe('1:1111:ios:org.multipaz.identityreader');
       expect(payload.aud).toEqual(['projects/mock-verifier-app']);
       expect(payload.provider).toBe('custom');
-      expect(payload.iss).toBe(
-        'https://firebaseappcheck.googleapis.com/v1/jwks',
-      );
+      expect(payload.iss).toBe('https://mock-jwt-issuer.com/');
       expect(payload.exp).toBeGreaterThan(payload.iat);
       expect(payload.jti).toBe('mock-uuid');
       expect(keyPairManager.getOrCreateRSAKeys).toHaveBeenCalledWith(
