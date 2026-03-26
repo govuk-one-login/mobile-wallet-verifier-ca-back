@@ -43,6 +43,7 @@ export const sendHttpRequest: ISendHttpRequest = async (
       }
 
       if (!response.ok) {
+        console.log('AM I HERE. RESPONSE>', response);
         return errorResult({
           statusCode: response.status,
           description: await response.text(),

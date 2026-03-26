@@ -163,10 +163,10 @@ Mappings:
       AllowedAppIds: '["1:1111:ios:org.multipaz.identityreader", "1:1111:android:org.multipaz.identityreader"]'
       Audience: '["projects/mock-verifier-app"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-      FirebaseJwksUri: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
-      Issuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
+      FirebaseJwksUri: https://fbhfjzpcy4.execute-api.eu-west-2.amazonaws.com/dev/mock-jwks
+      Issuer: https://fbhfjzpcy4.execute-api.eu-west-2.amazonaws.com/dev/mock-jwks
       LambdaLogLevel: DEBUG
-      MockJwtIssuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
+      MockJwtIssuer: https://fbhfjzpcy4.execute-api.eu-west-2.amazonaws.com/dev/mock-jwks
 
     build:
       Algorithm: 'RS256'

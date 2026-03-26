@@ -35,6 +35,8 @@ export const handlerConstructor = async (
   }
   const config = configResult.value;
 
+  console.log('Here are my envVars >>> ', config);
+
   const validateEventResult = validateEvent(event.headers, event.body);
   if (validateEventResult.isError) {
     return unauthorizedResponse(validateEventResult.value);
