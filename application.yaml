@@ -400,6 +400,9 @@ Resources:
       Description: Mock services API for testing - JWKS and certificate generation
       StageName: !Ref Environment
       OpenApiVersion: 3.0.0
+      AccessLogSetting:
+        DestinationArn: !GetAtt MockServicesApiAccessLogs.Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
       EndpointConfiguration:
         Type: REGIONAL
       DefinitionBody:
@@ -469,6 +472,13 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MockServicesApi}/*/*'
+
+  MockServicesApiAccessLogs:
+    Type: AWS::Logs::LogGroup
+    Condition: DeployMockResources
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/${AWS::StackName}-mock-services-api-access-logs
+      RetentionInDays: 30
 
   # ========================================
   # PRODUCTION SERVICES
