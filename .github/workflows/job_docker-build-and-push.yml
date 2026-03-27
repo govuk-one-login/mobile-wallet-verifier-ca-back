@@ -1,0 +1,58 @@
+name: Docker Build + Push
+on:
+  workflow_call:
+    inputs:
+      WORKING_DIRECTORY:
+        description: Path to working directory in repo
+        required: true
+        type: string
+      IMAGE_TAG:
+        description: The docker image tag
+        required: true
+        type: string
+      DOCKERFILE:
+        description: The docker file path
+        required: true
+        type: string
+    secrets:
+      GH_ACTIONS_ROLE_ARN:
+        required: true
+      IMAGE_REPOSITORY_URI:
+        required: true
+      CONTAINER_SIGN_KMS_KEY:
+        required: true
+
+jobs:
+  docker-build-push:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.WORKING_DIRECTORY }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Configure AWS credentials for build environment
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        with:
+          aws-region: eu-west-2
+          role-to-assume: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076 # v2.0.1
+
+      - name: Build Dockerfile with tag
+        run: docker build --file "${{ inputs.DOCKERFILE }}" --tag "${{ secrets.IMAGE_REPOSITORY_URI }}:${{ inputs.IMAGE_TAG }}" .
+
+      - name: Push image to Amazon ECR
+        run: docker push "${{ secrets.IMAGE_REPOSITORY_URI }}:${{ inputs.IMAGE_TAG }}"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+        with:
+          cosign-release: v2.5.2
+
+      - name: Sign image in Amazon ECR
+        run: cosign sign --key "awskms:///${{ secrets.CONTAINER_SIGN_KMS_KEY }}" "${{ secrets.IMAGE_REPOSITORY_URI }}:${{ inputs.IMAGE_TAG }}"
+
