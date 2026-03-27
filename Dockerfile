@@ -6,7 +6,7 @@ WORKDIR /ca-backend
 RUN adduser --disabled-password test && chown test .
 
 COPY package.json package-lock.json ./
-RUN npm install --ignore-scripts
+RUN npm ci --ignore-scripts
 
 ## Update container, install awscli and check awscli is installed correctly
 RUN apk update && apk upgrade; apk add --no-cache bash aws-cli && aws --version
