@@ -17,9 +17,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@aws-lambda-powertools/logger": "^2.31.0",
-    "@aws-sdk/client-dynamodb": "^3.1012.0",
-    "@aws-sdk/client-secrets-manager": "^3.1012.0",
+    "@aws-lambda-powertools/logger": "^2.32.0",
+    "@aws-sdk/client-dynamodb": "^3.1017.0",
+    "@aws-sdk/client-secrets-manager": "^3.1017.0",
     "@peculiar/asn1-android": "^2.3.8",
     "@peculiar/asn1-schema": "^2.3.8",
     "@peculiar/webcrypto": "1.5.0",
@@ -38,8 +38,8 @@
     "@types/aws-lambda": "^8.10.161",
     "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.10",
-    "@vitest/coverage-v8": "^4.1.0",
-    "eslint": "^10.0.3",
+    "@vitest/coverage-v8": "^4.1.1",
+    "eslint": "^10.1.0",
     "glob": "^13.0.6",
     "husky": "^9.1.7",
     "jiti": "^2.6.1",
@@ -48,7 +48,7 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.1",
+    "typescript-eslint": "^8.57.2",
     "vitest": "^4.0.15"
   }
 }

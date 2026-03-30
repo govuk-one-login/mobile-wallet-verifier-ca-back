@@ -166,6 +166,7 @@ Mappings:
       FirebaseJwksUri: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
       Issuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
       LambdaLogLevel: DEBUG
+      MockJwtIssuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
 
     build:
       Algorithm: 'RS256'
@@ -175,6 +176,7 @@ Mappings:
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
       LambdaLogLevel: INFO
+      MockJwtIssuer: https://mock.verifier-ca.build.account.gov.uk/mock-jwks
 
     staging:
       Algorithm: 'RS256'
@@ -377,10 +379,10 @@ Resources:
         Variables:
           DEVICE_KEYS_SECRET: !Sub '${AWS::StackName}-mock-device-keys'
           FIREBASE_APPCHECK_JWKS_SECRET: !Sub '${AWS::StackName}-mock-firebase-appcheck-keys'
-          FIREBASE_JWKS_URI: !FindInMap
+          MOCK_JWT_ISSUER: !FindInMap
             - EnvironmentVariables
             - !Ref Environment
-            - FirebaseJwksUri
+            - MockJwtIssuer
 
   MockIssueCertRequestFunctionLogGroup:
     Type: AWS::Logs::LogGroup
