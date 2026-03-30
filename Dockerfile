@@ -9,7 +9,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
 ## Update container, install awscli and check awscli is installed correctly
-RUN apk update && apk upgrade; apk add --no-cache bash aws-cli && aws --version
+RUN apk update && apk add --no-cache bash aws-cli && aws --version
 
 # Copy the test files and the configuration files
 COPY tests/integrationTests ./tests/integrationTests
