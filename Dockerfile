@@ -13,7 +13,6 @@ RUN apk update && apk add --no-cache bash aws-cli && aws --version
 
 # Copy the test files and the configuration files
 COPY tests/integrationTests ./tests/integrationTests
-COPY test-environment-variables ./test-environment-variables
 COPY vitest.config.ts cucumber.json tsconfig.json ./
 
 # Give user, 'test', permissions to execute test script and switch the user to 'test'

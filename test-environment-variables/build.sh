@@ -1,1 +1,0 @@
-export FIREBASE_JWKS_URI=https://mock.verifier-ca.build.account.gov.uk/mock-jwks
