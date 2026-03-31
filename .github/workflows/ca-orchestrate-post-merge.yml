@@ -210,13 +210,14 @@ jobs:
   # Deploy backend to build environment
   upload-backend-sam-artifact-build:
     name: Upload Backend to Build
-    needs: [detect-changes, run-test-suite, upload-base-app-sam-artifact-build]
+    needs: [detect-changes, run-test-suite, upload-base-app-sam-artifact-build, build-push-ca-backend-test-container-build]
     # Run if backend needs deploying AND (base-app succeeded OR base was skipped)
     if: |
       always() &&
       needs.detect-changes.outputs.deploy_app == 'true' &&
       (needs.detect-changes.outputs.target_environment == 'build' || needs.detect-changes.outputs.target_environment == 'all') &&
       needs.run-test-suite.result == 'success' &&
+      needs.build-push-ca-backend-test-container-build.result == 'success' &&
       (needs.upload-base-app-sam-artifact-build.result == 'success' || needs.upload-base-app-sam-artifact-build.result == 'skipped')
     permissions:
       id-token: write
