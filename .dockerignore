@@ -3,3 +3,5 @@ dist
 coverage
 results
 .git
+.DS_Store
+.idea
