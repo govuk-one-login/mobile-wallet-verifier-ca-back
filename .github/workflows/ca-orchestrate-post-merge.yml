@@ -9,6 +9,11 @@ on:
       - 'src/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'cucumber.json'
+      - 'Dockerfile'
+      - 'run-tests.sh'
+      - 'tests/**'
+      - 'test-environment-variables/**'
       - '.github/workflows/ca-orchestrate-post-merge.yml'
       - '.github/workflows/job_docker-build-and-push.yml'
 
