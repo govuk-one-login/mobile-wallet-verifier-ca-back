@@ -13,6 +13,8 @@ on:
       - 'Dockerfile'
       - 'run-tests.sh'
       - 'tests/**'
+      - 'tsconfig.json'
+      - 'vitest.config.ts'
       - '.github/workflows/ca-orchestrate-post-merge.yml'
       - '.github/workflows/job_docker-build-and-push.yml'
 
