@@ -2,7 +2,7 @@ FROM node:22-alpine
 
 WORKDIR /ca-backend
 
-# Create a new user 'test' to avoid running the app as a root
+# Create a new user 'test' to avoid running as root
 RUN adduser --disabled-password test && chown test .
 
 COPY package.json package-lock.json ./

@@ -128,7 +128,7 @@ jobs:
 
   # Build test container and push to ECR in build environment
   build-push-ca-backend-test-container-build:
-    name: BUILD CA Backend TestContainer + Push in
+    name: Build CA Backend Test Container and Push to ECR
     if: ${{ github.ref == 'refs/heads/main' }}
     needs:
       - ci-checks

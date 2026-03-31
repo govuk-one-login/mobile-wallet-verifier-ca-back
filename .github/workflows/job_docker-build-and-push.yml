@@ -1,4 +1,4 @@
-name: Docker Build + Push
+name: Docker Build + Push Test Image
 on:
   workflow_call:
     inputs:
@@ -16,13 +16,13 @@ on:
         type: string
     secrets:
       GH_ACTIONS_ROLE_ARN:
-        description: AWS Role for pushing the test image and AWS artifact to AWS
+        description: AWS Role for pushing the test image and deploying artifact to AWS
         required: true
       BACKEND_ECR_REPOSITORY:
         description: ECR repository for the test images
         required: true
       CONTAINER_SIGN_KMS_KEY:
-        description: KMS key for encrypting the test image
+        description: KMS key for signing the test image
         required: true
 
 permissions:
@@ -55,7 +55,7 @@ jobs:
         with:
           cosign-release: v2.5.2
 
-      - name: Build, tag, and push testing image to Amazon ECR
+      - name: Build, tag, and push test image to Amazon ECR
         env:
           COSIGN_YES: "true"
           IMAGE_TAG: latest
