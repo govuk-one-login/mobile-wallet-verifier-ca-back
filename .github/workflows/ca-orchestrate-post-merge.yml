@@ -135,12 +135,11 @@ jobs:
     uses: ./.github/workflows/job_docker-build-and-push.yml
     with:
       WORKING_DIRECTORY: ./
-      DOCKERFILE: Dockerfile
       IMAGE_TAG: latest
     secrets:
       CONTAINER_SIGN_KMS_KEY: ${{ secrets.BUILD_CONTAINER_SIGN_KMS_KEY }}
       GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_BUILD_GH_ACTIONS_ROLE_ARN }}
-      IMAGE_REPOSITORY_URI: ${{ secrets.BACKEND_BUILD_TEST_IMAGE_REPOSITORY_URI }}
+      BACKEND_ECR_REPOSITORY: ${{ secrets.BACKEND_ECR_REPOSITORY }}
 
 
   # Deploy base app to dev environment
