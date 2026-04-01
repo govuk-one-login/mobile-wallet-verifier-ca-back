@@ -138,6 +138,7 @@ jobs:
     with:
       WORKING_DIRECTORY: ./
       IMAGE_TAG: latest
+    secrets: inherit
 
   # Deploy base app to dev environment
   upload-base-app-sam-artifact-dev:
