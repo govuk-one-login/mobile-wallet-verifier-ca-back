@@ -135,6 +135,9 @@ jobs:
     needs:
       - ci-checks
     uses: ./.github/workflows/job_docker-build-and-push.yml
+    permissions:
+      id-token: write
+      contents: read
     with:
       WORKING_DIRECTORY: ./
       IMAGE_TAG: latest
