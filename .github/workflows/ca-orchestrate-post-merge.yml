@@ -9,7 +9,14 @@ on:
       - 'src/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'cucumber.json'
+      - 'Dockerfile'
+      - 'run-tests.sh'
+      - 'tests/**'
+      - 'tsconfig.json'
+      - 'vitest.config.ts'
       - '.github/workflows/ca-orchestrate-post-merge.yml'
+      - '.github/workflows/job_docker-build-and-push.yml'
 
   workflow_dispatch:
     inputs:
@@ -121,6 +128,21 @@ jobs:
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  # Build test container and push to ECR in build environment
+  build-push-ca-backend-test-container-build:
+    name: Build CA Backend Test Container and Push to ECR
+    if: ${{ github.ref == 'refs/heads/main' }}
+    needs:
+      - ci-checks
+    uses: ./.github/workflows/job_docker-build-and-push.yml
+    with:
+      WORKING_DIRECTORY: ./
+      IMAGE_TAG: latest
+    secrets:
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+      BACKEND_ECR_REPOSITORY: ${{ secrets.BACKEND_ECR_REPOSITORY }}
+      CONTAINER_SIGN_KMS_KEY: ${{ secrets.CONTAINER_SIGN_KMS_KEY }}
+
   # Deploy base app to dev environment
   upload-base-app-sam-artifact-dev:
     name: Upload Base Application to Dev
@@ -194,13 +216,14 @@ jobs:
   # Deploy backend to build environment
   upload-backend-sam-artifact-build:
     name: Upload Backend to Build
-    needs: [detect-changes, run-test-suite, upload-base-app-sam-artifact-build]
+    needs: [detect-changes, run-test-suite, upload-base-app-sam-artifact-build, build-push-ca-backend-test-container-build]
     # Run if backend needs deploying AND (base-app succeeded OR base was skipped)
     if: |
       always() &&
       needs.detect-changes.outputs.deploy_app == 'true' &&
       (needs.detect-changes.outputs.target_environment == 'build' || needs.detect-changes.outputs.target_environment == 'all') &&
       needs.run-test-suite.result == 'success' &&
+      needs.build-push-ca-backend-test-container-build.result == 'success' &&
       (needs.upload-base-app-sam-artifact-build.result == 'success' || needs.upload-base-app-sam-artifact-build.result == 'skipped')
     permissions:
       id-token: write
