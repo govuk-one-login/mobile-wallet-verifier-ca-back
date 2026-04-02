@@ -58,7 +58,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
-        run: npm clean-install
+        run: npm clean-install --ignore-scripts
 
       - name: Check formatting
         if: inputs.RUN_FORMATTING == 'true'

@@ -63,7 +63,7 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
 
       - name: Install Dependencies
-        run: npm clean-install
+        run: npm clean-install --ignore-scripts
 
       - name: Authenticate with AWS
         uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 #v6.0.0

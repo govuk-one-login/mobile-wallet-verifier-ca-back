@@ -63,7 +63,7 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
 
       - name: Install Dependencies
-        run: npm clean-install
+        run: npm clean-install --ignore-scripts
 
       - name: Setup AWS SAM CLI
         uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04
