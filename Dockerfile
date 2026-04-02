@@ -13,9 +13,9 @@ RUN npm ci --ignore-scripts \
 COPY tests/integrationTests ./tests/integrationTests
 COPY vitest.config.ts cucumber.json tsconfig.json ./
 
-# Give user, 'test', permissions to execute test script and switch the user to 'test'
+# Give user, 'test', permissions to execute test script and create symlink for CodeBuild
 COPY run-tests.sh ./
-RUN chmod 755 ./run-tests.sh
+RUN chmod 755 ./run-tests.sh && ln -s /ca-backend/run-tests.sh /run-tests.sh
 USER test
 
 ENTRYPOINT ["./run-tests.sh"]
