@@ -138,7 +138,10 @@ jobs:
     with:
       WORKING_DIRECTORY: ./
       IMAGE_TAG: latest
-    secrets: inherit
+    secrets:
+      GH_ACTIONS_ROLE_ARN: ${{ secrets.GH_ACTIONS_ROLE_ARN }}
+      BACKEND_ECR_REPOSITORY: ${{ secrets.BACKEND_ECR_REPOSITORY }}
+      CONTAINER_SIGN_KMS_KEY: ${{ secrets.CONTAINER_SIGN_KMS_KEY }}
 
   # Deploy base app to dev environment
   upload-base-app-sam-artifact-dev:
