@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eu
 
+cd /ca-backend
+
 if [[ "$TEST_ENVIRONMENT" == "build" ]]; then
   if npm run test:integration; then
     cp -rf results $TEST_REPORT_ABSOLUTE_DIR
