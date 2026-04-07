@@ -7,7 +7,7 @@ RUN adduser --disabled-password test && chown test .
 
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts \
-    && apk update && apk add --no-cache bash aws-cli curl && aws --version
+    && apk update && apk add --no-cache aws-cli bash curl && aws --version
 
 # Copy the test files and the configuration files
 COPY tests/integrationTests ./tests/integrationTests
