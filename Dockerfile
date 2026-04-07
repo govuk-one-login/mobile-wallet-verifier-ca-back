@@ -15,9 +15,8 @@ COPY vitest.config.ts cucumber.json tsconfig.json ./
 
 # Give user, 'test', permissions to execute test script and switch the user to 'test'
 COPY run-tests.sh /
-RUN chmod +x /run-tests.sh
-
-RUN echo "=== DEBUG INFO ===" && \
+RUN chmod +x /run-tests.sh && \
+    echo "=== DEBUG INFO ===" && \
     pwd && \
     echo "Files in root (/):" && \
     ls -la / && \
