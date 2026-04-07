@@ -65,7 +65,7 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> .npmrc
 
       - name: Install Dependencies
-        run: npm clean-install
+        run: npm clean-install --ignore-scripts
 
       # comment to be removed
       - name: Run Unit Tests
