@@ -6,8 +6,10 @@ WORKDIR /ca-backend
 RUN adduser --disabled-password test && chown test .
 
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts \
-    && apk update && apk add --no-cache bash aws-cli && aws --version
+RUN npm install --ignore-scripts
+
+## Update container, install awscli and check awscli is installed correctly
+RUN apk upgrade && apk update; apk add --no-cache bash aws-cli && aws --version
 
 # Copy the test files and the configuration files
 COPY tests/integrationTests ./tests/integrationTests
