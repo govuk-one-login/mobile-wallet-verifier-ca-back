@@ -58,7 +58,7 @@ jobs:
       - name: Build, tag, and push test image to Amazon ECR
         env:
           COSIGN_YES: "true"
-          IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
+          IMAGE_TAG: latest
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           BACKEND_ECR_REPOSITORY: ${{ secrets.BACKEND_ECR_REPOSITORY }}
           CONTAINER_SIGN_KMS_KEY: ${{ secrets.CONTAINER_SIGN_KMS_KEY }}
