@@ -140,7 +140,7 @@ jobs:
       contents: read
     with:
       WORKING_DIRECTORY: ./
-      IMAGE_TAG: ${{ github.sha }}
+      IMAGE_TAG: latest
     secrets:
       GH_ACTIONS_ROLE_ARN: ${{ secrets.BACKEND_BUILD_GH_ACTIONS_ROLE_ARN }}
       BACKEND_ECR_REPOSITORY: ${{ secrets.BACKEND_ECR_REPOSITORY }}
