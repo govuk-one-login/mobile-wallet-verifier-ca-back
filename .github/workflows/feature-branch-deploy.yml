@@ -69,7 +69,7 @@ jobs:
         uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04
 
       - name: Authenticate with AWS
-        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
@@ -103,7 +103,7 @@ jobs:
               StackIdentifier="$STACK_IDENTIFIER"
 
       - name: Authenticate with AWS - backend role
-        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
