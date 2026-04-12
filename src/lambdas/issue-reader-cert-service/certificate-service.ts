@@ -1,4 +1,8 @@
-import { ACMPCAClient, IssueCertificateCommand } from '@aws-sdk/client-acm-pca';
+import {
+  ACMPCAClient,
+  GetCertificateCommand,
+  IssueCertificateCommand,
+} from '@aws-sdk/client-acm-pca';
 import {
   Result,
   successResult,
@@ -43,6 +47,40 @@ export const issueCertificate = async (
     logger.error('Error issuing certificate', { error });
     return errorResult({
       errorMessage: 'Failed to issue certificate',
+      errorCategory: ErrorCategory.SERVER_ERROR,
+    });
+  }
+};
+
+export const getCertificate = async (
+  certificateArn: string,
+  certificateAuthorityArn: string,
+): Promise<Result<string>> => {
+  try {
+    const getCommand = new GetCertificateCommand({
+      CertificateAuthorityArn: certificateAuthorityArn,
+      CertificateArn: certificateArn,
+    });
+
+    const getResponse = await acmpcaClient.send(getCommand);
+
+    if (!getResponse.Certificate) {
+      logger.error('Failed to retrieve certificate');
+      return errorResult({
+        errorMessage: 'Failed to retrieve certificate',
+        errorCategory: ErrorCategory.SERVER_ERROR,
+      });
+    }
+
+    const certChain = getResponse.CertificateChain
+      ? `${getResponse.Certificate}\n${getResponse.CertificateChain}`
+      : getResponse.Certificate;
+
+    return successResult(certChain);
+  } catch (error) {
+    logger.error('Error retrieving certificate', { error });
+    return errorResult({
+      errorMessage: 'Failed to retrieve certificate',
       errorCategory: ErrorCategory.SERVER_ERROR,
     });
   }
