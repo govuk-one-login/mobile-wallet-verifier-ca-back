@@ -9,6 +9,7 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
   'AUDIENCE',
   'FIREBASE_JWKS_URI',
   'ISSUER',
+  'CERTIFICATE_AUTHORITY_ARN',
 ] as const;
 
 export type IssueReaderCertConfig = {
@@ -17,6 +18,7 @@ export type IssueReaderCertConfig = {
   AUDIENCE: string[];
   ISSUER: string;
   FIREBASE_JWKS_URI: string;
+  CERTIFICATE_AUTHORITY_ARN: string;
 };
 
 export function getIssueReaderCertConfig(
