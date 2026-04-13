@@ -82,7 +82,7 @@ Conditions:
 
 Resources:
   # Shared API Gateway Custom Domains
-  # These are created once and shared by multiple application stacks via base path mappings
+  # These are created once and shared by multiple application stacks via base path mapping
   ApiGatewayOriginDomain:
     Type: AWS::ApiGateway::DomainName
     Condition: CreateCustomDomain
