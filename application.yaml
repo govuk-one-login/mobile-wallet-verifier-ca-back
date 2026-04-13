@@ -162,6 +162,7 @@ Mappings:
       Algorithm: 'RS256'
       AllowedAppIds: '["1:1111:ios:org.multipaz.identityreader", "1:1111:android:org.multipaz.identityreader"]'
       Audience: '["projects/mock-verifier-app"]'
+      CertificateAuthorityArn: arn:aws:acm-pca:eu-west-2:673684579794:certificate-authority/b6283425-df27-4f61-a733-b41b62a40100
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
       Issuer: https://mock.verifier-ca.dev.account.gov.uk/mock-jwks
@@ -172,6 +173,7 @@ Mappings:
       Algorithm: 'RS256'
       AllowedAppIds: '["1:1111:ios:org.multipaz.identityreader", "1:1111:android:org.multipaz.identityreader"]'
       Audience: '["projects/mock-verifier-app"]'
+      CertificateAuthorityArn: arn:aws:acm-pca:eu-west-2:619710252082:certificate-authority/9f5c8997-f841-4b8c-9c57-0478af7c2f72
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://mock.verifier-ca.build.account.gov.uk/mock-jwks
       Issuer: https://mock.verifier-ca.build.account.gov.uk/mock-jwks
@@ -182,6 +184,7 @@ Mappings:
       Algorithm: 'RS256'
       AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
+      CertificateAuthorityArn: arn:aws:acm-pca:eu-west-2:619710252082:certificate-authority/9f5c8997-f841-4b8c-9c57-0478af7c2f72
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
@@ -191,6 +194,7 @@ Mappings:
       Algorithm: 'RS256'
       AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
+      CertificateAuthorityArn: arn:aws:acm-pca:eu-west-2:619710252082:certificate-authority/9f5c8997-f841-4b8c-9c57-0478af7c2f72
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
@@ -200,6 +204,7 @@ Mappings:
       Algorithm: 'RS256'
       AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
       Audience: '["mockProjectId"]'
+      CertificateAuthorityArn: arn:aws:acm-pca:eu-west-2:619710252082:certificate-authority/9f5c8997-f841-4b8c-9c57-0478af7c2f72
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceProductionVariables
       FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
       Issuer: https://mockIssuer.com/mockProjectId
@@ -886,13 +891,6 @@ Outputs:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-function-version'
 
   # Mock Services Outputs
-  MockServicesApiUrl:
-    Description: Mock services API base URL
-    Condition: DeployMockResources
-    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
-    Export:
-      Name: !Sub '${AWS::StackName}-mock-services-api-url'
-
   MockJWKSEndpoint:
     Description: Mock JWKS endpoint URL for Firebase App Check token verification
     Condition: DeployMockResources
