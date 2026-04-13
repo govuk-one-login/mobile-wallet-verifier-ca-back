@@ -20,6 +20,7 @@ import {
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
 import { validateCsr } from './validate-csr.ts';
+import { IssueReaderCertResponse } from './certificate-service.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -66,8 +67,28 @@ export const handlerConstructor = async (
     return badRequestResponse(validateCsrResult.value);
   }
 
+  const issueCertResult = await dependencies.issueCertificate(
+    csrPem,
+    config.CERTIFICATE_AUTHORITY_ARN,
+  );
+  if (issueCertResult.isError) {
+    return serverErrorResponse;
+  }
+
+  const getCertResult = await dependencies.getCertificate(
+    issueCertResult.value,
+    config.CERTIFICATE_AUTHORITY_ARN,
+  );
+  if (getCertResult.isError) {
+    return serverErrorResponse;
+  }
+
+  const response: IssueReaderCertResponse = {
+    certChain: getCertResult.value,
+  };
+
   logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
-  return okResponse(context.awsRequestId);
+  return okResponse(context.awsRequestId, response);
 };
 
 export const handler = handlerConstructor.bind(null, dependencies);
