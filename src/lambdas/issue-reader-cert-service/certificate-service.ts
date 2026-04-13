@@ -10,6 +10,7 @@ import {
   ErrorCategory,
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
+import {SIGNING_ALGORITHM, VALIDITY} from "../common/certificate-service-constants/certificate-service-constants.ts";
 
 export interface IssueReaderCertResponse {
   certChain: string;
@@ -25,17 +26,17 @@ export const issueCertificate = async (
     const issueCommand = new IssueCertificateCommand({
       CertificateAuthorityArn: certificateAuthorityArn,
       Csr: Buffer.from(csrPem),
-      SigningAlgorithm: 'SHA384WITHECDSA',
+      SigningAlgorithm: SIGNING_ALGORITHM,
       Validity: {
-        Type: 'DAYS',
-        Value: 1, // 24 hours
+        Type: VALIDITY.Type,
+        Value: VALIDITY.Value,
       },
     });
 
     const issueResponse = await acmpcaClient.send(issueCommand);
 
     if (!issueResponse.CertificateArn) {
-      logger.error('Failed to issue certificate: No certificate ARN returned');
+      logger.error('No certificate ARN returned');
       return errorResult({
         errorMessage: 'Failed to issue certificate',
         errorCategory: ErrorCategory.SERVER_ERROR,
