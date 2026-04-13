@@ -10,7 +10,10 @@ import {
   ErrorCategory,
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
-import {SIGNING_ALGORITHM, VALIDITY} from "../common/certificate-service-constants/certificate-service-constants.ts";
+import {
+  SIGNING_ALGORITHM,
+  VALIDITY,
+} from '../common/certificate-service-constants/certificate-service-constants.ts';
 
 export interface IssueReaderCertResponse {
   certChain: string;
@@ -29,7 +32,7 @@ export const issueCertificate = async (
       SigningAlgorithm: SIGNING_ALGORITHM,
       Validity: {
         Type: VALIDITY.Type,
-        Value: VALIDITY.Value,
+        Value: VALIDITY.Value, // 24 hours
       },
     });
 
