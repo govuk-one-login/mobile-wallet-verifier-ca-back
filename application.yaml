@@ -576,6 +576,19 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: ACMPCAAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - acm-pca:IssueCertificate
+                  - acm-pca:GetCertificate
+                Resource: !FindInMap
+                  - EnvironmentVariables
+                  - !Ref Environment
+                  - CertificateAuthorityArn
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
