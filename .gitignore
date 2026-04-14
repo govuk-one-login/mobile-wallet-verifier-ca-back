@@ -10,6 +10,7 @@ node_modules/
 # Ignore coverage directory
 coverage/
 results/
+docker-vars.env
 
 # Mac
 .DS_Store
