@@ -22,9 +22,3 @@ export const EXTENDED_KEY_USAGE = [
   },
 ] as const;
 
-export const CUSTOM_EXTENSIONS = [
-  {
-    ObjectIdentifier: '2.5.29.18',
-    Value: 'issuerAlternativeName', // confirm the value for issuerAlternativeName
-  },
-] as const;
