@@ -105,20 +105,21 @@ describe('Handler', () => {
       body: JSON.stringify({ csrPem: validCsrPem }),
     });
 
-    mockIssueCertificate = vi.fn()
-        .mockResolvedValue(
-            successResult(
-                'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
-            ),
-        );
+    mockIssueCertificate = vi
+      .fn()
+      .mockResolvedValue(
+        successResult(
+          'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
+        ),
+      );
 
-    mockGetCertificate = vi.fn()
-        .mockResolvedValue(
-            successResult(
-                '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
-            ),
-        );
-
+    mockGetCertificate = vi
+      .fn()
+      .mockResolvedValue(
+        successResult(
+          '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
+        ),
+      );
 
     dependencies = {
       env,
