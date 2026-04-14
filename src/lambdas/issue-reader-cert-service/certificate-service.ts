@@ -11,6 +11,9 @@ import {
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import {
+  CUSTOM_EXTENSIONS,
+  EXTENDED_KEY_USAGE,
+  KEY_USAGE,
   SIGNING_ALGORITHM,
   VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
@@ -27,6 +30,31 @@ export const issueCertificate = async (
 ): Promise<Result<string>> => {
   try {
     const issueCommand = new IssueCertificateCommand({
+      ApiPassthrough: {
+        Extensions: {
+          KeyUsage: {
+            DigitalSignature: KEY_USAGE.DigitalSignature,
+          },
+          ExtendedKeyUsage: [
+            {
+              // mDL Reader Auth
+              ExtendedKeyUsageObjectIdentifier:
+                EXTENDED_KEY_USAGE[0].ExtendedKeyUsageObjectIdentifier,
+            },
+            {
+              // mdocReaderAuth
+              ExtendedKeyUsageObjectIdentifier:
+                EXTENDED_KEY_USAGE[1].ExtendedKeyUsageObjectIdentifier,
+            },
+          ],
+          CustomExtensions: [
+            {
+              ObjectIdentifier: CUSTOM_EXTENSIONS[0].ObjectIdentifier,
+              Value: CUSTOM_EXTENSIONS[0].Value,
+            },
+          ],
+        },
+      },
       CertificateAuthorityArn: certificateAuthorityArn,
       Csr: Buffer.from(csrPem),
       SigningAlgorithm: SIGNING_ALGORITHM,
