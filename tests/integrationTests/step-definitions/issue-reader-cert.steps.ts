@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   requestIssueReaderCert,
   requestMockIssueReaderCertRequest,
-  MockIssueReaderCertRequest
+  MockIssueReaderCertRequest,
 } from '../utils/integration-test-helpers.ts';
 import type { HttpResponseSnapshot } from '../utils/api-instance.ts';
 
@@ -22,22 +22,20 @@ Given('I generate a valid mock issue reader certificate request', async () => {
 When(
   'I submit the mock issue reader certificate request to the issue reader cert endpoint',
   async () => {
-    if (mockRequest === undefined) {
-      throw new Error(
-        'A mock issue reader certificate request must be generated first',
-      );
-    }
+    assert.ok(
+      mockRequest,
+      'A mock issue reader certificate request must be generated first',
+    );
 
     response = await requestIssueReaderCert(mockRequest);
   },
 );
 
 Then('the issue reader cert endpoint returns a 200 OK response', () => {
-  if (response === undefined) {
-    throw new Error(
-      'The issue reader cert endpoint must be called before asserting the response',
-    );
-  }
+  assert.ok(
+    response,
+    'The issue reader cert endpoint must be called before asserting on the response',
+  );
 
   assert.equal(
     response.status,
