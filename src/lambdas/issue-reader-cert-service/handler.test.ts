@@ -36,6 +36,7 @@ import {
   createCsrPem,
   CreateCsrPemOptions,
 } from '../../../tests/testUtils/create-csr-pem.ts';
+import { issueCertificate, getCertificate } from './certificate-service.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -48,6 +49,8 @@ describe('Handler', () => {
     AUDIENCE: JSON.stringify(['mockAudience']),
     FIREBASE_JWKS_URI: 'https://mockFirebaseJwksUri.com/',
     ISSUER: 'https://mockIssuer.com/',
+    CERTIFICATE_AUTHORITY_ARN:
+      'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111',
   };
   let consoleInfoSpy: MockInstance;
   let consoleErrorSpy: MockInstance;
@@ -55,6 +58,8 @@ describe('Handler', () => {
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let validFireBaseJwt: string;
+  let mockIssueCertificate: typeof issueCertificate;
+  let mockGetCertificate: typeof getCertificate;
 
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
@@ -100,9 +105,26 @@ describe('Handler', () => {
       body: JSON.stringify({ csrPem: validCsrPem }),
     });
 
+    mockIssueCertificate = vi.fn()
+        .mockResolvedValue(
+            successResult(
+                'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
+            ),
+        );
+
+    mockGetCertificate = vi.fn()
+        .mockResolvedValue(
+            successResult(
+                '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
+            ),
+        );
+
+
     dependencies = {
       env,
       verifyAppCheckJwt: verifyAppCheckJwtWithMockedJwksCache,
+      issueCertificate: mockIssueCertificate,
+      getCertificate: mockGetCertificate,
     };
   });
 
@@ -543,6 +565,46 @@ describe('Handler', () => {
     );
   });
 
+  describe('Certificate issuance', () => {
+    describe('Given certificate issuance fails', () => {
+      beforeEach(async () => {
+        mockIssueCertificate = vi.fn().mockResolvedValue(emptyFailure());
+        dependencies.issueCertificate = mockIssueCertificate;
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Returns 500 server error response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            code: 'server_error',
+            message: 'Server Error',
+          }),
+        });
+      });
+    });
+
+    describe('Given certificate retrieval fails', () => {
+      beforeEach(async () => {
+        mockGetCertificate = vi.fn().mockResolvedValue(emptyFailure());
+        dependencies.getCertificate = mockGetCertificate;
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Returns 500 server error response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            code: 'server_error',
+            message: 'Server Error',
+          }),
+        });
+      });
+    });
+  });
+
   describe('Happy path tests', () => {
     describe('Given a valid event', () => {
       beforeEach(async () => {
@@ -569,15 +631,29 @@ describe('Handler', () => {
         });
       });
 
-      it('Returns 200 OK response', () => {
+      it('Returns 200 OK response with certificate chain', () => {
         expect(result).toStrictEqual({
           statusCode: 200,
           headers: {
             'Content-Type': 'application/json',
             'X-Request-Id': context.awsRequestId,
           },
-          body: 'OK',
+          body: JSON.stringify({
+            certChain:
+              '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
+          }),
         });
+      });
+
+      it('Calls certificate functions with correct parameters', () => {
+        expect(mockIssueCertificate).toHaveBeenCalledWith(
+          expect.any(String),
+          env.CERTIFICATE_AUTHORITY_ARN,
+        );
+        expect(mockGetCertificate).toHaveBeenCalledWith(
+          'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
+          env.CERTIFICATE_AUTHORITY_ARN,
+        );
       });
     });
   });
