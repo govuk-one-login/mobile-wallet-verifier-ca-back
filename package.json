@@ -13,7 +13,7 @@
     "format:check": "./node_modules/.bin/prettier --check '**/*.{json,md,ts}'",
     "infra:format:check": "rain fmt --verify application.yaml",
     "infra:format": "rain fmt --write application.yaml",
-    "test:integration": "cucumber-js"
+    "test:integration": "./node_modules/@cucumber/cucumber/bin/cucumber.js --retry 3"
   },
   "license": "MIT",
   "dependencies": {
