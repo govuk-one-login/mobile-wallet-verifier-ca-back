@@ -17,8 +17,8 @@ export interface ApiInstance {
   ) => Promise<HttpResponseSnapshot>;
 }
 
-const API_GATEWAY_URL = 'https://api.verifier-ca.dev.account.gov.uk';
-const MOCK_SERVICES_API_URL = 'https://mock.verifier-ca.dev.account.gov.uk';
+const API_GATEWAY_URL = 'https://api.verifier-ca.build.account.gov.uk';
+const MOCK_SERVICES_API_URL = 'https://mock.verifier-ca.build.account.gov.uk';
 
 function getInstance(baseUrl: string): ApiInstance {
   return {
