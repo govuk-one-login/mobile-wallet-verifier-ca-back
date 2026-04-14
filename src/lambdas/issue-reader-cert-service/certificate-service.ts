@@ -11,7 +11,6 @@ import {
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import {
-  CUSTOM_EXTENSIONS,
   EXTENDED_KEY_USAGE,
   KEY_USAGE,
   SIGNING_ALGORITHM,
@@ -45,12 +44,6 @@ export const issueCertificate = async (
               // mdocReaderAuth
               ExtendedKeyUsageObjectIdentifier:
                 EXTENDED_KEY_USAGE[1].ExtendedKeyUsageObjectIdentifier,
-            },
-          ],
-          CustomExtensions: [
-            {
-              ObjectIdentifier: CUSTOM_EXTENSIONS[0].ObjectIdentifier,
-              Value: CUSTOM_EXTENSIONS[0].Value,
             },
           ],
         },
@@ -88,32 +81,51 @@ export const getCertificate = async (
   certificateArn: string,
   certificateAuthorityArn: string,
 ): Promise<Result<string>> => {
-  try {
-    const getCommand = new GetCertificateCommand({
-      CertificateAuthorityArn: certificateAuthorityArn,
-      CertificateArn: certificateArn,
-    });
+  const maxRetries = 10;
+  const baseDelay = 1000; // 1 second
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const getCommand = new GetCertificateCommand({
+        CertificateAuthorityArn: certificateAuthorityArn,
+        CertificateArn: certificateArn,
+      });
 
-    const getResponse = await acmpcaClient.send(getCommand);
+      const getResponse = await acmpcaClient.send(getCommand);
 
-    if (!getResponse.Certificate) {
-      logger.error('Failed to retrieve certificate');
+      if (!getResponse.Certificate) {
+        logger.error('Failed to retrieve certificate');
+        return errorResult({
+          errorMessage: 'Failed to retrieve certificate',
+          errorCategory: ErrorCategory.SERVER_ERROR,
+        });
+      }
+
+      const certChain = getResponse.CertificateChain
+        ? `${getResponse.Certificate}\n${getResponse.CertificateChain}`
+        : getResponse.Certificate;
+
+      return successResult(certChain);
+    } catch (error: any) {
+      if (error.name === 'RequestInProgressException' && attempt < maxRetries - 1) {
+        // Wait with exponential backoff
+        const delay = baseDelay * Math.pow(2, attempt);
+        logger.info(`Certificate not ready, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      logger.error('Error retrieving certificate', { error });
       return errorResult({
         errorMessage: 'Failed to retrieve certificate',
         errorCategory: ErrorCategory.SERVER_ERROR,
       });
     }
-
-    const certChain = getResponse.CertificateChain
-      ? `${getResponse.Certificate}\n${getResponse.CertificateChain}`
-      : getResponse.Certificate;
-
-    return successResult(certChain);
-  } catch (error) {
-    logger.error('Error retrieving certificate', { error });
-    return errorResult({
-      errorMessage: 'Failed to retrieve certificate',
-      errorCategory: ErrorCategory.SERVER_ERROR,
-    });
   }
+  
+  logger.error('Certificate retrieval timed out after maximum retries');
+  return errorResult({
+    errorMessage: 'Certificate retrieval timed out',
+    errorCategory: ErrorCategory.SERVER_ERROR,
+  });
 };
