@@ -1,9 +1,6 @@
 import {
   getApiGatewayApiInstance,
   getMockServicesApiInstance,
-  API_GATEWAY_URL,
-  MOCK_SERVICES_API_URL,
-  buildUrl,
 } from './api-instance.ts';
 import type { HttpResponseSnapshot } from './api-instance.ts';
 
@@ -62,19 +59,6 @@ export async function requestIssueReaderCert(
       'X-Firebase-AppCheck': mockRequest.headers['X-Firebase-AppCheck'],
     },
   );
-}
-
-export function getIssueReaderCertApiTestConfig(): {
-  issueReaderCertApiUrl: string;
-  mockIssueCertRequestUrl: string;
-} {
-  return {
-    issueReaderCertApiUrl: buildUrl(API_GATEWAY_URL, ISSUE_READER_CERT_PATH),
-    mockIssueCertRequestUrl: buildUrl(
-      MOCK_SERVICES_API_URL,
-      MOCK_ISSUE_CERT_REQUEST_PATH,
-    ),
-  };
 }
 
 function isMockIssueReaderCertRequest(

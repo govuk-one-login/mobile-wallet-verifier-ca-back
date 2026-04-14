@@ -1,7 +1,6 @@
 import { Before, Given, Then, When } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
 import {
-  getIssueReaderCertApiTestConfig,
   requestIssueReaderCert,
   requestMockIssueReaderCertRequest,
   MockIssueReaderCertRequest
@@ -16,11 +15,7 @@ Before(() => {
   response = undefined;
 });
 
-Given('the issue reader certificate API test endpoints are configured', () => {
-  getIssueReaderCertApiTestConfig();
-});
-
-When('I generate a valid mock issue reader certificate request', async () => {
+Given('I generate a valid mock issue reader certificate request', async () => {
   mockRequest = await requestMockIssueReaderCertRequest();
 });
 
