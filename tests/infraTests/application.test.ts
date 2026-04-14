@@ -173,6 +173,17 @@ describe('Application Infrastructure', () => {
       expect(apiOutput.Value).toBeDefined();
     });
 
+    it('exports mock services API base URL', () => {
+      const mockServicesApiOutput = template.Outputs
+        .MockServicesApiUrl as Record<string, unknown>;
+
+      expect(mockServicesApiOutput.Description).toBe(
+        'Mock services API base URL',
+      );
+      expect(mockServicesApiOutput.Value).toBeDefined();
+      expect(mockServicesApiOutput.Condition).toBe('DeployMockResources');
+    });
+
     it('should export API Gateway ID', () => {
       const apiIdOutput = template.Outputs.ApiGatewayId as Record<
         string,

@@ -170,11 +170,11 @@ Mappings:
 
     build:
       Algorithm: 'RS256'
-      AllowedAppIds: '["1:mockProjectId:ios:mockAppId", "1:mockProjectId:android:mockAppId"]'
-      Audience: '["mockProjectId"]'
+      AllowedAppIds: '["1:1111:ios:org.multipaz.identityreader", "1:1111:android:org.multipaz.identityreader"]'
+      Audience: '["projects/mock-verifier-app"]'
       DynatraceSecretArn: arn:aws:secretsmanager:eu-west-2:216552277552:secret:DynatraceNonProductionVariables
-      FirebaseJwksUri: https://firebaseappcheck.googleapis.com/v1/jwks
-      Issuer: https://mockIssuer.com/mockProjectId
+      FirebaseJwksUri: https://mock.verifier-ca.build.account.gov.uk/mock-jwks
+      Issuer: https://mock.verifier-ca.build.account.gov.uk/mock-jwks
       LambdaLogLevel: INFO
       MockJwtIssuer: https://mock.verifier-ca.build.account.gov.uk/mock-jwks
 
@@ -886,6 +886,13 @@ Outputs:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-function-version'
 
   # Mock Services Outputs
+  MockServicesApiUrl:
+    Description: Mock services API base URL
+    Condition: DeployMockResources
+    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-mock-services-api-url'
+
   MockJWKSEndpoint:
     Description: Mock JWKS endpoint URL for Firebase App Check token verification
     Condition: DeployMockResources
