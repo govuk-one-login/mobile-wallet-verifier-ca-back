@@ -32,7 +32,7 @@ When(
   },
 );
 
-Then('the issue reader cert endpoint returns a 200 happy-path response', () => {
+Then('the issue reader cert endpoint returns a 200 OK response', () => {
   if (response === undefined) {
     throw new Error(
       'The issue reader cert endpoint must be called before asserting the response',
