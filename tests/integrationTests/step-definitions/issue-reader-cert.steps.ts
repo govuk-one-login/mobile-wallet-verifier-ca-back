@@ -15,12 +15,12 @@ Before(() => {
   response = undefined;
 });
 
-Given('I generate a valid mock issue reader certificate request', async () => {
+Given('I generate a valid issue reader cert request', async () => {
   mockRequest = await requestMockIssueReaderCertRequest();
 });
 
 When(
-  'I submit the mock issue reader certificate request to the issue reader cert endpoint',
+  'I submit the request to the issue reader cert endpoint',
   async () => {
     assert.ok(
       mockRequest,

@@ -67,10 +67,10 @@ export {
 };
 
 function buildUrl(baseUrl: string, path: string): string {
-  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  const normalizedPath = path.startsWith('/') ? path.slice(1) : path;
+  const normalisedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const normalisedPath = path.startsWith('/') ? path.slice(1) : path;
 
-  return new URL(normalizedPath, normalizedBaseUrl).toString();
+  return new URL(normalisedPath, normalisedBaseUrl).toString();
 }
 
 async function captureResponse(
