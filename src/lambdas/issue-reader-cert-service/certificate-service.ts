@@ -13,7 +13,8 @@ import { logger } from '../common/logger/logger.ts';
 import {
   EXTENDED_KEY_USAGE,
   KEY_USAGE,
-  SIGNING_ALGORITHM, TEMPLATE_ARN,
+  SIGNING_ALGORITHM,
+  TEMPLATE_ARN,
   VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 
