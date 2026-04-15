@@ -846,6 +846,17 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-api-url'
 
+  ApiGatewayPublicUrl:
+    Description: API Gateway public URL for external clients
+    Condition: CreateCustomDomain
+    Value:
+      Fn::Sub:
+        - 'https://${PublicDomainFullName}'
+        - PublicDomainFullName:
+            Fn::ImportValue: !Sub '${BaseAppStack}-PublicDomainFullName'
+    Export:
+      Name: !Sub '${AWS::StackName}-api-public-url'
+
   ApiGatewayId:
     Description: API Gateway ID
     Value: !Ref CaBackendApi
@@ -892,6 +903,17 @@ Outputs:
     Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
     Export:
       Name: !Sub '${AWS::StackName}-mock-services-api-url'
+
+  MockServicesPublicUrl:
+    Description: Mock services public URL for external clients
+    Condition: DeployMockCustomDomainResources
+    Value:
+      Fn::Sub:
+        - 'https://${MockDomainFullName}'
+        - MockDomainFullName:
+            Fn::ImportValue: !Sub '${BaseAppStack}-MockDomainFullName'
+    Export:
+      Name: !Sub '${AWS::StackName}-mock-services-public-url'
 
   MockJWKSEndpoint:
     Description: Mock JWKS endpoint URL for Firebase App Check token verification

@@ -11,6 +11,7 @@ node_modules/
 coverage/
 results/
 docker-vars.env
+cf-output.txt
 
 # Mac
 .DS_Store

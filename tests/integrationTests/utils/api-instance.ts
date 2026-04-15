@@ -51,11 +51,11 @@ function getInstance(baseUrl: string): ApiInstance {
 }
 
 function getApiGatewayApiInstance(): ApiInstance {
-  return getInstance(API_GATEWAY_URL);
+  return getInstance(getRequiredEnvVar('API_GATEWAY_URL'));
 }
 
 function getMockServicesApiInstance(): ApiInstance {
-  return getInstance(MOCK_SERVICES_API_URL);
+  return getInstance(getRequiredEnvVar('MOCK_SERVICES_API_URL'));
 }
 
 export {
@@ -64,6 +64,7 @@ export {
   buildUrl,
   API_GATEWAY_URL,
   MOCK_SERVICES_API_URL,
+  getRequiredEnvVar
 };
 
 function buildUrl(baseUrl: string, path: string): string {
@@ -82,4 +83,14 @@ async function captureResponse(
     headers: Object.fromEntries(response.headers.entries()),
     url: response.url,
   };
+}
+
+function getRequiredEnvVar(envVarName: 'API_GATEWAY_URL' | 'MOCK_SERVICES_API_URL'): string {
+  const envVar = process.env[envVarName]?.trim();
+
+  if (!envVar) {
+    throw new Error(`${envVarName} must be set before running integration tests`);
+  }
+
+  return envVar;
 }
