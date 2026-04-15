@@ -21,4 +21,3 @@ export const EXTENDED_KEY_USAGE = [
     ExtendedKeyUsageObjectIdentifier: '1.0.23220.4.1.6',
   },
 ] as const;
-

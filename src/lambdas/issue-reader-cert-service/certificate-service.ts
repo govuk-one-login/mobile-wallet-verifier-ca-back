@@ -83,7 +83,9 @@ export const getCertificate = async (
 ): Promise<Result<string>> => {
   const maxRetries = 10;
   const baseDelay = 1000; // 1 second
-  
+
+  // Adding retry logic with exponential backoff to handle
+  // the asynchronous nature of certificate issuance in ACM PCA.
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const getCommand = new GetCertificateCommand({
@@ -107,14 +109,19 @@ export const getCertificate = async (
 
       return successResult(certChain);
     } catch (error: any) {
-      if (error.name === 'RequestInProgressException' && attempt < maxRetries - 1) {
+      if (
+        error.name === 'RequestInProgressException' &&
+        attempt < maxRetries - 1
+      ) {
         // Wait with exponential backoff
         const delay = baseDelay * Math.pow(2, attempt);
-        logger.info(`Certificate not ready, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        logger.info(
+          `Certificate not ready, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
-      
+
       logger.error('Error retrieving certificate', { error });
       return errorResult({
         errorMessage: 'Failed to retrieve certificate',
@@ -122,7 +129,7 @@ export const getCertificate = async (
       });
     }
   }
-  
+
   logger.error('Certificate retrieval timed out after maximum retries');
   return errorResult({
     errorMessage: 'Certificate retrieval timed out',
