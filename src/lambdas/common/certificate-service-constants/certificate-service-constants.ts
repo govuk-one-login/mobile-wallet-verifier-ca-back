@@ -2,6 +2,8 @@
 
 export const SIGNING_ALGORITHM = 'SHA384WITHECDSA';
 
+export const TEMPLATE_ARN = 'arn:aws:acm-pca:::template/BlankEndEntityCertificate_APIPassthrough/V1';
+
 export const VALIDITY = {
   Type: 'DAYS',
   Value: 1, // 24 hours

@@ -13,7 +13,7 @@ import { logger } from '../common/logger/logger.ts';
 import {
   EXTENDED_KEY_USAGE,
   KEY_USAGE,
-  SIGNING_ALGORITHM,
+  SIGNING_ALGORITHM, TEMPLATE_ARN,
   VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 
@@ -46,6 +46,7 @@ export const issueCertificate = async (
       CertificateAuthorityArn: certificateAuthorityArn,
       Csr: Buffer.from(csrPem),
       SigningAlgorithm: SIGNING_ALGORITHM,
+      TemplateArn: TEMPLATE_ARN,
       Validity: {
         Type: VALIDITY.Type,
         Value: VALIDITY.Value, // 24 hours
