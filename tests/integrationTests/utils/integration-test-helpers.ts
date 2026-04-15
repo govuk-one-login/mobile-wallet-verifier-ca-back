@@ -17,12 +17,7 @@ export interface MockIssueReaderCertRequest {
 }
 
 export async function requestMockIssueReaderCertRequest(): Promise<MockIssueReaderCertRequest> {
-  const responseSnapshot = await getMockServicesApiInstance().get(
-    MOCK_ISSUE_CERT_REQUEST_PATH,
-    {
-      Accept: 'application/json',
-    },
-  );
+  const responseSnapshot = await getMockServicesApiInstance().get(MOCK_ISSUE_CERT_REQUEST_PATH);
   if (responseSnapshot.status !== 200) {
     throw new Error(
       `Mock issue cert request endpoint returned ${responseSnapshot.status} for ${responseSnapshot.url}: ${responseSnapshot.body}`,
@@ -54,7 +49,6 @@ export async function requestIssueReaderCert(
     ISSUE_READER_CERT_PATH,
     JSON.stringify(mockRequest.body),
     {
-      Accept: 'application/json',
       'Content-Type': 'application/json',
       'X-Firebase-AppCheck': mockRequest.headers['X-Firebase-AppCheck'],
     },
