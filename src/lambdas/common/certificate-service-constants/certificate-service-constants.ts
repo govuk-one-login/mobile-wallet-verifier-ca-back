@@ -16,8 +16,4 @@ export const EXTENDED_KEY_USAGE = [
     // mDL Reader Auth
     ExtendedKeyUsageObjectIdentifier: '1.0.18013.5.1.6',
   },
-  {
-    // mdocReaderAuth
-    ExtendedKeyUsageObjectIdentifier: '1.0.23220.4.1.6',
-  },
 ] as const;

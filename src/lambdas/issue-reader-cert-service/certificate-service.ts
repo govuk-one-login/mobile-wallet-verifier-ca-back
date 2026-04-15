@@ -40,11 +40,6 @@ export const issueCertificate = async (
               ExtendedKeyUsageObjectIdentifier:
                 EXTENDED_KEY_USAGE[0].ExtendedKeyUsageObjectIdentifier,
             },
-            {
-              // mdocReaderAuth
-              ExtendedKeyUsageObjectIdentifier:
-                EXTENDED_KEY_USAGE[1].ExtendedKeyUsageObjectIdentifier,
-            },
           ],
         },
       },
