@@ -17,7 +17,9 @@ export interface MockIssueReaderCertRequest {
 }
 
 export async function requestMockIssueReaderCertRequest(): Promise<MockIssueReaderCertRequest> {
-  const responseSnapshot = await getMockServicesApiInstance().get(MOCK_ISSUE_CERT_REQUEST_PATH);
+  const responseSnapshot = await getMockServicesApiInstance().get(
+    MOCK_ISSUE_CERT_REQUEST_PATH,
+  );
   if (responseSnapshot.status !== 200) {
     throw new Error(
       `Mock issue cert request endpoint returned ${responseSnapshot.status} for ${responseSnapshot.url}: ${responseSnapshot.body}`,

@@ -19,17 +19,14 @@ Given('I generate a valid issue reader cert request', async () => {
   mockRequest = await requestMockIssueReaderCertRequest();
 });
 
-When(
-  'I submit the request to the issue reader cert endpoint',
-  async () => {
-    assert.ok(
-      mockRequest,
-      'A mock issue reader certificate request must be generated first',
-    );
+When('I submit the request to the issue reader cert endpoint', async () => {
+  assert.ok(
+    mockRequest,
+    'A mock issue reader certificate request must be generated first',
+  );
 
-    response = await requestIssueReaderCert(mockRequest);
-  },
-);
+  response = await requestIssueReaderCert(mockRequest);
+});
 
 Then('the issue reader cert endpoint returns a 200 OK response', () => {
   assert.ok(
