@@ -9,13 +9,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
-<<<<<<< DCMAW-18604
-    "noEmit": true,
-    "types": ["node"]
-=======
     "types": ["node"],
     "noEmit": true
->>>>>>> main
   },
   "exclude": ["node_modules", "dist", "coverage", "scripts"]
 }
