@@ -130,6 +130,20 @@ Run tests with coverage:
 npm run test:cov
 ```
 
+#### Integration tests
+
+These integration tests are implemented with Cucumber and exercise the deployed API end-to-end against the main build environment using the mock services.
+
+The Cucumber feature files and step definitions live under `tests/integrationTests`.
+
+Run the integration tests:
+
+```bash
+npm run test:integration
+```
+
+Current limitation: these tests are currently wired to the main build stack only. Support for running the integration tests against the dev environment will be added in a future iteration.
+
 #### Mock Testing
 
 For testing in dev/build environments, mock services are available:
