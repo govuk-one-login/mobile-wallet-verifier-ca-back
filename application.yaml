@@ -905,6 +905,13 @@ Outputs:
       Name: !Sub '${AWS::StackName}-issue-reader-cert-service-function-version'
 
   # Mock Services Outputs
+  MockServicesApiUrl:
+    Description: Mock services API base URL
+    Condition: DeployMockResources
+    Value: !Sub 'https://${MockServicesApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-mock-services-api-url'
+
   MockJWKSEndpoint:
     Description: Mock JWKS endpoint URL for Firebase App Check token verification
     Condition: DeployMockResources
