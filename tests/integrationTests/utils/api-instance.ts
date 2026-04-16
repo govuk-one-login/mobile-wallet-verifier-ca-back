@@ -50,21 +50,13 @@ function getInstance(baseUrl: string): ApiInstance {
   };
 }
 
-function getApiGatewayApiInstance(): ApiInstance {
+export function getApiGatewayApiInstance(): ApiInstance {
   return getInstance(API_GATEWAY_URL);
 }
 
-function getMockServicesApiInstance(): ApiInstance {
+export function getMockServicesApiInstance(): ApiInstance {
   return getInstance(MOCK_SERVICES_API_URL);
 }
-
-export {
-  getApiGatewayApiInstance,
-  getMockServicesApiInstance,
-  buildUrl,
-  API_GATEWAY_URL,
-  MOCK_SERVICES_API_URL,
-};
 
 function buildUrl(baseUrl: string, path: string): string {
   const normalisedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
