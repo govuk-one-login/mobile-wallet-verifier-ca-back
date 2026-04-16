@@ -105,8 +105,9 @@ export const getCertificate = async (
         : getResponse.Certificate;
 
       return successResult(certChain);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (
+        error instanceof Error &&
         error.name === 'RequestInProgressException' &&
         attempt < maxRetries - 1
       ) {
