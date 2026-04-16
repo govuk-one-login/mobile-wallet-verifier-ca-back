@@ -132,7 +132,7 @@ npm run test:cov
 
 #### Integration tests
 
-These integration tests are implemented with Cucumber and exercise the deployed API end-to-end against the main build environment using the mock services.
+These integration tests are implemented with Cucumber and exercise the deployed API end to end against the main build environment using the mock services.
 
 The Cucumber feature files and step definitions live under `tests/integrationTests`.
 
