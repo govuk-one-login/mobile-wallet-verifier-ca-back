@@ -643,6 +643,10 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - Algorithm
+          CERTIFICATE_AUTHORITY_ARN: !FindInMap
+            - EnvironmentVariables
+            - !Ref Environment
+            - CertificateAuthorityArn
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
