@@ -590,6 +590,7 @@ Resources:
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
       Role: !GetAtt IssueReaderCertServiceRole.Arn
+      Timeout: 15
       VpcConfig:
         SecurityGroupIds:
           - Fn::ImportValue: !Sub ${VpcStackName}-AWSServicesEndpointSecurityGroupId
