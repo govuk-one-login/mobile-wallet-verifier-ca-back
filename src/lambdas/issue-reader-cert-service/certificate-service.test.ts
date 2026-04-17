@@ -117,7 +117,7 @@ describe('Certificate Service', () => {
           Certificate: certificate,
           CertificateChain: certificateChain,
         });
-        const result = await getCertificate(mockCertificateArn, mockCaArn);
+        result = await getCertificate(mockCertificateArn, mockCaArn);
 
         expect(result).toEqual({
           isError: false,
@@ -143,7 +143,7 @@ describe('Certificate Service', () => {
       it('returns an error result', async () => {
         mockSend.mockRejectedValue(new Error('Access denied'));
 
-        const result = await getCertificate(mockCertificateArn, mockCaArn);
+        result = await getCertificate(mockCertificateArn, mockCaArn);
 
         expect(result.isError).toBe(true);
       });
