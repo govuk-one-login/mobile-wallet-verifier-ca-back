@@ -18,10 +18,6 @@ import {
   VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 
-export interface IssueReaderCertResponse {
-  certChain: string;
-}
-
 const acmpcaClient = new ACMPCAClient({});
 
 export const issueCertificate = async (

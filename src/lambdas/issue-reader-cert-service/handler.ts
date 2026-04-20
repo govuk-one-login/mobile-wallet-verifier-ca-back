@@ -15,12 +15,12 @@ import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check
 import { ErrorCategory } from '../common/result/result.ts';
 import {
   badRequestResponse,
+  IssueReaderCertResponseBody,
   okResponse,
   serverErrorResponse,
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
 import { validateCsr } from './validate-csr.ts';
-import { IssueReaderCertResponse } from './certificate-service.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -83,7 +83,7 @@ export const handlerConstructor = async (
     return serverErrorResponse;
   }
 
-  const response: IssueReaderCertResponse = {
+  const response: IssueReaderCertResponseBody = {
     certChain: getCertResult.value,
   };
 
