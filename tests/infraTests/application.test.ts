@@ -78,6 +78,14 @@ describe('Application Infrastructure', () => {
       );
     });
 
+    it('should have a 15 second timeout', () => {
+      const properties = issueReaderCertFunction.Properties as Record<
+        string,
+        unknown
+      >;
+      expect(properties.Timeout).toBe(15);
+    });
+
     it('should have VPC configuration', () => {
       const properties = issueReaderCertFunction.Properties as Record<
         string,
