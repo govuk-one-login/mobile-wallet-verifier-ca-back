@@ -61,7 +61,7 @@ export const issueCertificate = async (
     }
 
     return successResult(issueResponse.CertificateArn);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error issuing certificate', { error });
     return errorResult({
       errorMessage: 'Failed to issue certificate',
