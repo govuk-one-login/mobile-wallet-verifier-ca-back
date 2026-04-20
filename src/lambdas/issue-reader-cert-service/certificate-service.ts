@@ -74,7 +74,7 @@ export const getCertificate = async (
   certificateArn: string,
   certificateAuthorityArn: string,
 ): Promise<Result<string>> => {
-  const maxRetries = 10;
+  const maxRetries = 3;
   const baseDelay = 1000; // 1 second
 
   // Adding retry logic with exponential backoff to handle
