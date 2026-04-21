@@ -9,6 +9,7 @@ import type { HttpResponseSnapshot } from '../utils/api-instance.ts';
 
 let mockRequest: MockIssueReaderCertRequest | undefined;
 let response: HttpResponseSnapshot | undefined;
+let body;
 
 Before(() => {
   mockRequest = undefined;
@@ -39,7 +40,11 @@ Then('the issue reader cert endpoint returns a 200 OK response', () => {
     200,
     `Unexpected response from ${response.url}: ${response.body}`,
   );
-  assert.equal(response.body, 'OK');
+
+  body = JSON.parse(response.body);
+
+  assert.ok(typeof body.certChain === 'string', 'certChain should be a string');
+  assert.ok(body.certChain.length > 0, 'certChain should not be empty');
   assert.ok(response.headers['content-type']?.includes('application/json'));
   assert.ok(response.headers['x-request-id']?.trim());
 });
