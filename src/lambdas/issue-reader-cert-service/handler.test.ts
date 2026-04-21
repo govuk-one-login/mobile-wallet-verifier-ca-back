@@ -20,7 +20,11 @@ import {
   buildLambdaContext,
   buildEvent,
 } from '../../../tests/testUtils/build-event.ts';
-import { emptyFailure, successResult } from '../common/result/result.ts';
+import {
+  emptyFailure,
+  Result,
+  successResult,
+} from '../common/result/result.ts';
 import {
   ExpectedAppCheckJwtData,
   verifyAppCheckJwt,
@@ -36,7 +40,6 @@ import {
   createCsrPem,
   CreateCsrPemOptions,
 } from '../../../tests/testUtils/create-csr-pem.ts';
-import { issueCertificate, getCertificate } from './certificate-service.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -58,8 +61,14 @@ describe('Handler', () => {
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let validFireBaseJwt: string;
-  let mockIssueCertificate: typeof issueCertificate;
-  let mockGetCertificate: typeof getCertificate;
+  let mockIssueCertificate: (params: {
+    csrPem: string;
+    certificateAuthorityArn: string;
+  }) => Promise<Result<string, void>>;
+  let mockGetCertificate: (params: {
+    certificateArn: string;
+    certificateAuthorityArn: string;
+  }) => Promise<Result<string, void>>;
 
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
@@ -647,14 +656,15 @@ describe('Handler', () => {
       });
 
       it('Calls certificate functions with correct parameters', () => {
-        expect(mockIssueCertificate).toHaveBeenCalledWith(
-          expect.any(String),
-          env.CERTIFICATE_AUTHORITY_ARN,
-        );
-        expect(mockGetCertificate).toHaveBeenCalledWith(
-          'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
-          env.CERTIFICATE_AUTHORITY_ARN,
-        );
+        expect(mockIssueCertificate).toHaveBeenCalledWith({
+          csrPem: expect.any(String),
+          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+        });
+        expect(mockGetCertificate).toHaveBeenCalledWith({
+          certificateArn:
+            'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
+          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+        });
       });
     });
   });

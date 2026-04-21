@@ -48,7 +48,10 @@ describe('Certificate Service', () => {
     describe('Given ACM PCA returns a certificate ARN', () => {
       beforeEach(async () => {
         mockSend.mockResolvedValue({ CertificateArn: mockCertificateArn });
-        result = await issueCertificate(mockCsr, mockCaArn);
+        result = await issueCertificate({
+          csrPem: mockCsr,
+          certificateAuthorityArn: mockCaArn,
+        });
       });
 
       it('calls IssueCertificateCommand with the correct parameters', async () => {
@@ -80,7 +83,10 @@ describe('Certificate Service', () => {
     describe('Given ACM PCA returns no certificate ARN', () => {
       beforeEach(async () => {
         mockSend.mockResolvedValue({});
-        result = await issueCertificate(mockCsr, mockCaArn);
+        result = await issueCertificate({
+          csrPem: mockCsr,
+          certificateAuthorityArn: mockCaArn,
+        });
       });
 
       it('returns an error result', () => {
@@ -97,7 +103,10 @@ describe('Certificate Service', () => {
     describe('Given ACM PCA throws', () => {
       beforeEach(async () => {
         mockSend.mockRejectedValue(new Error('ACM PCA error'));
-        result = await issueCertificate(mockCsr, mockCaArn);
+        result = await issueCertificate({
+          csrPem: mockCsr,
+          certificateAuthorityArn: mockCaArn,
+        });
       });
 
       it('returns an error result', () => {
@@ -126,7 +135,10 @@ describe('Certificate Service', () => {
           Certificate: certificate,
           CertificateChain: certificateChain,
         });
-        result = await getCertificate(mockCertificateArn, mockCaArn);
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
       });
 
       it('calls GetCertificateCommand with the provided ARNs', () => {
@@ -136,10 +148,19 @@ describe('Certificate Service', () => {
         });
       });
 
+      it('returns the concatenated certificate and chain', () => {
+        expect(result).toEqual(
+          successResult(`${certificate}\n${certificateChain}`),
+        );
+      });
+
       describe('Given ACM PCA returns no certificate', () => {
         beforeEach(async () => {
           mockSend.mockResolvedValue({});
-          result = await getCertificate(mockCertificateArn, mockCaArn);
+          result = await getCertificate({
+            certificateArn: mockCertificateArn,
+            certificateAuthorityArn: mockCaArn,
+          });
         });
 
         it('returns an error result', () => {
@@ -156,7 +177,10 @@ describe('Certificate Service', () => {
       describe('Given ACM PCA returns no certificate chain', () => {
         beforeEach(async () => {
           mockSend.mockResolvedValue({ Certificate: certificate });
-          result = await getCertificate(mockCertificateArn, mockCaArn);
+          result = await getCertificate({
+            certificateArn: mockCertificateArn,
+            certificateAuthorityArn: mockCaArn,
+          });
         });
 
         it('returns an error result', () => {
@@ -171,22 +195,6 @@ describe('Certificate Service', () => {
       });
     });
 
-    describe('Given ACM PCA returns a certificate and chain', () => {
-      beforeEach(async () => {
-        mockSend.mockResolvedValue({
-          Certificate: certificate,
-          CertificateChain: certificateChain,
-        });
-        result = await getCertificate(mockCertificateArn, mockCaArn);
-      });
-
-      it('returns the concatenated certificate and chain', () => {
-        expect(result).toEqual(
-          successResult(`${certificate}\n${certificateChain}`),
-        );
-      });
-    });
-
     describe('Given ACM PCA throws RequestInProgressException then succeeds', () => {
       it('retries and returns success', async () => {
         const inProgressError = Object.assign(new Error(), {
@@ -198,7 +206,10 @@ describe('Certificate Service', () => {
           CertificateChain: certificateChain,
         });
 
-        result = await getCertificate(mockCertificateArn, mockCaArn);
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
 
         expect(result).toEqual(
           successResult(`${certificate}\n${certificateChain}`),
@@ -210,7 +221,10 @@ describe('Certificate Service', () => {
     describe('Given ACM PCA throws a non-retryable error', () => {
       beforeEach(async () => {
         mockSend.mockRejectedValue(new Error('Access denied'));
-        result = await getCertificate(mockCertificateArn, mockCaArn);
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
       });
 
       it('returns an error result', () => {

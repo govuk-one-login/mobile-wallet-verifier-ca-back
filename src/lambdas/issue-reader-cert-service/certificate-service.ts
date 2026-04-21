@@ -20,10 +20,11 @@ import { LogMessage } from '../common/logger/log-message.ts';
 
 const acmpcaClient = new ACMPCAClient({});
 
-export const issueCertificate = async (
-  csrPem: string,
-  certificateAuthorityArn: string,
-): Promise<Result<string, void>> => {
+export const issueCertificate = async (params: {
+  csrPem: string;
+  certificateAuthorityArn: string;
+}): Promise<Result<string, void>> => {
+  const { csrPem, certificateAuthorityArn } = params;
   try {
     const issueCommand = new IssueCertificateCommand({
       ApiPassthrough: {
@@ -71,10 +72,11 @@ export const issueCertificate = async (
   }
 };
 
-export const getCertificate = async (
-  certificateArn: string,
-  certificateAuthorityArn: string,
-): Promise<Result<string, void>> => {
+export const getCertificate = async (params: {
+  certificateArn: string;
+  certificateAuthorityArn: string;
+}): Promise<Result<string, void>> => {
+  const { certificateArn, certificateAuthorityArn } = params;
   const maxRetries = 3;
   const baseDelay = 1000; // 1 second
 
