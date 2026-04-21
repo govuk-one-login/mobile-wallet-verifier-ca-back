@@ -16,6 +16,7 @@ import {
   TEMPLATE_ARN,
   VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
+import { LogMessage } from '../common/logger/log-message.ts';
 
 const acmpcaClient = new ACMPCAClient({});
 
@@ -52,13 +53,20 @@ export const issueCertificate = async (
     const issueResponse = await acmpcaClient.send(issueCommand);
 
     if (!issueResponse.CertificateArn) {
-      logger.error('No certificate ARN returned');
+      const errorMessage = 'No certificate ARN returned';
+      logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
+        errorMessage,
+      });
       return emptyFailure();
     }
 
     return successResult(issueResponse.CertificateArn);
   } catch (error: unknown) {
-    logger.error('Error issuing certificate', { error });
+    const errorMessage = 'Error issuing certificate';
+    logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
+      error,
+      errorMessage,
+    });
     return emptyFailure();
   }
 };
@@ -82,7 +90,10 @@ export const getCertificate = async (
       const getResponse = await acmpcaClient.send(getCommand);
 
       if (!getResponse.Certificate) {
-        logger.error('Failed to retrieve certificate');
+        const errorMessage = 'Failed to retrieve certificate';
+        logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+          errorMessage,
+        });
         return emptyFailure();
       }
 
@@ -99,18 +110,23 @@ export const getCertificate = async (
       ) {
         // Wait with exponential backoff
         const delay = baseDelay * Math.pow(2, attempt);
-        logger.info(
-          `Certificate not ready, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
-        );
+
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
 
-      logger.error('Error retrieving certificate', { error });
+      const errorMessage = 'Error retrieving certificate';
+      logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+        error,
+        errorMessage,
+      });
       return emptyFailure();
     }
   }
 
-  logger.error('Certificate retrieval timed out after maximum retries');
+  const errorMessage = 'Certificate retrieval timed out after maximum retries';
+  logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+    errorMessage,
+  });
   return emptyFailure();
 };

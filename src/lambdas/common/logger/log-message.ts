@@ -62,6 +62,17 @@ export class LogMessage implements LogAttributes {
     'CSR validation failed',
   );
 
+  // Certificate Service logs
+  static readonly CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE = new LogMessage(
+    'MOBILE_CA_CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE',
+    'Issuing leaf certificate failed',
+  );
+
+  static readonly CERT_SERVICE_GET_CERTIFICATE_FAILURE = new LogMessage(
+    'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+    'Retrieving certificate chain failed',
+  );
+
   // Mock logs
   static readonly MOCK_ISSUE_CERT_REQUEST_INVALID_CONFIG = new LogMessage(
     'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',
