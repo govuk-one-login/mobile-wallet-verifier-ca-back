@@ -14,8 +14,14 @@ export interface IssueReaderCertDependencies {
     expectedJwtData: ExpectedAppCheckJwtData,
     dependencies?: VerifyAppCheckJwtDependencies,
   ) => Promise<Result<void>>;
-  issueCertificate: typeof issueCertificate;
-  getCertificate: typeof getCertificate;
+  issueCertificate: (
+    csrPem: string,
+    certificateAuthorityArn: string,
+  ) => Promise<Result<string, void>>;
+  getCertificate: (
+    certificateArn: string,
+    certificateAuthorityArn: string,
+  ) => Promise<Result<string, void>>;
 }
 
 export const dependencies: IssueReaderCertDependencies = {

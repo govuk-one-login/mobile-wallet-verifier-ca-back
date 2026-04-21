@@ -23,7 +23,7 @@ vi.mock('@aws-sdk/client-acm-pca', () => ({
   GetCertificateCommand: vi.fn(),
 }));
 
-let result: Result<string>;
+let result: Result<string, void>;
 let certificate: string;
 let certificateChain: string;
 const mockCaArn =
@@ -131,11 +131,15 @@ describe('Certificate Service', () => {
         const inProgressError = Object.assign(new Error(), {
           name: 'RequestInProgressException',
         });
+        vi.clearAllMocks();
         mockSend
           .mockRejectedValueOnce(inProgressError)
           .mockResolvedValue({ Certificate: certificate });
 
+        result = await getCertificate(mockCertificateArn, mockCaArn);
+
         expect(result).toEqual({ isError: false, value: certificate });
+        expect(mockSend).toHaveBeenCalledTimes(2);
       });
     });
 

@@ -6,8 +6,7 @@ import {
 import {
   Result,
   successResult,
-  errorResult,
-  ErrorCategory,
+  emptyFailure,
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import {
@@ -23,7 +22,7 @@ const acmpcaClient = new ACMPCAClient({});
 export const issueCertificate = async (
   csrPem: string,
   certificateAuthorityArn: string,
-): Promise<Result<string>> => {
+): Promise<Result<string, void>> => {
   try {
     const issueCommand = new IssueCertificateCommand({
       ApiPassthrough: {
@@ -54,26 +53,20 @@ export const issueCertificate = async (
 
     if (!issueResponse.CertificateArn) {
       logger.error('No certificate ARN returned');
-      return errorResult({
-        errorMessage: 'Failed to issue certificate',
-        errorCategory: ErrorCategory.SERVER_ERROR,
-      });
+      return emptyFailure();
     }
 
     return successResult(issueResponse.CertificateArn);
   } catch (error: unknown) {
     logger.error('Error issuing certificate', { error });
-    return errorResult({
-      errorMessage: 'Failed to issue certificate',
-      errorCategory: ErrorCategory.SERVER_ERROR,
-    });
+    return emptyFailure();
   }
 };
 
 export const getCertificate = async (
   certificateArn: string,
   certificateAuthorityArn: string,
-): Promise<Result<string>> => {
+): Promise<Result<string, void>> => {
   const maxRetries = 3;
   const baseDelay = 1000; // 1 second
 
@@ -90,10 +83,7 @@ export const getCertificate = async (
 
       if (!getResponse.Certificate) {
         logger.error('Failed to retrieve certificate');
-        return errorResult({
-          errorMessage: 'Failed to retrieve certificate',
-          errorCategory: ErrorCategory.SERVER_ERROR,
-        });
+        return emptyFailure();
       }
 
       const certChain = getResponse.CertificateChain
@@ -117,16 +107,10 @@ export const getCertificate = async (
       }
 
       logger.error('Error retrieving certificate', { error });
-      return errorResult({
-        errorMessage: 'Failed to retrieve certificate',
-        errorCategory: ErrorCategory.SERVER_ERROR,
-      });
+      return emptyFailure();
     }
   }
 
   logger.error('Certificate retrieval timed out after maximum retries');
-  return errorResult({
-    errorMessage: 'Certificate retrieval timed out',
-    errorCategory: ErrorCategory.SERVER_ERROR,
-  });
+  return emptyFailure();
 };
