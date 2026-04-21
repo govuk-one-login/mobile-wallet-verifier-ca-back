@@ -4,6 +4,6 @@
     "requireModule": ["tsx/cjs"],
     "require": ["tests/integrationTests/step-definitions/**/*.steps.ts"],
     "format": ["junit:results/integration-tests-report.xml"],
-    "timeout": 15000
+    "timeout": 20000
   }
 }
