@@ -97,11 +97,17 @@ export const getCertificate = async (
         return emptyFailure();
       }
 
-      const certChain = getResponse.CertificateChain
-        ? `${getResponse.Certificate}\n${getResponse.CertificateChain}`
-        : getResponse.Certificate;
+      if (!getResponse.CertificateChain) {
+        const errorMessage = 'Failed to retrieve certificate chain';
+        logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+          errorMessage,
+        });
+        return emptyFailure();
+      }
 
-      return successResult(certChain);
+      return successResult(
+        `${getResponse.Certificate}\n${getResponse.CertificateChain}`,
+      );
     } catch (error: unknown) {
       if (
         error instanceof Error &&

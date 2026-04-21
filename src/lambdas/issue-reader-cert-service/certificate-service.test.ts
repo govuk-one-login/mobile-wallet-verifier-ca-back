@@ -11,7 +11,11 @@ import {
   VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { getCertificate, issueCertificate } from './certificate-service.ts';
-import { Result } from '../common/result/result.ts';
+import {
+  emptyFailure,
+  Result,
+  successResult,
+} from '../common/result/result.ts';
 
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }));
 
@@ -74,7 +78,7 @@ describe('Certificate Service', () => {
       it('returns an error result', async () => {
         mockSend.mockResolvedValue({});
         result = await issueCertificate(mockCsr, mockCaArn);
-        expect(result.isError).toBe(true);
+        expect(result).toEqual(emptyFailure());
       });
     });
 
@@ -82,7 +86,7 @@ describe('Certificate Service', () => {
       it('returns an error result', async () => {
         mockSend.mockRejectedValue(new Error('ACM PCA error'));
         result = await issueCertificate(mockCsr, mockCaArn);
-        expect(result.isError).toBe(true);
+        expect(result).toEqual(emptyFailure());
       });
     });
   });
@@ -107,9 +111,10 @@ describe('Certificate Service', () => {
         });
       });
 
-      it('returns the certificate when there is no chain', async () => {
+      it('returns an error when certificate chain is not present', async () => {
         mockSend.mockResolvedValue({ Certificate: certificate });
-        expect(result).toEqual({ isError: false, value: certificate });
+        result = await getCertificate(mockCertificateArn, mockCaArn);
+        expect(result).toEqual(emptyFailure());
       });
 
       it('concatenates certificate and chain when chain is present', async () => {
@@ -132,13 +137,16 @@ describe('Certificate Service', () => {
           name: 'RequestInProgressException',
         });
         vi.clearAllMocks();
-        mockSend
-          .mockRejectedValueOnce(inProgressError)
-          .mockResolvedValue({ Certificate: certificate });
+        mockSend.mockRejectedValueOnce(inProgressError).mockResolvedValue({
+          Certificate: certificate,
+          CertificateChain: certificateChain,
+        });
 
         result = await getCertificate(mockCertificateArn, mockCaArn);
 
-        expect(result).toEqual({ isError: false, value: certificate });
+        expect(result).toEqual(
+          successResult(`${certificate}\n${certificateChain}`),
+        );
         expect(mockSend).toHaveBeenCalledTimes(2);
       });
     });
@@ -149,7 +157,7 @@ describe('Certificate Service', () => {
 
         result = await getCertificate(mockCertificateArn, mockCaArn);
 
-        expect(result.isError).toBe(true);
+        expect(result).toEqual(emptyFailure());
       });
     });
   });
