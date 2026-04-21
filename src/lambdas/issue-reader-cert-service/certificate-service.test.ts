@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, MockInstance } from 'vitest';
 import {
   IssueCertificateCommand,
   GetCertificateCommand,
@@ -16,6 +16,7 @@ import {
   Result,
   successResult,
 } from '../common/result/result.ts';
+import '../../../tests/testUtils/matchers.ts';
 
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }));
 
@@ -30,6 +31,7 @@ vi.mock('@aws-sdk/client-acm-pca', () => ({
 let result: Result<string, void>;
 let certificate: string;
 let certificateChain: string;
+let consoleErrorSpy: MockInstance;
 const mockCaArn =
   'arn:aws:acm-pca:eu-west-2:111111111111:certificate-authority/mock';
 const mockCertificateArn = `${mockCaArn}/certificate/mock`;
@@ -39,6 +41,7 @@ const mockCsr =
 describe('Certificate Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    consoleErrorSpy = vi.spyOn(console, 'error');
   });
 
   describe('issueCertificate', () => {
@@ -70,64 +73,117 @@ describe('Certificate Service', () => {
       });
 
       it('returns success with the certificate ARN', async () => {
-        expect(result).toEqual({ isError: false, value: mockCertificateArn });
+        expect(result).toEqual(successResult(mockCertificateArn));
       });
     });
 
     describe('Given ACM PCA returns no certificate ARN', () => {
-      it('returns an error result', async () => {
+      beforeEach(async () => {
         mockSend.mockResolvedValue({});
         result = await issueCertificate(mockCsr, mockCaArn);
+      });
+
+      it('returns an error result', () => {
         expect(result).toEqual(emptyFailure());
+      });
+
+      it('logs CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE',
+        });
       });
     });
 
     describe('Given ACM PCA throws', () => {
-      it('returns an error result', async () => {
+      beforeEach(async () => {
         mockSend.mockRejectedValue(new Error('ACM PCA error'));
         result = await issueCertificate(mockCsr, mockCaArn);
+      });
+
+      it('returns an error result', () => {
         expect(result).toEqual(emptyFailure());
+      });
+
+      it('logs CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE',
+        });
       });
     });
   });
 
   describe('getCertificate', () => {
-    beforeEach(async () => {
-      mockSend.mockResolvedValue({
-        Certificate:
-          '-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----',
-      });
+    beforeEach(() => {
       certificate =
         '-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----';
       certificateChain =
         '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----';
-      result = await getCertificate(mockCertificateArn, mockCaArn);
     });
-    describe('Given ACM PCA returns a certificate', () => {
-      it('calls GetCertificateCommand with the provided ARNs', async () => {
+
+    describe('Given ACM PCA returns a certificate and chain', () => {
+      beforeEach(async () => {
+        mockSend.mockResolvedValue({
+          Certificate: certificate,
+          CertificateChain: certificateChain,
+        });
+        result = await getCertificate(mockCertificateArn, mockCaArn);
+      });
+
+      it('calls GetCertificateCommand with the provided ARNs', () => {
         expect(GetCertificateCommand).toHaveBeenCalledWith({
           CertificateArn: mockCertificateArn,
           CertificateAuthorityArn: mockCaArn,
         });
       });
 
-      it('returns an error when certificate chain is not present', async () => {
-        mockSend.mockResolvedValue({ Certificate: certificate });
-        result = await getCertificate(mockCertificateArn, mockCaArn);
-        expect(result).toEqual(emptyFailure());
+      describe('Given ACM PCA returns no certificate', () => {
+        beforeEach(async () => {
+          mockSend.mockResolvedValue({});
+          result = await getCertificate(mockCertificateArn, mockCaArn);
+        });
+
+        it('returns an error result', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+
+        it('logs CERT_SERVICE_GET_CERTIFICATE_FAILURE', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+          });
+        });
       });
 
-      it('concatenates certificate and chain when chain is present', async () => {
+      describe('Given ACM PCA returns no certificate chain', () => {
+        beforeEach(async () => {
+          mockSend.mockResolvedValue({ Certificate: certificate });
+          result = await getCertificate(mockCertificateArn, mockCaArn);
+        });
+
+        it('returns an error result', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+
+        it('logs CERT_SERVICE_GET_CERTIFICATE_FAILURE', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+          });
+        });
+      });
+    });
+
+    describe('Given ACM PCA returns a certificate and chain', () => {
+      beforeEach(async () => {
         mockSend.mockResolvedValue({
           Certificate: certificate,
           CertificateChain: certificateChain,
         });
         result = await getCertificate(mockCertificateArn, mockCaArn);
+      });
 
-        expect(result).toEqual({
-          isError: false,
-          value: `${certificate}\n${certificateChain}`,
-        });
+      it('returns the concatenated certificate and chain', () => {
+        expect(result).toEqual(
+          successResult(`${certificate}\n${certificateChain}`),
+        );
       });
     });
 
@@ -152,12 +208,19 @@ describe('Certificate Service', () => {
     });
 
     describe('Given ACM PCA throws a non-retryable error', () => {
-      it('returns an error result', async () => {
+      beforeEach(async () => {
         mockSend.mockRejectedValue(new Error('Access denied'));
-
         result = await getCertificate(mockCertificateArn, mockCaArn);
+      });
 
+      it('returns an error result', () => {
         expect(result).toEqual(emptyFailure());
+      });
+
+      it('logs CERT_SERVICE_GET_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+        });
       });
     });
   });
