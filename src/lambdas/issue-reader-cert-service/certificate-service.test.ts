@@ -45,6 +45,48 @@ describe('Certificate Service', () => {
   });
 
   describe('issueCertificate', () => {
+    describe('Given ACM PCA throws', () => {
+      beforeEach(async () => {
+        mockSend.mockRejectedValue(new Error('ACM PCA error'));
+        result = await issueCertificate({
+          csrPem: mockCsr,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
+          errorMessage: 'Unexpected error issuing certificate',
+        });
+      });
+
+      it('returns an error result', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given ACM PCA returns no certificate ARN', () => {
+      beforeEach(async () => {
+        mockSend.mockResolvedValue({});
+        result = await issueCertificate({
+          csrPem: mockCsr,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
+          errorMessage: 'No certificate ARN returned',
+        });
+      });
+
+      it('returns an error result', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
     describe('Given ACM PCA returns a certificate ARN', () => {
       beforeEach(async () => {
         mockSend.mockResolvedValue({ CertificateArn: mockCertificateArn });
@@ -79,48 +121,6 @@ describe('Certificate Service', () => {
         expect(result).toEqual(successResult(mockCertificateArn));
       });
     });
-
-    describe('Given ACM PCA returns no certificate ARN', () => {
-      beforeEach(async () => {
-        mockSend.mockResolvedValue({});
-        result = await issueCertificate({
-          csrPem: mockCsr,
-          certificateAuthorityArn: mockCaArn,
-        });
-      });
-
-      it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
-      });
-
-      it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
-          errorMessage: 'No certificate ARN returned',
-        });
-      });
-    });
-
-    describe('Given ACM PCA throws', () => {
-      beforeEach(async () => {
-        mockSend.mockRejectedValue(new Error('ACM PCA error'));
-        result = await issueCertificate({
-          csrPem: mockCsr,
-          certificateAuthorityArn: mockCaArn,
-        });
-      });
-
-      it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
-      });
-
-      it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
-          errorMessage: 'Unexpected error issuing certificate',
-        });
-      });
-    });
   });
 
   describe('getCertificate', () => {
@@ -129,6 +129,124 @@ describe('Certificate Service', () => {
         '-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----';
       certificateChain =
         '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----';
+    });
+
+    describe('Given ACM PCA keeps throwing RequestInProgressException', () => {
+      beforeEach(async () => {
+        const inProgressError = Object.assign(new Error(), {
+          name: 'RequestInProgressException',
+        });
+        mockSend.mockRejectedValue(inProgressError);
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+          errorMessage: 'Certificate retrieval timed out after maximum retries',
+        });
+      });
+
+      it('retries up to the retry limit', () => {
+        expect(mockSend).toHaveBeenCalledTimes(3);
+      });
+
+      it('returns an error result after exhausting retries', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given ACM PCA throws a non-retryable error', () => {
+      beforeEach(async () => {
+        mockSend.mockRejectedValue(new Error('Access denied'));
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+          errorMessage: 'Unexpected error retrieving certificate',
+        });
+      });
+
+      it('returns an error result', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given ACM PCA throws RequestInProgressException then succeeds', () => {
+      beforeEach(async () => {
+        const inProgressError = Object.assign(new Error(), {
+          name: 'RequestInProgressException',
+        });
+        mockSend.mockRejectedValueOnce(inProgressError).mockResolvedValue({
+          Certificate: certificate,
+          CertificateChain: certificateChain,
+        });
+
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('retries one time (attempts two times)', () => {
+        expect(mockSend).toHaveBeenCalledTimes(2);
+      });
+
+      it('retries and returns success', async () => {
+        expect(result).toEqual(
+          successResult(`${certificate}\n${certificateChain}`),
+        );
+      });
+    });
+
+    describe('Given ACM PCA returns no certificate', () => {
+      beforeEach(async () => {
+        mockSend.mockResolvedValue({});
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+          errorMessage: 'Failed to retrieve certificate',
+        });
+      });
+
+      it('returns an error result', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given ACM PCA returns no certificate chain', () => {
+      beforeEach(async () => {
+        mockSend.mockResolvedValue({ Certificate: certificate });
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+          errorMessage: 'Failed to retrieve certificate chain',
+        });
+      });
+
+      it('returns an error result', () => {
+        expect(result).toEqual(emptyFailure());
+      });
     });
 
     describe('Given ACM PCA returns a certificate and chain', () => {
@@ -154,120 +272,6 @@ describe('Certificate Service', () => {
         expect(result).toEqual(
           successResult(`${certificate}\n${certificateChain}`),
         );
-      });
-
-      describe('Given ACM PCA returns no certificate', () => {
-        beforeEach(async () => {
-          mockSend.mockResolvedValue({});
-          result = await getCertificate({
-            certificateArn: mockCertificateArn,
-            certificateAuthorityArn: mockCaArn,
-          });
-        });
-
-        it('returns an error result', () => {
-          expect(result).toEqual(emptyFailure());
-        });
-
-        it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-            errorMessage: 'Failed to retrieve certificate',
-          });
-        });
-      });
-
-      describe('Given ACM PCA returns no certificate chain', () => {
-        beforeEach(async () => {
-          mockSend.mockResolvedValue({ Certificate: certificate });
-          result = await getCertificate({
-            certificateArn: mockCertificateArn,
-            certificateAuthorityArn: mockCaArn,
-          });
-        });
-
-        it('returns an error result', () => {
-          expect(result).toEqual(emptyFailure());
-        });
-
-        it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-            errorMessage: 'Failed to retrieve certificate chain',
-          });
-        });
-      });
-    });
-
-    describe('Given ACM PCA throws RequestInProgressException then succeeds', () => {
-      it('retries and returns success', async () => {
-        const inProgressError = Object.assign(new Error(), {
-          name: 'RequestInProgressException',
-        });
-        vi.clearAllMocks();
-        mockSend.mockRejectedValueOnce(inProgressError).mockResolvedValue({
-          Certificate: certificate,
-          CertificateChain: certificateChain,
-        });
-
-        result = await getCertificate({
-          certificateArn: mockCertificateArn,
-          certificateAuthorityArn: mockCaArn,
-        });
-
-        expect(result).toEqual(
-          successResult(`${certificate}\n${certificateChain}`),
-        );
-        expect(mockSend).toHaveBeenCalledTimes(2);
-      });
-    });
-
-    describe('Given ACM PCA keeps throwing RequestInProgressException', () => {
-      beforeEach(async () => {
-        const inProgressError = Object.assign(new Error(), {
-          name: 'RequestInProgressException',
-        });
-        mockSend.mockRejectedValue(inProgressError);
-        result = await getCertificate({
-          certificateArn: mockCertificateArn,
-          certificateAuthorityArn: mockCaArn,
-        });
-      });
-
-      it('returns an error result after exhausting retries', () => {
-        expect(result).toEqual(emptyFailure());
-      });
-
-      it('retries up to the retry limit', () => {
-        expect(mockSend).toHaveBeenCalledTimes(3);
-      });
-
-      it('logs a timeout-specific failure message', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-          errorMessage: 'Certificate retrieval timed out after maximum retries',
-        });
-      });
-    });
-
-    describe('Given ACM PCA throws a non-retryable error', () => {
-      beforeEach(async () => {
-        mockSend.mockRejectedValue(new Error('Access denied'));
-        result = await getCertificate({
-          certificateArn: mockCertificateArn,
-          certificateAuthorityArn: mockCaArn,
-        });
-      });
-
-      it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
-      });
-
-      it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-          errorMessage: 'Unexpected error retrieving certificate',
-        });
       });
     });
   });
