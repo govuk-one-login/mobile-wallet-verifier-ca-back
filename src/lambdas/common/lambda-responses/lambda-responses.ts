@@ -1,13 +1,20 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
 
-export const okResponse = (awsRequestId: string): APIGatewayProxyResult => {
+export interface IssueReaderCertResponseBody {
+  certChain: string;
+}
+
+export const okResponse = (
+  awsRequestId: string,
+  body: IssueReaderCertResponseBody,
+): APIGatewayProxyResult => {
   return {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
       'X-Request-Id': awsRequestId,
     },
-    body: 'OK',
+    body: JSON.stringify(body),
   };
 };
 

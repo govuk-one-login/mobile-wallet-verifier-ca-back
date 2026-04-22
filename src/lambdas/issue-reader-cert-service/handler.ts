@@ -16,6 +16,7 @@ import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check
 import { ErrorCategory } from '../common/result/result.ts';
 import {
   badRequestResponse,
+  IssueReaderCertResponseBody,
   okResponse,
   serverErrorResponse,
   unauthorizedResponse,
@@ -67,8 +68,30 @@ export const handlerConstructor = async (
     return badRequestResponse(validateCsrResult.value);
   }
 
+  const certificateAuthorityArn = config.CERTIFICATE_AUTHORITY_ARN;
+
+  const issueCertResult = await dependencies.issueCertificate({
+    csrPem,
+    certificateAuthorityArn,
+  });
+  if (issueCertResult.isError) {
+    return serverErrorResponse;
+  }
+
+  const getCertResult = await dependencies.getCertificate({
+    certificateArn: issueCertResult.value,
+    certificateAuthorityArn,
+  });
+  if (getCertResult.isError) {
+    return serverErrorResponse;
+  }
+
+  const response: IssueReaderCertResponseBody = {
+    certChain: getCertResult.value,
+  };
+
   logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
-  return okResponse(context.awsRequestId);
+  return okResponse(context.awsRequestId, response);
 };
 
 export const handler = handlerConstructor.bind(null, dependencies);

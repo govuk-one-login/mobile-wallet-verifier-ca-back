@@ -9,6 +9,7 @@ import type { HttpResponseSnapshot } from '../utils/api-instance.ts';
 
 let mockRequest: MockIssueReaderCertRequest | undefined;
 let response: HttpResponseSnapshot | undefined;
+const LAMBDA_TIMEOUT = 60 * 15000;
 
 Before(() => {
   mockRequest = undefined;
@@ -19,14 +20,18 @@ Given('I generate a valid issue reader cert request', async () => {
   mockRequest = await requestMockIssueReaderCertRequest();
 });
 
-When('I submit the request to the issue reader cert endpoint', async () => {
-  assert.ok(
-    mockRequest,
-    'A mock issue reader certificate request must be generated first',
-  );
+When(
+  'I submit the request to the issue reader cert endpoint',
+  { timeout: LAMBDA_TIMEOUT },
+  async () => {
+    assert.ok(
+      mockRequest,
+      'A mock issue reader certificate request must be generated first',
+    );
 
-  response = await requestIssueReaderCert(mockRequest);
-});
+    response = await requestIssueReaderCert(mockRequest);
+  },
+);
 
 Then('the issue reader cert endpoint returns a 200 OK response', () => {
   assert.ok(
@@ -39,7 +44,14 @@ Then('the issue reader cert endpoint returns a 200 OK response', () => {
     200,
     `Unexpected response from ${response.url}: ${response.body}`,
   );
-  assert.equal(response.body, 'OK');
+
+  const parsedBody = JSON.parse(response.body);
+
+  assert.ok(
+    typeof parsedBody.certChain === 'string',
+    'certChain should be a string',
+  );
+  assert.ok(parsedBody.certChain.length > 0, 'certChain should not be empty');
   assert.ok(response.headers['content-type']?.includes('application/json'));
   assert.ok(response.headers['x-request-id']?.trim());
 });
