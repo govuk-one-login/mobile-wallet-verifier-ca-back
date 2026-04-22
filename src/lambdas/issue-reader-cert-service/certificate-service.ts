@@ -56,18 +56,16 @@ export const issueCertificate = async (params: {
 
     issueResponse = await acmpcaClient.send(issueCommand);
   } catch (error: unknown) {
-    const errorMessage = 'Error issuing certificate';
     logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
       error,
-      errorMessage,
+      errorMessage: 'Error issuing certificate',
     });
     return emptyFailure();
   }
 
   if (!issueResponse.CertificateArn) {
-    const errorMessage = 'No certificate ARN returned';
     logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
-      errorMessage,
+      errorMessage: 'No certificate ARN returned',
     });
     return emptyFailure();
   }
@@ -107,26 +105,23 @@ export const getCertificate = async (params: {
         continue;
       }
 
-      const errorMessage = 'Error retrieving certificate';
       logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
         error,
-        errorMessage,
+        errorMessage: 'Error retrieving certificate',
       });
       return emptyFailure();
     }
 
     if (!getResponse.Certificate) {
-      const errorMessage = 'Failed to retrieve certificate';
       logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
-        errorMessage,
+        errorMessage: 'Failed to retrieve certificate',
       });
       return emptyFailure();
     }
 
     if (!getResponse.CertificateChain) {
-      const errorMessage = 'Failed to retrieve certificate chain';
       logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
-        errorMessage,
+        errorMessage: 'Failed to retrieve certificate chain',
       });
       return emptyFailure();
     }
@@ -136,9 +131,8 @@ export const getCertificate = async (params: {
     );
   }
 
-  const errorMessage = 'Certificate retrieval timed out after maximum retries';
   logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
-    errorMessage,
+    errorMessage: 'Certificate retrieval timed out after maximum retries',
   });
   return emptyFailure();
 };
