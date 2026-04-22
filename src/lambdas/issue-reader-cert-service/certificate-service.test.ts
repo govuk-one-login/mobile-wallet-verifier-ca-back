@@ -96,6 +96,7 @@ describe('Certificate Service', () => {
       it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
+          errorMessage: 'No certificate ARN returned',
         });
       });
     });
@@ -116,6 +117,7 @@ describe('Certificate Service', () => {
       it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
+          errorMessage: 'Unexpected error issuing certificate',
         });
       });
     });
@@ -170,6 +172,7 @@ describe('Certificate Service', () => {
         it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+            errorMessage: 'Failed to retrieve certificate',
           });
         });
       });
@@ -190,6 +193,7 @@ describe('Certificate Service', () => {
         it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+            errorMessage: 'Failed to retrieve certificate chain',
           });
         });
       });
@@ -234,6 +238,7 @@ describe('Certificate Service', () => {
       it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+          errorMessage: 'Unexpected error retrieving certificate',
         });
       });
     });

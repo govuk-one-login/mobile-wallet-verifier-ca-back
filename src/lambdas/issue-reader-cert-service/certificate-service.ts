@@ -62,7 +62,7 @@ export const issueCertificate = async (
   } catch (error: unknown) {
     logger.error(LogMessage.ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE, {
       error,
-      errorMessage: 'Error issuing certificate',
+      errorMessage: 'Unexpected error issuing certificate',
     });
     return emptyFailure();
   }
@@ -115,7 +115,7 @@ export const getCertificate = async (
 
       logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
         error,
-        errorMessage: 'Error retrieving certificate',
+        errorMessage: 'Unexpected error retrieving certificate',
       });
       return emptyFailure();
     }
