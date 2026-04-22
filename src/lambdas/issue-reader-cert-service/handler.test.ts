@@ -65,6 +65,7 @@ describe('Handler', () => {
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let validFireBaseJwt: string;
+  let validCsrPem: string;
   let mockIssueCertificate: (
     params: IssueCertificateParams,
   ) => Promise<Result<string, void>>;
@@ -106,7 +107,7 @@ describe('Handler', () => {
       subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
     });
 
-    const validCsrPem = await createCsrPem();
+    validCsrPem = await createCsrPem();
 
     context = buildLambdaContext();
     event = buildEvent({
@@ -640,7 +641,7 @@ describe('Handler', () => {
 
       it('Calls certificate functions with correct parameters', () => {
         expect(mockIssueCertificate).toHaveBeenCalledWith({
-          csrPem: expect.any(String),
+          csrPem: validCsrPem,
           certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
         });
         expect(mockGetCertificate).toHaveBeenCalledWith({
