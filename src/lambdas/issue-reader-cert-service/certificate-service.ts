@@ -1,7 +1,9 @@
 import {
   ACMPCAClient,
   GetCertificateCommand,
+  GetCertificateCommandOutput,
   IssueCertificateCommand,
+  IssueCertificateCommandOutput,
 } from '@aws-sdk/client-acm-pca';
 import {
   Result,
@@ -24,6 +26,7 @@ export const issueCertificate = async (params: {
   csrPem: string;
   certificateAuthorityArn: string;
 }): Promise<Result<string, void>> => {
+  let issueResponse: IssueCertificateCommandOutput;
   const { csrPem, certificateAuthorityArn } = params;
   try {
     const issueCommand = new IssueCertificateCommand({
@@ -51,17 +54,7 @@ export const issueCertificate = async (params: {
       },
     });
 
-    const issueResponse = await acmpcaClient.send(issueCommand);
-
-    if (!issueResponse.CertificateArn) {
-      const errorMessage = 'No certificate ARN returned';
-      logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
-        errorMessage,
-      });
-      return emptyFailure();
-    }
-
-    return successResult(issueResponse.CertificateArn);
+    issueResponse = await acmpcaClient.send(issueCommand);
   } catch (error: unknown) {
     const errorMessage = 'Error issuing certificate';
     logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
@@ -70,12 +63,23 @@ export const issueCertificate = async (params: {
     });
     return emptyFailure();
   }
+
+  if (!issueResponse.CertificateArn) {
+    const errorMessage = 'No certificate ARN returned';
+    logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
+      errorMessage,
+    });
+    return emptyFailure();
+  }
+
+  return successResult(issueResponse.CertificateArn);
 };
 
 export const getCertificate = async (params: {
   certificateArn: string;
   certificateAuthorityArn: string;
 }): Promise<Result<string, void>> => {
+  let getResponse: GetCertificateCommandOutput;
   const { certificateArn, certificateAuthorityArn } = params;
   const maxRetries = 3;
   const baseDelay = 1000; // 1 second
@@ -89,27 +93,7 @@ export const getCertificate = async (params: {
         CertificateArn: certificateArn,
       });
 
-      const getResponse = await acmpcaClient.send(getCommand);
-
-      if (!getResponse.Certificate) {
-        const errorMessage = 'Failed to retrieve certificate';
-        logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
-          errorMessage,
-        });
-        return emptyFailure();
-      }
-
-      if (!getResponse.CertificateChain) {
-        const errorMessage = 'Failed to retrieve certificate chain';
-        logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
-          errorMessage,
-        });
-        return emptyFailure();
-      }
-
-      return successResult(
-        `${getResponse.Certificate}\n${getResponse.CertificateChain}`,
-      );
+      getResponse = await acmpcaClient.send(getCommand);
     } catch (error: unknown) {
       if (
         error instanceof Error &&
@@ -130,6 +114,26 @@ export const getCertificate = async (params: {
       });
       return emptyFailure();
     }
+
+    if (!getResponse.Certificate) {
+      const errorMessage = 'Failed to retrieve certificate';
+      logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+        errorMessage,
+      });
+      return emptyFailure();
+    }
+
+    if (!getResponse.CertificateChain) {
+      const errorMessage = 'Failed to retrieve certificate chain';
+      logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+        errorMessage,
+      });
+      return emptyFailure();
+    }
+
+    return successResult(
+      `${getResponse.Certificate}\n${getResponse.CertificateChain}`,
+    );
   }
 
   const errorMessage = 'Certificate retrieval timed out after maximum retries';
