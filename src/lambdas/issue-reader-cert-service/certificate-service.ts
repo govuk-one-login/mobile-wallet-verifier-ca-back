@@ -101,17 +101,16 @@ export const getCertificate = async (
 
       getResponse = await acmpcaClient.send(getCommand);
     } catch (error: unknown) {
-      if (
-        error instanceof Error &&
-        error.name === 'RequestInProgressException' &&
-        attempt < maxRetries - 1
-      ) {
+      const isRequestInProgressException =
+        error instanceof Error && error.name === 'RequestInProgressException';
+      if (isRequestInProgressException && attempt < maxRetries - 1) {
         // Wait with exponential backoff
         const delay = baseDelay * Math.pow(2, attempt);
-
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
+
+      if (isRequestInProgressException) continue;
 
       logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
         error,

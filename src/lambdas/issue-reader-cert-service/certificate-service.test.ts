@@ -222,6 +222,34 @@ describe('Certificate Service', () => {
       });
     });
 
+    describe('Given ACM PCA keeps throwing RequestInProgressException', () => {
+      beforeEach(async () => {
+        const inProgressError = Object.assign(new Error(), {
+          name: 'RequestInProgressException',
+        });
+        mockSend.mockRejectedValue(inProgressError);
+        result = await getCertificate({
+          certificateArn: mockCertificateArn,
+          certificateAuthorityArn: mockCaArn,
+        });
+      });
+
+      it('returns an error result after exhausting retries', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+
+      it('retries up to the retry limit', () => {
+        expect(mockSend).toHaveBeenCalledTimes(3);
+      });
+
+      it('logs a timeout-specific failure message', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
+          errorMessage: 'Certificate retrieval timed out after maximum retries',
+        });
+      });
+    });
+
     describe('Given ACM PCA throws a non-retryable error', () => {
       beforeEach(async () => {
         mockSend.mockRejectedValue(new Error('Access denied'));
