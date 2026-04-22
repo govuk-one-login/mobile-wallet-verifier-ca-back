@@ -18,5 +18,6 @@ export default defineConfig({
         'tests/**',
       ],
     },
+    setupFiles: ['vitest.setup.ts'],
   },
 });
