@@ -623,8 +623,8 @@ describe('Handler', () => {
         result = await handlerConstructor(dependencies, event, context);
       });
 
-      it('Calls verifyAppCheckJwt with correct parameters', () =>
-        expect(dependencies.verifyAppCheckJwt).toBeCalledWith(
+      it('Calls verifyAppCheckJwt with correct parameters', () => {
+        expect(dependencies.verifyAppCheckJwt).toHaveBeenCalledWith(
           event.headers?.['X-Firebase-AppCheck'],
           dependencies.env.FIREBASE_JWKS_URI,
           {
@@ -635,7 +635,20 @@ describe('Handler', () => {
             audience: JSON.parse(dependencies.env.AUDIENCE as string),
             issuer: dependencies.env.ISSUER,
           },
-        ));
+        );
+      });
+
+      it('Calls certificate functions with correct parameters', () => {
+        expect(mockIssueCertificate).toHaveBeenCalledWith({
+          csrPem: expect.any(String),
+          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+        });
+        expect(mockGetCertificate).toHaveBeenCalledWith({
+          certificateArn:
+            'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
+          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+        });
+      });
 
       it('Logs COMPLETED', () => {
         expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
@@ -654,18 +667,6 @@ describe('Handler', () => {
             certChain:
               '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
           }),
-        });
-      });
-
-      it('Calls certificate functions with correct parameters', () => {
-        expect(mockIssueCertificate).toHaveBeenCalledWith({
-          csrPem: expect.any(String),
-          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
-        });
-        expect(mockGetCertificate).toHaveBeenCalledWith({
-          certificateArn:
-            'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
-          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
         });
       });
     });

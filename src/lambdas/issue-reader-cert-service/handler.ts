@@ -68,9 +68,11 @@ export const handlerConstructor = async (
     return badRequestResponse(validateCsrResult.value);
   }
 
+  const certificateAuthorityArn = config.CERTIFICATE_AUTHORITY_ARN;
+
   const issueCertResult = await dependencies.issueCertificate({
     csrPem,
-    certificateAuthorityArn: config.CERTIFICATE_AUTHORITY_ARN,
+    certificateAuthorityArn,
   });
   if (issueCertResult.isError) {
     return serverErrorResponse;
@@ -78,7 +80,7 @@ export const handlerConstructor = async (
 
   const getCertResult = await dependencies.getCertificate({
     certificateArn: issueCertResult.value,
-    certificateAuthorityArn: config.CERTIFICATE_AUTHORITY_ARN,
+    certificateAuthorityArn,
   });
   if (getCertResult.isError) {
     return serverErrorResponse;
