@@ -40,6 +40,10 @@ import {
   createCsrPem,
   CreateCsrPemOptions,
 } from '../../../tests/testUtils/create-csr-pem.ts';
+import {
+  GetCertificateParams,
+  IssueCertificateParams,
+} from './certificate-service.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -61,14 +65,12 @@ describe('Handler', () => {
   let privateKey: CryptoKey;
   let publicJwk: JWK;
   let validFireBaseJwt: string;
-  let mockIssueCertificate: (params: {
-    csrPem: string;
-    certificateAuthorityArn: string;
-  }) => Promise<Result<string, void>>;
-  let mockGetCertificate: (params: {
-    certificateArn: string;
-    certificateAuthorityArn: string;
-  }) => Promise<Result<string, void>>;
+  let mockIssueCertificate: (
+    params: IssueCertificateParams,
+  ) => Promise<Result<string, void>>;
+  let mockGetCertificate: (
+    params: GetCertificateParams,
+  ) => Promise<Result<string, void>>;
 
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');

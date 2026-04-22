@@ -22,10 +22,14 @@ import { LogMessage } from '../common/logger/log-message.ts';
 
 const acmpcaClient = new ACMPCAClient({});
 
-export const issueCertificate = async (params: {
+export interface IssueCertificateParams {
   csrPem: string;
   certificateAuthorityArn: string;
-}): Promise<Result<string, void>> => {
+}
+
+export const issueCertificate = async (
+  params: IssueCertificateParams,
+): Promise<Result<string, void>> => {
   let issueResponse: IssueCertificateCommandOutput;
   const { csrPem, certificateAuthorityArn } = params;
   try {
@@ -73,10 +77,14 @@ export const issueCertificate = async (params: {
   return successResult(issueResponse.CertificateArn);
 };
 
-export const getCertificate = async (params: {
+export interface GetCertificateParams {
   certificateArn: string;
   certificateAuthorityArn: string;
-}): Promise<Result<string, void>> => {
+}
+
+export const getCertificate = async (
+  params: GetCertificateParams,
+): Promise<Result<string, void>> => {
   let getResponse: GetCertificateCommandOutput;
   const { certificateArn, certificateAuthorityArn } = params;
   const maxRetries = 3;
