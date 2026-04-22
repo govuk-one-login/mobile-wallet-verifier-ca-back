@@ -93,9 +93,9 @@ describe('Certificate Service', () => {
         expect(result).toEqual(emptyFailure());
       });
 
-      it('logs CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE', () => {
+      it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE',
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
         });
       });
     });
@@ -113,9 +113,9 @@ describe('Certificate Service', () => {
         expect(result).toEqual(emptyFailure());
       });
 
-      it('logs CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE', () => {
+      it('logs ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE',
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
         });
       });
     });
@@ -167,9 +167,9 @@ describe('Certificate Service', () => {
           expect(result).toEqual(emptyFailure());
         });
 
-        it('logs CERT_SERVICE_GET_CERTIFICATE_FAILURE', () => {
+        it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
           });
         });
       });
@@ -187,9 +187,9 @@ describe('Certificate Service', () => {
           expect(result).toEqual(emptyFailure());
         });
 
-        it('logs CERT_SERVICE_GET_CERTIFICATE_FAILURE', () => {
+        it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
           });
         });
       });
@@ -231,9 +231,9 @@ describe('Certificate Service', () => {
         expect(result).toEqual(emptyFailure());
       });
 
-      it('logs CERT_SERVICE_GET_CERTIFICATE_FAILURE', () => {
+      it('logs ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
         });
       });
     });

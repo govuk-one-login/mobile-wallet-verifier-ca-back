@@ -60,7 +60,7 @@ export const issueCertificate = async (
 
     issueResponse = await acmpcaClient.send(issueCommand);
   } catch (error: unknown) {
-    logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
+    logger.error(LogMessage.ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE, {
       error,
       errorMessage: 'Error issuing certificate',
     });
@@ -68,7 +68,7 @@ export const issueCertificate = async (
   }
 
   if (!issueResponse.CertificateArn) {
-    logger.error(LogMessage.CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE, {
+    logger.error(LogMessage.ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE, {
       errorMessage: 'No certificate ARN returned',
     });
     return emptyFailure();
@@ -113,7 +113,7 @@ export const getCertificate = async (
         continue;
       }
 
-      logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
         error,
         errorMessage: 'Error retrieving certificate',
       });
@@ -121,14 +121,14 @@ export const getCertificate = async (
     }
 
     if (!getResponse.Certificate) {
-      logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
         errorMessage: 'Failed to retrieve certificate',
       });
       return emptyFailure();
     }
 
     if (!getResponse.CertificateChain) {
-      logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
         errorMessage: 'Failed to retrieve certificate chain',
       });
       return emptyFailure();
@@ -139,7 +139,7 @@ export const getCertificate = async (
     );
   }
 
-  logger.error(LogMessage.CERT_SERVICE_GET_CERTIFICATE_FAILURE, {
+  logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
     errorMessage: 'Certificate retrieval timed out after maximum retries',
   });
   return emptyFailure();

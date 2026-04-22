@@ -63,13 +63,13 @@ export class LogMessage implements LogAttributes {
   );
 
   // Certificate Service logs
-  static readonly CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE = new LogMessage(
-    'MOBILE_CA_CERT_SERVICE_ISSUE_CERTIFICATE_FAILURE',
+  static readonly ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_ISSUE_CERTIFICATE_FAILURE',
     'Issuing leaf certificate failed',
   );
 
-  static readonly CERT_SERVICE_GET_CERTIFICATE_FAILURE = new LogMessage(
-    'MOBILE_CA_CERT_SERVICE_GET_CERTIFICATE_FAILURE',
+  static readonly ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE = new LogMessage(
+    'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
     'Retrieving certificate chain failed',
   );
 
