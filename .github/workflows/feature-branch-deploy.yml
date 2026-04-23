@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup NodeJS
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           cache: npm
           cache-dependency-path: package-lock.json
@@ -66,7 +66,7 @@ jobs:
         run: npm clean-install --ignore-scripts
 
       - name: Setup AWS SAM CLI
-        uses: aws-actions/setup-sam@2360ef6d90015369947b45b496193ab9976a9b04
+        uses: aws-actions/setup-sam@f84ec7d548307efafe33230528756de3c5841a17
 
       - name: Authenticate with AWS
         uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37
