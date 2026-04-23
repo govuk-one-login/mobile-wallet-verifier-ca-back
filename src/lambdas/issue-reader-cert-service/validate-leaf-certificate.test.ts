@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, MockInstance } from 'vitest';
 import { validateLeafCertificate } from './validate-leaf-certificate.ts';
 import '../../../tests/testUtils/matchers.ts';
-import { errorResult, Result } from '../common/result/result.ts';
+import { emptySuccess, errorResult, Result } from '../common/result/result.ts';
+import { createValidCertPem } from '../../../tests/testUtils/create-valid-cert-pem.ts';
 
 describe('validateLeafCertificate', () => {
   let consoleErrorSpy: MockInstance;
@@ -30,6 +31,15 @@ describe('validateLeafCertificate', () => {
           errorResult('Certificate not valid X.509 format'),
         );
       });
+    });
+  });
+
+  describe('Given leaf certificate is valid', () => {
+    beforeEach(async () => {
+      result = await validateLeafCertificate(await createValidCertPem());
+    });
+    it('Returns empty success', () => {
+      expect(result).toEqual(emptySuccess());
     });
   });
 });
