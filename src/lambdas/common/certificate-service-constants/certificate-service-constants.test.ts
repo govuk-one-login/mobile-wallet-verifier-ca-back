@@ -5,6 +5,7 @@ import {
   VALIDITY,
   KEY_USAGE,
   EXTENDED_KEY_USAGE,
+  EXPECTED_CERTIFICATE_VERSION,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -54,5 +55,11 @@ describe('EXTENDED_KEY_USAGE', () => {
         '1.0.18013.5.1.6',
       );
     });
+  });
+});
+
+describe('EXPECTED_CERTIFICATE_VERSION', () => {
+  it('Is 2 (X.509 v3)', () => {
+    expect(EXPECTED_CERTIFICATE_VERSION).toEqual(2);
   });
 });
