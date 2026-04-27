@@ -226,10 +226,10 @@ describe('validateLeafCertificate', () => {
     beforeEach(async () => {
       const validCert = await createValidCertPem();
       const validSerial = new ArrayBuffer(8);
-      const view = new Uint8Array(validSerial);
-      view[0] = 0x01; // Positive number (MSB not set)
-      view[1] = 0x23; // Some random bytes
-      view[2] = 0x45;
+      const dataBytes = new Uint8Array(validSerial);
+      dataBytes[0] = 0x01; // Positive number (MSB not set)
+      dataBytes[1] = 0x23; // Some random bytes
+      dataBytes[2] = 0x45;
       vi.spyOn(AsnConvert, 'parse').mockReturnValue({
         tbsCertificate: {
           version: 2, // Valid v3 certificate
