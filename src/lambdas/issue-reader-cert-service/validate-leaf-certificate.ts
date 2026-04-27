@@ -1,4 +1,6 @@
 import { X509Certificate } from '@peculiar/x509';
+import { AsnConvert } from '@peculiar/asn1-schema';
+import { Certificate } from '@peculiar/asn1-x509';
 import {
   Result,
   errorResult,
@@ -7,6 +9,7 @@ import {
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
+import { EXPECTED_CERTIFICATE_VERSION } from '../common/certificate-service-constants/certificate-service-constants.ts';
 
 export async function validateLeafCertificate(
   certPem: string,
@@ -14,6 +17,13 @@ export async function validateLeafCertificate(
   const parseCertResult = parseX509Certificate(certPem);
   if (parseCertResult.isError) {
     return parseCertResult;
+  }
+
+  const certificate = parseCertResult.value;
+
+  const versionValidation = validateVersion(certificate);
+  if (versionValidation.isError) {
+    return versionValidation;
   }
 
   return emptySuccess();
@@ -41,4 +51,39 @@ function parseX509Certificate(
   }
 
   return successResult(certificate);
+}
+
+function validateVersion(certificate: X509Certificate): Result<void, string> {
+  try {
+    // Parse the certificate's ASN.1 structure to access the version field
+    const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
+    const version = certAsn.tbsCertificate.version;
+
+
+    if (version !== EXPECTED_CERTIFICATE_VERSION) {
+      const errorMessage = 'Certificate version must be v3';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: {
+            actualVersion: version,
+            expectedVersion: EXPECTED_CERTIFICATE_VERSION,
+          },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+    return emptySuccess();
+  } catch (error: unknown) {
+    const errorMessage = 'Failed to parse certificate version';
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage,
+        data: { error },
+      },
+    );
+    return errorResult(errorMessage);
+  }
 }
