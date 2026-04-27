@@ -26,6 +26,10 @@ export async function validateLeafCertificate(
     return versionValidation;
   }
 
+  const serialValidation = validateSerialNumber(certificate);
+  if (serialValidation.isError) {
+    return serialValidation;
+  }
   return emptySuccess();
 }
 
@@ -75,6 +79,85 @@ function validateVersion(certificate: X509Certificate): Result<void, string> {
     }
   } catch (error: unknown) {
     const errorMessage = 'Failed to parse certificate version';
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage,
+        data: { error },
+      },
+    );
+    return errorResult(errorMessage);
+  }
+  return emptySuccess();
+}
+
+function validateSerialNumber(
+  certificate: X509Certificate,
+): Result<void, string> {
+  try {
+    // Extract serial number directly from ASN.1 structure to have an ArrayBuffer which is already in binary format
+    const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
+    const serialNumber = certAsn.tbsCertificate.serialNumber;
+
+    // Check it is present and non-empty
+    if (!serialNumber || serialNumber.byteLength === 0) {
+      const errorMessage = 'Certificate serial number must be present';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: { serialNumber: serialNumber ? 'empty' : 'missing' },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+
+    // Check maximum 20 octets (bytes)
+    if (serialNumber.byteLength > 20) {
+      const errorMessage =
+        'Certificate serial number must not exceed 20 octets';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: { serialNumberLength: serialNumber.byteLength, maxLength: 20 },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+
+    // Check if serial number is zero (all bytes are 0)
+    const isZero = Array.from(new Uint8Array(serialNumber)).every(
+      (byte) => byte === 0,
+    );
+    if (isZero) {
+      const errorMessage = 'Certificate serial number must be non-zero';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: { serialNumber: 'zero' },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+
+    // Check if serial number is positive (MSB should not indicate negative)
+    // In ASN.1 INTEGER encoding, if MSB is 1, it's treated as negative
+    const firstByte = new Uint8Array(serialNumber)[0];
+    if (firstByte & 0x80) {
+      const errorMessage = 'Certificate serial number must be positive';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: { serialNumberMSB: firstByte },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+  } catch (error: unknown) {
+    const errorMessage = 'Failed to parse certificate serial number';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
