@@ -59,7 +59,6 @@ function validateVersion(certificate: X509Certificate): Result<void, string> {
     const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
     const version = certAsn.tbsCertificate.version;
 
-
     if (version !== EXPECTED_CERTIFICATE_VERSION) {
       const errorMessage = 'Certificate version must be v3';
       logger.error(
@@ -74,7 +73,6 @@ function validateVersion(certificate: X509Certificate): Result<void, string> {
       );
       return errorResult(errorMessage);
     }
-    return emptySuccess();
   } catch (error: unknown) {
     const errorMessage = 'Failed to parse certificate version';
     logger.error(
@@ -86,4 +84,5 @@ function validateVersion(certificate: X509Certificate): Result<void, string> {
     );
     return errorResult(errorMessage);
   }
+  return emptySuccess();
 }

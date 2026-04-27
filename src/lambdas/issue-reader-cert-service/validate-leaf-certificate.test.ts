@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach, MockInstance } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  MockInstance,
+} from 'vitest';
 import { validateLeafCertificate } from './validate-leaf-certificate.ts';
 import '../../../tests/testUtils/matchers.ts';
 import { emptySuccess, errorResult, Result } from '../common/result/result.ts';
