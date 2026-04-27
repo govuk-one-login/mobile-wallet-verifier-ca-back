@@ -20,3 +20,6 @@ export const EXTENDED_KEY_USAGE = [
     ExtendedKeyUsageObjectIdentifier: '1.0.18013.5.1.6',
   },
 ] as const;
+
+// Certificate validation constants
+export const EXPECTED_CERTIFICATE_VERSION = 2; // X.509 version field encoding: v1=0, v2=1, v3=2 (ASN.1 INTEGER values)
