@@ -13,6 +13,8 @@ export const CSR_POLICY = {
   curve: 'P-384',
   subject: {
     C: 'GB',
+    L: 'London',
     O: 'Government Digital Service',
+    ST: 'London',
   },
 } as const;
