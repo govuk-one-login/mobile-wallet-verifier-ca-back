@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateCSR, CSRSubject } from './certificate-generator';
 import * as keyPairManager from '../common/mock-utils/key-pair-manager';
+import { Pkcs10CertificateRequestGenerator } from '@peculiar/x509';
 
 vi.mock('../common/mock-utils/key-pair-manager');
 vi.mock('@peculiar/x509', () => ({
@@ -28,23 +29,27 @@ describe('generateCSR', () => {
     vi.spyOn(keyPairManager, 'importECDSAKeyPair').mockResolvedValue(
       mockCryptoKeys,
     );
+    vi.mocked(Pkcs10CertificateRequestGenerator.create).mockClear();
   });
 
-  it('should generate CSR with all subject fields', async () => {
+  it('should generate CSR with supported subject fields', async () => {
     const subject: CSRSubject = {
       countryName: 'GB',
       stateOrProvinceName: 'England',
       localityName: 'London',
       organizationName: 'Example Org',
-      organizationalUnitName: 'IT',
       commonName: 'example.com',
-      emailAddress: 'test@example.com',
-      serialNumber: '12345',
     };
 
     const result = await generateCSR({
       ...mockKeyPair,
       subject,
+    });
+
+    expect(Pkcs10CertificateRequestGenerator.create).toHaveBeenCalledWith({
+      name: 'C=GB, ST=England, L=London, O=Example Org, CN=example.com',
+      keys: mockCryptoKeys,
+      signingAlgorithm: { name: 'ECDSA', hash: 'SHA-384' },
     });
 
     expect(result).toEqual({
@@ -58,6 +63,10 @@ describe('generateCSR', () => {
   it('should call importECDSAKeyPair with correct key pair', async () => {
     const importSpy = vi.spyOn(keyPairManager, 'importECDSAKeyPair');
     const subject: CSRSubject = {
+      countryName: 'GB',
+      stateOrProvinceName: 'London',
+      localityName: 'London',
+      organizationName: 'Government Digital Service',
       commonName: 'example.com',
     };
 

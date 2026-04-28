@@ -12,8 +12,6 @@ import {
   FIREBASE_KID,
 } from '../common/mock-utils/key-pair-manager.ts';
 import { FirebaseAppCheckSigner } from './firebase-appcheck-signer.ts';
-import { randomUUID } from 'node:crypto';
-
 import {
   dependencies,
   GenerateMockIssueCertDependencies,
@@ -93,19 +91,16 @@ async function generateMockRequest(
     CSR_POLICY.curve,
   );
 
-  // Generate UUID for serial number
-  const serialNumber = randomUUID();
-
   // Generate CSR
   const csr = await generateCSR({
     privateKeyPem: keyPair.privateKeyPem,
     publicKeyPem: keyPair.publicKeyPem,
     subject: {
       countryName: CSR_POLICY.subject.C,
+      stateOrProvinceName: CSR_POLICY.subject.ST,
+      localityName: CSR_POLICY.subject.L,
       organizationName: CSR_POLICY.subject.O,
-      organizationalUnitName: 'Reader Certification Authority',
       commonName: 'Example Verifier Org Reader Sub-CA',
-      serialNumber,
     },
   });
 

@@ -1,18 +1,14 @@
 import { importECDSAKeyPair } from '../common/mock-utils/key-pair-manager';
 
 export interface CSRSubject {
-  countryName?: string;
-  stateOrProvinceName?: string;
-  localityName?: string;
-  organizationName?: string;
-  organizationalUnitName?: string;
+  countryName: string;
+  stateOrProvinceName: string;
+  localityName: string;
+  organizationName: string;
   commonName: string;
-  emailAddress?: string;
-  serialNumber?: string;
 }
 
 export interface CSROptions {
-  keySize?: number;
   subject: CSRSubject;
 }
 
@@ -23,17 +19,13 @@ export interface CSRResult {
 }
 
 function buildSubjectString(subject: CSRSubject): string {
-  const parts = [];
-  if (subject.countryName) parts.push(`C=${subject.countryName}`);
-  if (subject.stateOrProvinceName)
-    parts.push(`ST=${subject.stateOrProvinceName}`);
-  if (subject.localityName) parts.push(`L=${subject.localityName}`);
-  if (subject.organizationName) parts.push(`O=${subject.organizationName}`);
-  if (subject.organizationalUnitName)
-    parts.push(`OU=${subject.organizationalUnitName}`);
-  parts.push(`CN=${subject.commonName}`);
-  if (subject.serialNumber) parts.push(`2.5.4.5=${subject.serialNumber}`);
-  if (subject.emailAddress) parts.push(`E=${subject.emailAddress}`);
+  const parts = [
+    `C=${subject.countryName}`,
+    `ST=${subject.stateOrProvinceName}`,
+    `L=${subject.localityName}`,
+    `O=${subject.organizationName}`,
+    `CN=${subject.commonName}`,
+  ];
   return parts.join(', ');
 }
 

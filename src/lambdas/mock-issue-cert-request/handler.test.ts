@@ -116,10 +116,10 @@ describe('Mock Issue Reader Cert Request Handler', () => {
         publicKeyPem: 'mock-public',
         subject: {
           countryName: 'GB',
+          localityName: 'London',
+          stateOrProvinceName: 'London',
           organizationName: 'Government Digital Service',
-          organizationalUnitName: 'Reader Certification Authority',
           commonName: 'Example Verifier Org Reader Sub-CA',
-          serialNumber: expect.any(String),
         },
       });
 
