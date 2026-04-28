@@ -7,6 +7,7 @@ import {
   EXTENDED_KEY_USAGE,
   EXPECTED_CERTIFICATE_VERSION,
   EXPECTED_SIGNATURE_ALGORITHM_OID,
+  EXPECTED_ISSUER_AND_SUBJECT_NAME,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -68,5 +69,19 @@ describe('EXPECTED_CERTIFICATE_VERSION', () => {
 describe('EXPECTED_SIGNATURE_ALGORITHM_OID', () => {
   it('Is "1.2.840.10045.4.3.3" (ECDSA with SHA-384 on P-384)', () => {
     expect(EXPECTED_SIGNATURE_ALGORITHM_OID).toEqual('1.2.840.10045.4.3.3');
+  });
+});
+
+describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
+  it('Has C as "GB"', () => {
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.C).toEqual('GB');
+  });
+
+  it('Has O as "Government Digital Service"', () => {
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.O).toEqual('Government Digital Service');
+  });
+
+  it('Has CN as "GOVUK Mobile Wallet Verifier CA"', () => {
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.CN).toEqual('GOVUK Mobile Wallet Verifier CA');
   });
 });

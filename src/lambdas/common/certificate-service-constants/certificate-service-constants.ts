@@ -24,3 +24,8 @@ export const EXTENDED_KEY_USAGE = [
 // Certificate validation constants
 export const EXPECTED_CERTIFICATE_VERSION = 2; // X.509 version field encoding: v1=0, v2=1, v3=2 (ASN.1 INTEGER values)
 export const EXPECTED_SIGNATURE_ALGORITHM_OID = '1.2.840.10045.4.3.3'; // ECDSA with SHA-384 on P-384
+export const EXPECTED_ISSUER_AND_SUBJECT_NAME = {
+  C: 'GB',
+  O: 'Government Digital Service',
+  CN: 'GOVUK Mobile Wallet Verifier CA',
+} as const;
