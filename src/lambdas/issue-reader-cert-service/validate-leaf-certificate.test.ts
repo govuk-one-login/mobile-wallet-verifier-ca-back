@@ -54,7 +54,7 @@ describe('validateLeafCertificate', () => {
         vi.spyOn(AsnConvert, 'parse').mockReturnValue({
           tbsCertificate: {
             version: 0, // v1 instead of v3 (2)
-            serialNumber: new ArrayBuffer(8), // Valid serial number
+            serialNumber: new ArrayBuffer(9), // Valid serial number
           },
         } as any);
         result = await validateLeafCertificate(validCert);
@@ -135,11 +135,10 @@ describe('validateLeafCertificate', () => {
       describe('Given certificate has serial number exceeding 20 octets', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const longSerial = new ArrayBuffer(21); // 21 bytes > 20 octets limit
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
-              version: 2, // Valid version
-              serialNumber: longSerial,
+              version: 2,
+              serialNumber: new ArrayBuffer(21),
             },
           } as any);
           result = await validateLeafCertificate(validCert);
@@ -149,13 +148,42 @@ describe('validateLeafCertificate', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
-            errorMessage: 'Certificate serial number must not exceed 20 octets',
+            errorMessage: 'Certificate serial number must be between 9 and 20 bytes',
           });
         });
 
         it('Returns serial number length error', () => {
           expect(result).toEqual(
-            errorResult('Certificate serial number must not exceed 20 octets'),
+            errorResult('Certificate serial number must be between 9 and 20 bytes'),
+          );
+        });
+      });
+
+      describe('Given certificate serial number is shorter than 9 bytes', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          const shortSerial = new ArrayBuffer(8);
+          new Uint8Array(shortSerial)[0] = 0x01;
+          vi.spyOn(AsnConvert, 'parse').mockReturnValue({
+            tbsCertificate: {
+              version: 2,
+              serialNumber: shortSerial,
+            },
+          } as any);
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Certificate serial number must be between 9 and 20 bytes',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult('Certificate serial number must be between 9 and 20 bytes'),
           );
         });
       });
@@ -163,7 +191,7 @@ describe('validateLeafCertificate', () => {
       describe('Given certificate has zero serial number', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const zeroSerial = new ArrayBuffer(8);
+          const zeroSerial = new ArrayBuffer(9);
           // ArrayBuffer is initialized with zeros by default
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
@@ -192,7 +220,7 @@ describe('validateLeafCertificate', () => {
       describe('Given certificate has negative serial number', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const negativeSerial = new ArrayBuffer(8);
+          const negativeSerial = new ArrayBuffer(9);
           const dataBytes = new Uint8Array(negativeSerial);
           dataBytes[0] = 0x80; // Set MSB to make it negative in ASN.1 INTEGER encoding
           dataBytes[1] = 0x01; // Add some value to make it non-zero
@@ -225,7 +253,7 @@ describe('validateLeafCertificate', () => {
       describe('Given TBS and outer signature algorithm OIDs do not match', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const validSerial = new ArrayBuffer(8);
+          const validSerial = new ArrayBuffer(9);
           new Uint8Array(validSerial)[0] = 0x01;
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
@@ -259,7 +287,7 @@ describe('validateLeafCertificate', () => {
       describe('Given signature algorithm OID is not the expected ECDSA with SHA-384', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const validSerial = new ArrayBuffer(8);
+          const validSerial = new ArrayBuffer(9);
           new Uint8Array(validSerial)[0] = 0x01;
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
@@ -295,10 +323,10 @@ describe('validateLeafCertificate', () => {
   describe('Given leaf certificate is valid', () => {
     beforeEach(async () => {
       const validCert = await createValidCertPem();
-      const validSerial = new ArrayBuffer(8);
+      const validSerial = new ArrayBuffer(9);
       const dataBytes = new Uint8Array(validSerial);
-      dataBytes[0] = 0x01; // Positive number (MSB not set)
-      dataBytes[1] = 0x23; // Some random bytes
+      dataBytes[0] = 0x01;
+      dataBytes[1] = 0x23;
       dataBytes[2] = 0x45;
       vi.spyOn(AsnConvert, 'parse').mockReturnValue({
         tbsCertificate: {
