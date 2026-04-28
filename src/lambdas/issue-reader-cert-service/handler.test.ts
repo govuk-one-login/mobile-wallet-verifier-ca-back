@@ -642,7 +642,7 @@ describe('Handler', () => {
         },
       },
       {
-        scenario: 'Given CSR subject serialNumber is present',
+        scenario: 'Given CSR subject 2.5.4.5 (serialNumber) is present',
         csrPemConfig: {
           subject: { additionalAttributes: ['2.5.4.5=123456'] },
         },
@@ -652,9 +652,9 @@ describe('Handler', () => {
         },
       },
       {
-        scenario: 'Given CSR subject emailAddress is present',
+        scenario: 'Given CSR subject E is present',
         csrPemConfig: {
-          subject: { additionalAttributes: ['E=test@example.com'] },
+          subject: { additionalAttributes: ['E=mock@email-address.com'] },
         },
         expectedErrorMessage: 'CSR subject contains unsupported fields',
         expectedLogData: {
