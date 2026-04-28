@@ -520,7 +520,7 @@ describe('Handler', () => {
         scenario: 'Given CSR has invalid extendedKeyUsage',
         csrPemConfig: { extendedKeyUsage: ['1.2.3.4'] },
         expectedErrorMessage:
-          'CSR extendedKeyUsage is not mobile document reader authentication',
+          'CSR extendedKeyUsage is not exactly 1.0.18013.5.1.6',
         expectedLogData: {
           extendedKeyUsage: ['1.2.3.4'],
         },
@@ -534,7 +534,7 @@ describe('Handler', () => {
           ],
         },
         expectedErrorMessage:
-          'CSR extendedKeyUsage is not mobile document reader authentication',
+          'CSR extendedKeyUsage is not exactly 1.0.18013.5.1.6',
         expectedLogData: {
           extendedKeyUsage: [
             CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication,

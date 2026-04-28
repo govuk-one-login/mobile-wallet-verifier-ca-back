@@ -225,8 +225,7 @@ function validateCsrExtendedKeyUsage(
       CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication
   ) {
     const errorMessage =
-    // note to self, should I note the actual value instead or in addition?
-      'CSR extendedKeyUsage is not mobile document reader authentication';
+      `CSR extendedKeyUsage is not exactly ${CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication}`;
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
       data: {
