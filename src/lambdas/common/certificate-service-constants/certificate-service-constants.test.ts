@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
-  VALIDITY,
+  VALIDITY_DURATION_MS,
   KEY_USAGE,
   EXTENDED_KEY_USAGE,
   EXPECTED_CERTIFICATE_VERSION,
@@ -24,17 +24,9 @@ describe('TEMPLATE_ARN', () => {
   });
 });
 
-describe('VALIDITY', () => {
-  describe('Type', () => {
-    it('Is "DAYS"', () => {
-      expect(VALIDITY.Type).toEqual('DAYS');
-    });
-  });
-
-  describe('Value', () => {
-    it('Is 1', () => {
-      expect(VALIDITY.Value).toEqual(1);
-    });
+describe('VALIDITY_DURATION_MS', () => {
+  it('Is 86400000 (24 hours in milliseconds)', () => {
+    expect(VALIDITY_DURATION_MS).toEqual(24 * 60 * 60 * 1000);
   });
 });
 

@@ -50,23 +50,25 @@ describe('validateLeafCertificate', () => {
 
   const mockAsnWithValidSerialAndSignature = (mockIssuerName = true) => {
     let callCount = 0;
-    vi.spyOn(AsnConvert, 'parse').mockImplementation((data: any, type: any) => {
-      callCount++;
-      if (callCount === 1) {
-        // First call is from X509Certificate constructor - let it through
-        return originalAsnConvertParse(data, type);
-      }
-      return {
-        tbsCertificate: {
-          version: 2,
-          serialNumber: validSerial,
-          signature: { algorithm: '1.2.840.10045.4.3.3' },
-          issuer: {},
-          subject: {},
-        },
-        signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
-      } as any;
-    });
+    vi.spyOn(AsnConvert, 'parse').mockImplementation(
+      (...args: Parameters<typeof AsnConvert.parse>) => {
+        callCount++;
+        if (callCount === 1) {
+          // First call is from X509Certificate constructor - let it through
+          return originalAsnConvertParse(...args);
+        }
+        return {
+          tbsCertificate: {
+            version: 2,
+            serialNumber: validSerial,
+            signature: { algorithm: '1.2.840.10045.4.3.3' },
+            issuer: {},
+            subject: {},
+          },
+          signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+        } as ReturnType<typeof AsnConvert.parse>;
+      },
+    );
     vi.spyOn(AsnConvert, 'serialize')
       .mockReturnValueOnce(validIssuerBytes.buffer)
       .mockReturnValueOnce(validIssuerBytes.buffer);
@@ -430,8 +432,8 @@ describe('validateLeafCertificate', () => {
           const invalidCert = await createValidCertPem({
             notBefore,
             notAfter: new Date(
-              notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS + 1000,
-            ), // +1 second over 24 hours
+              notBefore.getTime() + 26 * 60 * 60 * 1000,
+            ), // 26 hours - outside 24-25 hour range
           });
           mockAsnWithValidSerialAndSignature();
           result = await validateLeafCertificate(invalidCert);
@@ -442,13 +444,13 @@ describe('validateLeafCertificate', () => {
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-              'Certificate validity period must be exactly 24 hours',
+              'Certificate validity period must be between 24 and 25 hours',
           });
         });
 
         it('Returns an error result', () => {
           expect(result).toEqual(
-            errorResult('Certificate validity period must be exactly 24 hours'),
+            errorResult('Certificate validity period must be between 24 and 25 hours'),
           );
         });
       });
@@ -469,13 +471,13 @@ describe('validateLeafCertificate', () => {
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-              'Certificate validity period must be exactly 24 hours',
+              'Certificate validity period must be between 24 and 25 hours',
           });
         });
 
         it('Returns an error result', () => {
           expect(result).toEqual(
-            errorResult('Certificate validity period must be exactly 24 hours'),
+            errorResult('Certificate validity period must be between 24 and 25 hours'),
           );
         });
       });

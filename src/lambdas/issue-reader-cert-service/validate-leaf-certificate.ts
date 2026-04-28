@@ -359,10 +359,14 @@ function validateCertificateValidity(
 
     const validityDurationMs = notAfter.getTime() - notBefore.getTime();
     const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
+    const TWENTY_FIVE_HOURS_IN_MS = 25 * 60 * 60 * 1000;
 
-    if (validityDurationMs !== TWENTY_FOUR_HOURS_IN_MS) {
+    if (
+      validityDurationMs < TWENTY_FOUR_HOURS_IN_MS ||
+      validityDurationMs > TWENTY_FIVE_HOURS_IN_MS
+    ) {
       const errorMessage =
-        'Certificate validity period must be exactly 24 hours';
+        'Certificate validity period must be between 24 and 25 hours';
       logger.error(
         LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
         {
