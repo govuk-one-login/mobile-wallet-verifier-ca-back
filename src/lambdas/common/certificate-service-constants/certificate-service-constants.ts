@@ -6,8 +6,8 @@ export const TEMPLATE_ARN =
   'arn:aws:acm-pca:::template/BlankEndEntityCertificate_APIPassthrough/V1';
 
 export const VALIDITY = {
-  Type: 'DAYS',
-  Value: 1, // 24 hours
+  Type: 'HOURS',
+  Value: 24,
 } as const;
 
 export const KEY_USAGE = {
