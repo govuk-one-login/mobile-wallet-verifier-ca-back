@@ -224,8 +224,7 @@ function validateCsrExtendedKeyUsage(
     extendedKeyUsage.usages[0] !==
       CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication
   ) {
-    const errorMessage =
-      `CSR extendedKeyUsage is not exactly ${CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication}`;
+    const errorMessage = `CSR extendedKeyUsage is not exactly ${CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication}`;
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
       data: {
