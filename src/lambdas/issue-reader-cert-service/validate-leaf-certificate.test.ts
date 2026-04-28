@@ -10,13 +10,68 @@ import {
 import { validateLeafCertificate } from './validate-leaf-certificate.ts';
 import '../../../tests/testUtils/matchers.ts';
 import { emptySuccess, errorResult, Result } from '../common/result/result.ts';
-import { createValidCertPem } from '../../../tests/testUtils/create-valid-cert-pem.ts';
-import { X509Certificate } from '@peculiar/x509';
+import {
+  createValidCertPem,
+  createValidSerialNumber,
+} from '../../../tests/testUtils/create-valid-cert-pem.ts';
+import { X509Certificate, Name } from '@peculiar/x509';
 import { AsnConvert } from '@peculiar/asn1-schema';
+
+const VALID_CERT_NAME =
+  'C=GB, ST=London, L=London, O=Government Digital Service, CN=GOVUK Mobile Wallet Verifier CA';
+const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
 
 describe('validateLeafCertificate', () => {
   let consoleErrorSpy: MockInstance;
   let result: Result<void, string>;
+
+  const validIssuerBytes = new Uint8Array([0x01, 0x02, 0x03]);
+  const validSerial = createValidSerialNumber();
+
+  const mockValidIssuerName = () => {
+    const mockName = {
+      getField: (field: string) => {
+        const fields: Record<string, string[]> = {
+          C: ['GB'],
+          ST: ['London'],
+          L: ['London'],
+          O: ['Government Digital Service'],
+          CN: ['GOVUK Mobile Wallet Verifier CA'],
+        };
+        return fields[field] ?? [];
+      },
+    } as unknown as Name;
+    vi.spyOn(X509Certificate.prototype, 'issuerName', 'get').mockReturnValue(
+      mockName,
+    );
+  };
+
+  const originalAsnConvertParse = AsnConvert.parse.bind(AsnConvert);
+
+  const mockAsnWithValidSerialAndSignature = (mockIssuerName = true) => {
+    let callCount = 0;
+    vi.spyOn(AsnConvert, 'parse').mockImplementation((data: any, type: any) => {
+      callCount++;
+      if (callCount === 1) {
+        // First call is from X509Certificate constructor - let it through
+        return originalAsnConvertParse(data, type);
+      }
+      return {
+        tbsCertificate: {
+          version: 2,
+          serialNumber: validSerial,
+          signature: { algorithm: '1.2.840.10045.4.3.3' },
+          issuer: {},
+          subject: {},
+        },
+        signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+      } as any;
+    });
+    vi.spyOn(AsnConvert, 'serialize')
+      .mockReturnValueOnce(validIssuerBytes.buffer)
+      .mockReturnValueOnce(validIssuerBytes.buffer);
+    if (mockIssuerName) mockValidIssuerName();
+  };
 
   beforeEach(async () => {
     consoleErrorSpy = vi.spyOn(console, 'error');
@@ -34,6 +89,7 @@ describe('validateLeafCertificate', () => {
           await createValidCertPem({ invalidX509: true }),
         );
       });
+
       it('Logs error', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode:
@@ -55,14 +111,10 @@ describe('validateLeafCertificate', () => {
         vi.spyOn(AsnConvert, 'parse').mockReturnValue({
           tbsCertificate: {
             version: 0, // v1 instead of v3 (2)
-            serialNumber: new ArrayBuffer(9), // Valid serial number
+            serialNumber: new ArrayBuffer(9),
           },
         } as any);
         result = await validateLeafCertificate(validCert);
-      });
-
-      afterEach(() => {
-        vi.restoreAllMocks();
       });
 
       it('Logs error', () => {
@@ -84,8 +136,8 @@ describe('validateLeafCertificate', () => {
           const validCert = await createValidCertPem();
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
-              version: 2, // Valid version
-              serialNumber: null, // Missing serial number
+              version: 2,
+              serialNumber: null,
             },
           } as any);
           result = await validateLeafCertificate(validCert);
@@ -111,8 +163,8 @@ describe('validateLeafCertificate', () => {
           const validCert = await createValidCertPem();
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
-              version: 2, // Valid version
-              serialNumber: new ArrayBuffer(0), // Empty serial number
+              version: 2,
+              serialNumber: new ArrayBuffer(0),
             },
           } as any);
           result = await validateLeafCertificate(validCert);
@@ -198,12 +250,10 @@ describe('validateLeafCertificate', () => {
       describe('Given certificate has zero serial number', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const zeroSerial = new ArrayBuffer(9);
-          // ArrayBuffer is initialized with zeros by default
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
-              version: 2, // Valid version
-              serialNumber: zeroSerial,
+              version: 2,
+              serialNumber: new ArrayBuffer(9),
             },
           } as any);
           result = await validateLeafCertificate(validCert);
@@ -230,10 +280,10 @@ describe('validateLeafCertificate', () => {
           const negativeSerial = new ArrayBuffer(9);
           const dataBytes = new Uint8Array(negativeSerial);
           dataBytes[0] = 0x80; // Set MSB to make it negative in ASN.1 INTEGER encoding
-          dataBytes[1] = 0x01; // Add some value to make it non-zero
+          dataBytes[1] = 0x01;
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
-              version: 2, // Valid version
+              version: 2,
               serialNumber: negativeSerial,
             },
           } as any);
@@ -260,15 +310,13 @@ describe('validateLeafCertificate', () => {
       describe('Given TBS and outer signature algorithm OIDs do not match', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const validSerial = new ArrayBuffer(9);
-          new Uint8Array(validSerial)[0] = 0x01;
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
               version: 2,
               serialNumber: validSerial,
               signature: { algorithm: '1.2.840.10045.4.3.3' },
             },
-            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' }, // SHA-256, mismatch
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as any);
           result = await validateLeafCertificate(validCert);
         });
@@ -294,13 +342,11 @@ describe('validateLeafCertificate', () => {
       describe('Given signature algorithm OID is not the expected ECDSA with SHA-384', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
-          const validSerial = new ArrayBuffer(9);
-          new Uint8Array(validSerial)[0] = 0x01;
           vi.spyOn(AsnConvert, 'parse').mockReturnValue({
             tbsCertificate: {
               version: 2,
               serialNumber: validSerial,
-              signature: { algorithm: '1.2.840.10045.4.3.2' }, // SHA-256
+              signature: { algorithm: '1.2.840.10045.4.3.2' },
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as any);
@@ -327,47 +373,14 @@ describe('validateLeafCertificate', () => {
     });
 
     describe('Given certificate validity validation fails', () => {
-      const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
-      const now = new Date('2026-06-01T12:00:00Z');
-      const validNotBefore = new Date('2026-06-01T12:00:00Z');
-
-      const mockAsnWithValidSerial = () => {
-        const validSerial = new ArrayBuffer(9);
-        new Uint8Array(validSerial)[0] = 0x01;
-        vi.spyOn(AsnConvert, 'parse').mockReturnValue({
-          tbsCertificate: {
-            version: 2,
-            serialNumber: validSerial,
-            signature: { algorithm: '1.2.840.10045.4.3.3' },
-          },
-          signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
-        } as any);
-      };
-
-      beforeEach(() => {
-        vi.useFakeTimers();
-        vi.setSystemTime(now);
-      });
-
-      afterEach(() => {
-        vi.useRealTimers();
-      });
-
       describe('Given certificate is expired', () => {
         beforeEach(async () => {
-          const validCert = await createValidCertPem();
-          mockAsnWithValidSerial();
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notBefore',
-            'get',
-          ).mockReturnValue(new Date('2026-05-31T12:00:00Z'));
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notAfter',
-            'get',
-          ).mockReturnValue(new Date('2026-06-01T11:59:59Z'));
-          result = await validateLeafCertificate(validCert);
+          const expiredCert = await createValidCertPem({
+            notBefore: new Date('2026-01-01T00:00:00Z'),
+            notAfter: new Date('2026-01-02T00:00:00Z'),
+          });
+          mockAsnWithValidSerialAndSignature();
+          result = await validateLeafCertificate(expiredCert);
         });
 
         it('Logs error', () => {
@@ -387,19 +400,13 @@ describe('validateLeafCertificate', () => {
 
       describe('Given certificate is not yet valid', () => {
         beforeEach(async () => {
-          const validCert = await createValidCertPem();
-          mockAsnWithValidSerial();
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notBefore',
-            'get',
-          ).mockReturnValue(new Date('2026-06-01T13:00:00Z'));
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notAfter',
-            'get',
-          ).mockReturnValue(new Date('2026-06-02T13:00:00Z'));
-          result = await validateLeafCertificate(validCert);
+          const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
+          const futureCert = await createValidCertPem({
+            notBefore: futureDate,
+            notAfter: new Date(futureDate.getTime() + TWENTY_FOUR_HOURS_IN_MS),
+          });
+          mockAsnWithValidSerialAndSignature();
+          result = await validateLeafCertificate(futureCert);
         });
 
         it('Logs error', () => {
@@ -419,21 +426,15 @@ describe('validateLeafCertificate', () => {
 
       describe('Given certificate validity period is not exactly 24 hours', () => {
         beforeEach(async () => {
-          const validCert = await createValidCertPem();
-          mockAsnWithValidSerial();
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notBefore',
-            'get',
-          ).mockReturnValue(validNotBefore);
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notAfter',
-            'get',
-          ).mockReturnValue(
-            new Date(validNotBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS + 1),
-          );
-          result = await validateLeafCertificate(validCert);
+          const notBefore = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+          const invalidCert = await createValidCertPem({
+            notBefore,
+            notAfter: new Date(
+              notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS + 1000,
+            ), // +1 second over 24 hours
+          });
+          mockAsnWithValidSerialAndSignature();
+          result = await validateLeafCertificate(invalidCert);
         });
 
         it('Logs error', () => {
@@ -452,21 +453,15 @@ describe('validateLeafCertificate', () => {
         });
       });
 
-      describe('Given certificate notAfter is before notBefore', () => {
+      describe('Given certificate validity period is less than 24 hours', () => {
         beforeEach(async () => {
-          const validCert = await createValidCertPem();
-          mockAsnWithValidSerial();
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notBefore',
-            'get',
-          ).mockReturnValue(new Date('2026-06-01T11:00:00Z'));
-          vi.spyOn(
-            X509Certificate.prototype,
-            'notAfter',
-            'get',
-          ).mockReturnValue(new Date('2026-06-01T13:00:00Z'));
-          result = await validateLeafCertificate(validCert);
+          const notBefore = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+          const invalidCert = await createValidCertPem({
+            notBefore,
+            notAfter: new Date(notBefore.getTime() + 2 * 60 * 60 * 1000), // 2 hours
+          });
+          mockAsnWithValidSerialAndSignature();
+          result = await validateLeafCertificate(invalidCert);
         });
 
         it('Logs error', () => {
@@ -481,6 +476,88 @@ describe('validateLeafCertificate', () => {
         it('Returns an error result', () => {
           expect(result).toEqual(
             errorResult('Certificate validity period must be exactly 24 hours'),
+          );
+        });
+      });
+    });
+
+    describe('Given certificate issuer and subject validation fails', () => {
+      describe('Given issuer and subject binary values do not match', () => {
+        beforeEach(async () => {
+          const notBefore = new Date(Date.now() - 60 * 60 * 1000);
+          const validCert = await createValidCertPem({
+            name: VALID_CERT_NAME,
+            notBefore,
+            notAfter: new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS),
+          });
+
+          let callCount = 0;
+          vi.spyOn(AsnConvert, 'parse').mockImplementation(
+            (data: any, type: any) => {
+              callCount++;
+              if (callCount === 1) return originalAsnConvertParse(data, type);
+              return {
+                tbsCertificate: {
+                  version: 2,
+                  serialNumber: validSerial,
+                  signature: { algorithm: '1.2.840.10045.4.3.3' },
+                  issuer: {},
+                  subject: {},
+                },
+                signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+              } as any;
+            },
+          );
+          vi.spyOn(AsnConvert, 'serialize')
+            .mockReturnValueOnce(new Uint8Array([0x01, 0x02, 0x03]).buffer)
+            .mockReturnValueOnce(new Uint8Array([0x04, 0x05, 0x06]).buffer);
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Certificate issuer and subject must have identical binary values',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult(
+              'Certificate issuer and subject must have identical binary values',
+            ),
+          );
+        });
+      });
+
+      describe('Given issuer name does not match expected values', () => {
+        beforeEach(async () => {
+          const notBefore = new Date(Date.now() - 60 * 60 * 1000);
+          const wrongNameCert = await createValidCertPem({
+            name: 'C=US, ST=London, L=London, O=Government Digital Service, CN=GOVUK Mobile Wallet Verifier CA',
+            notBefore,
+            notAfter: new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS),
+          });
+          mockAsnWithValidSerialAndSignature(false);
+          result = await validateLeafCertificate(wrongNameCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Certificate issuer and subject must match expected name values',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult(
+              'Certificate issuer and subject must match expected name values',
+            ),
           );
         });
       });
@@ -489,33 +566,14 @@ describe('validateLeafCertificate', () => {
 
   describe('Given leaf certificate is valid', () => {
     beforeEach(async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
-      const validCert = await createValidCertPem();
-      const validSerial = new ArrayBuffer(9);
-      const dataBytes = new Uint8Array(validSerial);
-      dataBytes[0] = 0x01;
-      dataBytes[1] = 0x23;
-      dataBytes[2] = 0x45;
-      vi.spyOn(AsnConvert, 'parse').mockReturnValue({
-        tbsCertificate: {
-          version: 2,
-          serialNumber: validSerial,
-          signature: { algorithm: '1.2.840.10045.4.3.3' },
-        },
-        signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
-      } as any);
-      vi.spyOn(X509Certificate.prototype, 'notBefore', 'get').mockReturnValue(
-        new Date('2026-01-01T00:00:00Z'),
-      );
-      vi.spyOn(X509Certificate.prototype, 'notAfter', 'get').mockReturnValue(
-        new Date('2026-01-02T00:00:00Z'),
-      );
+      const notBefore = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+      const validCert = await createValidCertPem({
+        name: VALID_CERT_NAME,
+        notBefore,
+        notAfter: new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS),
+      });
+      mockAsnWithValidSerialAndSignature();
       result = await validateLeafCertificate(validCert);
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
     });
 
     it('Returns empty success', () => {
