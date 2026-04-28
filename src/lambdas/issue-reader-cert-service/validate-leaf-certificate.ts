@@ -39,6 +39,11 @@ export async function validateLeafCertificate(
     return signatureValidation;
   }
 
+  const validityValidation = validateCertificateValidity(certificate);
+  if (validityValidation.isError) {
+    return validityValidation;
+  }
+
   return emptySuccess();
 }
 
@@ -129,7 +134,11 @@ function validateSerialNumber(
         LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
         {
           errorMessage,
-          data: { serialNumberLength: serialNumber.byteLength, minLength: 9, maxLength: 20 },
+          data: {
+            serialNumberLength: serialNumber.byteLength,
+            minLength: 9,
+            maxLength: 20,
+          },
         },
       );
       return errorResult(errorMessage);
@@ -227,5 +236,63 @@ function validateSignatureAlgorithm(
     return errorResult(errorMessage);
   }
 
+  return emptySuccess();
+}
+
+function validateCertificateValidity(
+  certificate: X509Certificate,
+): Result<void, string> {
+  try {
+    const now = new Date();
+    const notBefore = certificate.notBefore;
+    const notAfter = certificate.notAfter;
+
+    if (now < notBefore || now > notAfter) {
+      const errorMessage = 'Certificate is not within its validity period';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: {
+            notBefore: notBefore.toISOString(),
+            notAfter: notAfter.toISOString(),
+            currentTime: now.toISOString(),
+          },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+
+    const validityDurationMs = notAfter.getTime() - notBefore.getTime();
+    const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
+
+    if (validityDurationMs !== TWENTY_FOUR_HOURS_IN_MS) {
+      const errorMessage =
+        'Certificate validity period must be exactly 24 hours';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: {
+            notBefore: notBefore.toISOString(),
+            notAfter: notAfter.toISOString(),
+            actualDurationMs: validityDurationMs,
+            expectedDurationMs: TWENTY_FOUR_HOURS_IN_MS,
+          },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+  } catch (error: unknown) {
+    const errorMessage = 'Failed to parse certificate validity';
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage,
+        data: { error },
+      },
+    );
+    return errorResult(errorMessage);
+  }
   return emptySuccess();
 }

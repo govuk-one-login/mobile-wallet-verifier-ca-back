@@ -11,6 +11,7 @@ import { validateLeafCertificate } from './validate-leaf-certificate.ts';
 import '../../../tests/testUtils/matchers.ts';
 import { emptySuccess, errorResult, Result } from '../common/result/result.ts';
 import { createValidCertPem } from '../../../tests/testUtils/create-valid-cert-pem.ts';
+import { X509Certificate } from '@peculiar/x509';
 import { AsnConvert } from '@peculiar/asn1-schema';
 
 describe('validateLeafCertificate', () => {
@@ -148,13 +149,16 @@ describe('validateLeafCertificate', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
-            errorMessage: 'Certificate serial number must be between 9 and 20 bytes',
+            errorMessage:
+              'Certificate serial number must be between 9 and 20 bytes',
           });
         });
 
         it('Returns serial number length error', () => {
           expect(result).toEqual(
-            errorResult('Certificate serial number must be between 9 and 20 bytes'),
+            errorResult(
+              'Certificate serial number must be between 9 and 20 bytes',
+            ),
           );
         });
       });
@@ -177,13 +181,16 @@ describe('validateLeafCertificate', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
-            errorMessage: 'Certificate serial number must be between 9 and 20 bytes',
+            errorMessage:
+              'Certificate serial number must be between 9 and 20 bytes',
           });
         });
 
         it('Returns an error result', () => {
           expect(result).toEqual(
-            errorResult('Certificate serial number must be between 9 and 20 bytes'),
+            errorResult(
+              'Certificate serial number must be between 9 and 20 bytes',
+            ),
           );
         });
       });
@@ -318,10 +325,172 @@ describe('validateLeafCertificate', () => {
         });
       });
     });
+
+    describe('Given certificate validity validation fails', () => {
+      const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
+      const now = new Date('2026-06-01T12:00:00Z');
+      const validNotBefore = new Date('2026-06-01T12:00:00Z');
+
+      const mockAsnWithValidSerial = () => {
+        const validSerial = new ArrayBuffer(9);
+        new Uint8Array(validSerial)[0] = 0x01;
+        vi.spyOn(AsnConvert, 'parse').mockReturnValue({
+          tbsCertificate: {
+            version: 2,
+            serialNumber: validSerial,
+            signature: { algorithm: '1.2.840.10045.4.3.3' },
+          },
+          signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+        } as any);
+      };
+
+      beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(now);
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      describe('Given certificate is expired', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          mockAsnWithValidSerial();
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notBefore',
+            'get',
+          ).mockReturnValue(new Date('2026-05-31T12:00:00Z'));
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notAfter',
+            'get',
+          ).mockReturnValue(new Date('2026-06-01T11:59:59Z'));
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Certificate is not within its validity period',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult('Certificate is not within its validity period'),
+          );
+        });
+      });
+
+      describe('Given certificate is not yet valid', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          mockAsnWithValidSerial();
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notBefore',
+            'get',
+          ).mockReturnValue(new Date('2026-06-01T13:00:00Z'));
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notAfter',
+            'get',
+          ).mockReturnValue(new Date('2026-06-02T13:00:00Z'));
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Certificate is not within its validity period',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult('Certificate is not within its validity period'),
+          );
+        });
+      });
+
+      describe('Given certificate validity period is not exactly 24 hours', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          mockAsnWithValidSerial();
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notBefore',
+            'get',
+          ).mockReturnValue(validNotBefore);
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notAfter',
+            'get',
+          ).mockReturnValue(
+            new Date(validNotBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS + 1),
+          );
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Certificate validity period must be exactly 24 hours',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult('Certificate validity period must be exactly 24 hours'),
+          );
+        });
+      });
+
+      describe('Given certificate notAfter is before notBefore', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          mockAsnWithValidSerial();
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notBefore',
+            'get',
+          ).mockReturnValue(new Date('2026-06-01T11:00:00Z'));
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notAfter',
+            'get',
+          ).mockReturnValue(new Date('2026-06-01T13:00:00Z'));
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Certificate validity period must be exactly 24 hours',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult('Certificate validity period must be exactly 24 hours'),
+          );
+        });
+      });
+    });
   });
 
   describe('Given leaf certificate is valid', () => {
     beforeEach(async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T12:00:00Z'));
       const validCert = await createValidCertPem();
       const validSerial = new ArrayBuffer(9);
       const dataBytes = new Uint8Array(validSerial);
@@ -330,13 +499,23 @@ describe('validateLeafCertificate', () => {
       dataBytes[2] = 0x45;
       vi.spyOn(AsnConvert, 'parse').mockReturnValue({
         tbsCertificate: {
-          version: 2, // Valid v3 certificate
-          serialNumber: validSerial, // Valid serial number
+          version: 2,
+          serialNumber: validSerial,
           signature: { algorithm: '1.2.840.10045.4.3.3' },
         },
         signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
       } as any);
+      vi.spyOn(X509Certificate.prototype, 'notBefore', 'get').mockReturnValue(
+        new Date('2026-01-01T00:00:00Z'),
+      );
+      vi.spyOn(X509Certificate.prototype, 'notAfter', 'get').mockReturnValue(
+        new Date('2026-01-02T00:00:00Z'),
+      );
       result = await validateLeafCertificate(validCert);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
     it('Returns empty success', () => {
