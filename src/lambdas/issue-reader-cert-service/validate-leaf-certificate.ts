@@ -121,15 +121,15 @@ function validateSerialNumber(
       return errorResult(errorMessage);
     }
 
-    // Check maximum 20 octets (bytes)
-    if (serialNumber.byteLength > 20) {
+    // Shall contain at least 63 bits and should contain at least 71 bits of CSPRNG output (minimum 9 bytes), maximum 20 octets
+    if (serialNumber.byteLength < 9 || serialNumber.byteLength > 20) {
       const errorMessage =
-        'Certificate serial number must not exceed 20 octets';
+        'Certificate serial number must be between 9 and 20 bytes';
       logger.error(
         LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
         {
           errorMessage,
-          data: { serialNumberLength: serialNumber.byteLength, maxLength: 20 },
+          data: { serialNumberLength: serialNumber.byteLength, minLength: 9, maxLength: 20 },
         },
       );
       return errorResult(errorMessage);
