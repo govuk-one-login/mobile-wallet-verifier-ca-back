@@ -6,6 +6,7 @@ import {
   KEY_USAGE,
   EXTENDED_KEY_USAGE,
   EXPECTED_CERTIFICATE_VERSION,
+  EXPECTED_SIGNATURE_ALGORITHM_OID,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -61,5 +62,11 @@ describe('EXTENDED_KEY_USAGE', () => {
 describe('EXPECTED_CERTIFICATE_VERSION', () => {
   it('Is 2 (X.509 v3)', () => {
     expect(EXPECTED_CERTIFICATE_VERSION).toEqual(2);
+  });
+});
+
+describe('EXPECTED_SIGNATURE_ALGORITHM_OID', () => {
+  it('Is "1.2.840.10045.4.3.3" (ECDSA with SHA-384 on P-384)', () => {
+    expect(EXPECTED_SIGNATURE_ALGORITHM_OID).toEqual('1.2.840.10045.4.3.3');
   });
 });
