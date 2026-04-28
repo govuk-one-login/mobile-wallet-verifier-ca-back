@@ -1,14 +1,23 @@
 import {
   BasicConstraintsExtension,
+  ExtendedKeyUsageExtension,
+  Extension,
+  KeyUsageFlags,
+  KeyUsagesExtension,
   Pkcs10CertificateRequestGenerator,
 } from '@peculiar/x509';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import { CertificationRequest } from '@peculiar/asn1-csr';
-import { CSR_POLICY } from '../../src/lambdas/common/csr-constants/csr-constants';
+import {
+  CSR_POLICY,
+  NAME_CONSTRAINTS_OID,
+} from '../../src/lambdas/common/csr-constants/csr-constants';
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {
   C?: string | null;
+  ST?: string | null;
+  L?: string | null;
   O?: string | null;
   CN?: string | null;
   additionalAttributes?: string[];
@@ -18,6 +27,9 @@ export interface CreateCsrPemOptions {
   invalidPkcs10?: boolean;
   keyAlgorithm?: CsrKeyAlgorithm;
   basicConstraintsCa?: boolean;
+  keyUsage?: KeyUsageFlags;
+  extendedKeyUsage?: string[];
+  nameConstraints?: boolean;
   invalidateSignature?: boolean;
   unsupportedSignatureAlgorithm?: boolean;
   subject?: SubjectEntries;
@@ -38,9 +50,7 @@ export async function createCsrPem(
     'verify',
   ]);
 
-  const extensions = options.basicConstraintsCa
-    ? [new BasicConstraintsExtension(true, undefined, true)]
-    : [];
+  const extensions = buildExtensions(options);
 
   const csr = await Pkcs10CertificateRequestGenerator.create({
     name: buildSubjectName(options.subject),
@@ -64,6 +74,36 @@ export async function createCsrPem(
   }
 
   return csr.toString('pem');
+}
+
+function buildExtensions(options: CreateCsrPemOptions): Extension[] {
+  const extensions: Extension[] = [];
+
+  if (options.basicConstraintsCa !== undefined) {
+    extensions.push(
+      new BasicConstraintsExtension(
+        options.basicConstraintsCa,
+        undefined,
+        true,
+      ),
+    );
+  }
+
+  if (options.keyUsage !== undefined) {
+    extensions.push(new KeyUsagesExtension(options.keyUsage, true));
+  }
+
+  if (options.extendedKeyUsage !== undefined) {
+    extensions.push(new ExtendedKeyUsageExtension(options.extendedKeyUsage));
+  }
+
+  if (options.nameConstraints) {
+    extensions.push(
+      new Extension(NAME_CONSTRAINTS_OID, true, Buffer.from([0x30, 0x00])),
+    );
+  }
+
+  return extensions;
 }
 
 function getKeyGenerationAlgorithm(
@@ -120,13 +160,17 @@ function toPem(der: Buffer): string {
 function buildSubjectName(subject: SubjectEntries = {}): string {
   const {
     C = CSR_POLICY.subject.C,
+    ST = CSR_POLICY.subject.ST,
+    L = CSR_POLICY.subject.L,
     O = CSR_POLICY.subject.O,
     CN = 'MockCN',
-    additionalAttributes = ['OU=Ignored Subject Attribute'],
+    additionalAttributes = [],
   } = subject;
 
   const parts = [
     C === null ? null : `C=${C}`,
+    ST === null ? null : `ST=${ST}`,
+    L === null ? null : `L=${L}`,
     O === null ? null : `O=${O}`,
     CN === null ? null : `CN=${CN}`,
     ...additionalAttributes,

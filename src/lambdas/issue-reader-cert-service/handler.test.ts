@@ -40,6 +40,8 @@ import {
   createCsrPem,
   CreateCsrPemOptions,
 } from '../../../tests/testUtils/create-csr-pem.ts';
+import { KeyUsageFlags } from '@peculiar/x509';
+import { CSR_POLICY } from '../common/csr-constants/csr-constants.ts';
 import {
   GetCertificateParams,
   IssueCertificateParams,
@@ -454,6 +456,8 @@ describe('Handler', () => {
       expectedErrorMessage: string;
       expectedLogData?: Record<string, unknown>;
     };
+    const keyUsageWithDisallowedKeyEncipherment =
+      KeyUsageFlags.digitalSignature | KeyUsageFlags.keyEncipherment;
     const invalidCsrTestCases: InvalidCsrTestCase[] = [
       {
         scenario: 'Given CSRPem is not valid PKCS#10',
@@ -503,6 +507,58 @@ describe('Handler', () => {
         },
       },
       {
+        scenario: 'Given CSR has invalid keyUsage',
+        csrPemConfig: {
+          keyUsage: keyUsageWithDisallowedKeyEncipherment,
+        },
+        expectedErrorMessage: 'CSR keyUsage is not digitalSignature',
+        expectedLogData: {
+          keyUsage: keyUsageWithDisallowedKeyEncipherment,
+        },
+      },
+      {
+        scenario: 'Given CSR has invalid extendedKeyUsage',
+        csrPemConfig: { extendedKeyUsage: ['1.2.3.4'] },
+        expectedErrorMessage:
+          'CSR extendedKeyUsage is not mobile document reader authentication',
+        expectedLogData: {
+          extendedKeyUsage: ['1.2.3.4'],
+        },
+      },
+      {
+        scenario: 'Given CSR has extra extendedKeyUsage',
+        csrPemConfig: {
+          extendedKeyUsage: [
+            CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication,
+            '1.2.3.4',
+          ],
+        },
+        expectedErrorMessage:
+          'CSR extendedKeyUsage is not mobile document reader authentication',
+        expectedLogData: {
+          extendedKeyUsage: [
+            CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication,
+            '1.2.3.4',
+          ],
+        },
+      },
+      {
+        scenario: 'Given CSR contains NameConstraints',
+        csrPemConfig: { nameConstraints: true },
+        expectedErrorMessage: 'CSR contains NameConstraints extension',
+        expectedLogData: {
+          extensionType: '2.5.29.30',
+        },
+      },
+      {
+        scenario: 'Given CSR subject country is missing',
+        csrPemConfig: { subject: { C: null } },
+        expectedErrorMessage: 'CSR subject C is not GB',
+        expectedLogData: {
+          subjectC: [],
+        },
+      },
+      {
         scenario: 'Given CSR subject country is not GB',
         csrPemConfig: { subject: { C: 'FR' } },
         expectedErrorMessage: 'CSR subject C is not GB',
@@ -511,7 +567,48 @@ describe('Handler', () => {
         },
       },
       {
-        scenario: 'Given CSR subject 0 is not Government Digital Service',
+        scenario: 'Given CSR subject state or province is missing',
+        csrPemConfig: { subject: { ST: null } },
+        expectedErrorMessage: 'CSR subject ST is not London',
+        expectedLogData: {
+          subjectST: [],
+        },
+      },
+      {
+        scenario: 'Given CSR subject state or province is not London',
+        csrPemConfig: { subject: { ST: 'Manchester' } },
+        expectedErrorMessage: 'CSR subject ST is not London',
+        expectedLogData: {
+          subjectST: ['Manchester'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject locality is missing',
+        csrPemConfig: { subject: { L: null } },
+        expectedErrorMessage: 'CSR subject L is not London',
+        expectedLogData: {
+          subjectL: [],
+        },
+      },
+      {
+        scenario: 'Given CSR subject locality is not London',
+        csrPemConfig: { subject: { L: 'Cardiff' } },
+        expectedErrorMessage: 'CSR subject L is not London',
+        expectedLogData: {
+          subjectL: ['Cardiff'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject organisation is missing',
+        csrPemConfig: { subject: { O: null } },
+        expectedErrorMessage: 'CSR subject O is not Government Digital Service',
+        expectedLogData: {
+          subjectO: [],
+        },
+      },
+      {
+        scenario:
+          'Given CSR subject organisation is not Government Digital Service',
         csrPemConfig: { subject: { O: 'Invalid Service' } },
         expectedErrorMessage: 'CSR subject O is not Government Digital Service',
         expectedLogData: {
@@ -532,6 +629,36 @@ describe('Handler', () => {
         expectedErrorMessage: 'CSR subject CN is not present',
         expectedLogData: {
           subjectCN: [''],
+        },
+      },
+      {
+        scenario: 'Given CSR subject OU is present',
+        csrPemConfig: {
+          subject: { additionalAttributes: ['OU=Reader Certification'] },
+        },
+        expectedErrorMessage: 'CSR subject OU is present',
+        expectedLogData: {
+          subjectOU: ['Reader Certification'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject serialNumber is present',
+        csrPemConfig: {
+          subject: { additionalAttributes: ['2.5.4.5=123456'] },
+        },
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
+        expectedLogData: {
+          unsupportedSubjectFields: ['2.5.4.5'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject emailAddress is present',
+        csrPemConfig: {
+          subject: { additionalAttributes: ['E=test@example.com'] },
+        },
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
+        expectedLogData: {
+          unsupportedSubjectFields: ['E'],
         },
       },
     ];
