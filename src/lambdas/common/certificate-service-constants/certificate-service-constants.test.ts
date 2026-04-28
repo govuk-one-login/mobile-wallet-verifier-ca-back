@@ -78,7 +78,9 @@ describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
   });
 
   it('Has O as "Government Digital Service"', () => {
-    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.O).toEqual('Government Digital Service');
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.O).toEqual(
+      'Government Digital Service',
+    );
   });
 
   it('Has ST as "London"', () => {
@@ -86,7 +88,9 @@ describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
   });
 
   it('Has CN as "GOVUK Mobile Wallet Verifier CA"', () => {
-    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.CN).toEqual('GOVUK Mobile Wallet Verifier CA');
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.CN).toEqual(
+      'GOVUK Mobile Wallet Verifier CA',
+    );
   });
 
   it('Has L as "London"', () => {
