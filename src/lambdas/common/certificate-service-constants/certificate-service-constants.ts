@@ -27,5 +27,7 @@ export const EXPECTED_SIGNATURE_ALGORITHM_OID = '1.2.840.10045.4.3.3'; // ECDSA 
 export const EXPECTED_ISSUER_AND_SUBJECT_NAME = {
   C: 'GB',
   O: 'Government Digital Service',
+  ST: 'London',
   CN: 'GOVUK Mobile Wallet Verifier CA',
+  L: 'London',
 } as const;
