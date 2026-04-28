@@ -636,9 +636,9 @@ describe('Handler', () => {
         csrPemConfig: {
           subject: { additionalAttributes: ['OU=Reader Certification'] },
         },
-        expectedErrorMessage: 'CSR subject OU is present',
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
         expectedLogData: {
-          subjectOU: ['Reader Certification'],
+          unsupportedSubjectFields: ['OU'],
         },
       },
       {

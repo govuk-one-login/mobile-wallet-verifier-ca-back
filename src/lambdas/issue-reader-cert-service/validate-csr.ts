@@ -328,18 +328,6 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
     return errorResult(errorMessage);
   }
 
-  const subjectOrganisationalUnitNames = subjectName.getField('OU');
-  if (subjectOrganisationalUnitNames.length > 0) {
-    const errorMessage = 'CSR subject OU is present';
-    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
-      errorMessage,
-      data: {
-        subjectOU: subjectOrganisationalUnitNames,
-      },
-    });
-    return errorResult(errorMessage);
-  }
-
   const unsupportedSubjectFields = getUnsupportedSubjectFields(subjectName);
   if (unsupportedSubjectFields.length > 0) {
     const errorMessage = 'CSR subject contains unsupported fields';
