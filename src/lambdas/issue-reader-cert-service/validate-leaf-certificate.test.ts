@@ -113,7 +113,7 @@ describe('validateLeafCertificate', () => {
             version: 0, // v1 instead of v3 (2)
             serialNumber: new ArrayBuffer(9),
           },
-        } as any);
+        } as ReturnType<typeof AsnConvert.parse>);
         result = await validateLeafCertificate(validCert);
       });
 
@@ -139,7 +139,7 @@ describe('validateLeafCertificate', () => {
               version: 2,
               serialNumber: null,
             },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -166,7 +166,7 @@ describe('validateLeafCertificate', () => {
               version: 2,
               serialNumber: new ArrayBuffer(0),
             },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -193,7 +193,7 @@ describe('validateLeafCertificate', () => {
               version: 2,
               serialNumber: new ArrayBuffer(21),
             },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -225,7 +225,7 @@ describe('validateLeafCertificate', () => {
               version: 2,
               serialNumber: shortSerial,
             },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -255,7 +255,7 @@ describe('validateLeafCertificate', () => {
               version: 2,
               serialNumber: new ArrayBuffer(9),
             },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -286,7 +286,7 @@ describe('validateLeafCertificate', () => {
               version: 2,
               serialNumber: negativeSerial,
             },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -317,7 +317,7 @@ describe('validateLeafCertificate', () => {
               signature: { algorithm: '1.2.840.10045.4.3.3' },
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -349,7 +349,7 @@ describe('validateLeafCertificate', () => {
               signature: { algorithm: '1.2.840.10045.4.3.2' },
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
-          } as any);
+          } as ReturnType<typeof AsnConvert.parse>);
           result = await validateLeafCertificate(validCert);
         });
 
@@ -493,9 +493,9 @@ describe('validateLeafCertificate', () => {
 
           let callCount = 0;
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-            (data: any, type: any) => {
+            (...args: Parameters<typeof AsnConvert.parse>) => {
               callCount++;
-              if (callCount === 1) return originalAsnConvertParse(data, type);
+              if (callCount === 1) return originalAsnConvertParse(...args);
               return {
                 tbsCertificate: {
                   version: 2,
@@ -505,7 +505,7 @@ describe('validateLeafCertificate', () => {
                   subject: {},
                 },
                 signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
-              } as any;
+              } as ReturnType<typeof AsnConvert.parse>;
             },
           );
           vi.spyOn(AsnConvert, 'serialize')
