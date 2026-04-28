@@ -9,7 +9,10 @@ import {
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
-import { EXPECTED_CERTIFICATE_VERSION } from '../common/certificate-service-constants/certificate-service-constants.ts';
+import {
+  EXPECTED_CERTIFICATE_VERSION,
+  EXPECTED_SIGNATURE_ALGORITHM_OID,
+} from '../common/certificate-service-constants/certificate-service-constants.ts';
 
 export async function validateLeafCertificate(
   certPem: string,
@@ -26,10 +29,16 @@ export async function validateLeafCertificate(
     return versionValidation;
   }
 
-  const serialValidation = validateSerialNumber(certificate);
-  if (serialValidation.isError) {
-    return serialValidation;
+  const serialNumberValidation = validateSerialNumber(certificate);
+  if (serialNumberValidation.isError) {
+    return serialNumberValidation;
   }
+
+  const signatureValidation = validateSignatureAlgorithm(certificate);
+  if (signatureValidation.isError) {
+    return signatureValidation;
+  }
+
   return emptySuccess();
 }
 
@@ -167,5 +176,56 @@ function validateSerialNumber(
     );
     return errorResult(errorMessage);
   }
+  return emptySuccess();
+}
+
+function validateSignatureAlgorithm(
+  certificate: X509Certificate,
+): Result<void, string> {
+  try {
+    const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
+    const tbsAlgorithm = certAsn.tbsCertificate.signature.algorithm; // Signature algorithm inside Data
+    const outerAlgorithm = certAsn.signatureAlgorithm.algorithm;
+
+    if (tbsAlgorithm !== outerAlgorithm) {
+      const errorMessage =
+        'Certificate signature algorithm OID mismatch between TBS and outer certificate';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: { tbsAlgorithm, outerAlgorithm },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+
+    if (tbsAlgorithm !== EXPECTED_SIGNATURE_ALGORITHM_OID) {
+      const errorMessage =
+        'Certificate signature algorithm must be ECDSA with SHA-384 on P-384';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: {
+            actualAlgorithm: tbsAlgorithm,
+            expectedAlgorithm: EXPECTED_SIGNATURE_ALGORITHM_OID,
+          },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+  } catch (error: unknown) {
+    const errorMessage = 'Failed to parse certificate signature algorithm';
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage,
+        data: { error },
+      },
+    );
+    return errorResult(errorMessage);
+  }
+
   return emptySuccess();
 }

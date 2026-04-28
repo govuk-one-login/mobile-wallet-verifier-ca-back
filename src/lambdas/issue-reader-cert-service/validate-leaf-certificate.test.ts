@@ -220,6 +220,76 @@ describe('validateLeafCertificate', () => {
         });
       });
     });
+
+    describe('Given certificate signature algorithm validation fails', () => {
+      describe('Given TBS and outer signature algorithm OIDs do not match', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          const validSerial = new ArrayBuffer(8);
+          new Uint8Array(validSerial)[0] = 0x01;
+          vi.spyOn(AsnConvert, 'parse').mockReturnValue({
+            tbsCertificate: {
+              version: 2,
+              serialNumber: validSerial,
+              signature: { algorithm: '1.2.840.10045.4.3.3' },
+            },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' }, // SHA-256, mismatch
+          } as any);
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Certificate signature algorithm OID mismatch between TBS and outer certificate',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult(
+              'Certificate signature algorithm OID mismatch between TBS and outer certificate',
+            ),
+          );
+        });
+      });
+
+      describe('Given signature algorithm OID is not the expected ECDSA with SHA-384', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          const validSerial = new ArrayBuffer(8);
+          new Uint8Array(validSerial)[0] = 0x01;
+          vi.spyOn(AsnConvert, 'parse').mockReturnValue({
+            tbsCertificate: {
+              version: 2,
+              serialNumber: validSerial,
+              signature: { algorithm: '1.2.840.10045.4.3.2' }, // SHA-256
+            },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
+          } as any);
+          result = await validateLeafCertificate(validCert);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Certificate signature algorithm must be ECDSA with SHA-384 on P-384',
+          });
+        });
+
+        it('Returns an error result', () => {
+          expect(result).toEqual(
+            errorResult(
+              'Certificate signature algorithm must be ECDSA with SHA-384 on P-384',
+            ),
+          );
+        });
+      });
+    });
   });
 
   describe('Given leaf certificate is valid', () => {
@@ -234,7 +304,9 @@ describe('validateLeafCertificate', () => {
         tbsCertificate: {
           version: 2, // Valid v3 certificate
           serialNumber: validSerial, // Valid serial number
+          signature: { algorithm: '1.2.840.10045.4.3.3' },
         },
+        signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
       } as any);
       result = await validateLeafCertificate(validCert);
     });
