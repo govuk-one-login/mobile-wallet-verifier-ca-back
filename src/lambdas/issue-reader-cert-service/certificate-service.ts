@@ -16,7 +16,6 @@ import {
   KEY_USAGE,
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
-  VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
 import { validateLeafCertificate } from './validate-leaf-certificate.ts';
@@ -54,8 +53,8 @@ export const issueCertificate = async (
       SigningAlgorithm: SIGNING_ALGORITHM,
       TemplateArn: TEMPLATE_ARN,
       Validity: {
-        Type: VALIDITY.Type,
-        Value: VALIDITY.Value, // 24 hours
+        Type: 'DAYS',
+        Value: 1,
       },
     });
 

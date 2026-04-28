@@ -8,7 +8,6 @@ import {
   KEY_USAGE,
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
-  VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { getCertificate, issueCertificate } from './certificate-service.ts';
 import {
@@ -116,7 +115,7 @@ describe('Certificate Service', () => {
             }),
             SigningAlgorithm: SIGNING_ALGORITHM,
             TemplateArn: TEMPLATE_ARN,
-            Validity: { Type: VALIDITY.Type, Value: VALIDITY.Value },
+            Validity: { Type: 'DAYS', Value: 1 },
           }),
         );
       });
