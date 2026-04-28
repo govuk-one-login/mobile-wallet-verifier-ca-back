@@ -19,6 +19,7 @@ import {
   VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
+import { validateLeafCertificate } from './validate-leaf-certificate.ts';
 
 const acmpcaClient = new ACMPCAClient({});
 
@@ -130,6 +131,13 @@ export const getCertificate = async (
       logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
         errorMessage: 'Failed to retrieve certificate chain',
       });
+      return emptyFailure();
+    }
+
+    const validateResult = await validateLeafCertificate(
+      getResponse.Certificate,
+    );
+    if (validateResult.isError) {
       return emptyFailure();
     }
 
