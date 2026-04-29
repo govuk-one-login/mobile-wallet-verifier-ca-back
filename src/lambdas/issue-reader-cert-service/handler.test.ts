@@ -40,6 +40,8 @@ import {
   createCsrPem,
   CreateCsrPemOptions,
 } from '../../../tests/testUtils/create-csr-pem.ts';
+import { KeyUsageFlags } from '@peculiar/x509';
+import { CSR_POLICY } from '../common/csr-constants/csr-constants.ts';
 import {
   GetCertificateParams,
   IssueCertificateParams,
@@ -454,6 +456,8 @@ describe('Handler', () => {
       expectedErrorMessage: string;
       expectedLogData?: Record<string, unknown>;
     };
+    const keyUsageWithDisallowedKeyEncipherment =
+      KeyUsageFlags.digitalSignature | KeyUsageFlags.keyEncipherment;
     const invalidCsrTestCases: InvalidCsrTestCase[] = [
       {
         scenario: 'Given CSRPem is not valid PKCS#10',
@@ -461,6 +465,14 @@ describe('Handler', () => {
         expectedErrorMessage: 'CSR not valid PKCS#10 request',
         expectedLogData: {
           csrPem: 'invalidPKCS#10',
+          error: { name: 'TypeError' },
+        },
+      },
+      {
+        scenario: 'Given CSR extensions cannot be parsed',
+        csrPemConfig: { malformedKeyUsageExtension: true },
+        expectedErrorMessage: 'CSR extensions are invalid',
+        expectedLogData: {
           error: { name: 'TypeError' },
         },
       },
@@ -503,6 +515,58 @@ describe('Handler', () => {
         },
       },
       {
+        scenario: 'Given CSR has invalid keyUsage',
+        csrPemConfig: {
+          keyUsage: keyUsageWithDisallowedKeyEncipherment,
+        },
+        expectedErrorMessage: 'CSR keyUsage is not digitalSignature',
+        expectedLogData: {
+          keyUsage: keyUsageWithDisallowedKeyEncipherment,
+        },
+      },
+      {
+        scenario: 'Given CSR has invalid extendedKeyUsage',
+        csrPemConfig: { extendedKeyUsage: ['1.2.3.4'] },
+        expectedErrorMessage:
+          'CSR extendedKeyUsage is not exactly 1.0.18013.5.1.6',
+        expectedLogData: {
+          extendedKeyUsage: ['1.2.3.4'],
+        },
+      },
+      {
+        scenario: 'Given CSR has extra extendedKeyUsage',
+        csrPemConfig: {
+          extendedKeyUsage: [
+            CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication,
+            '1.2.3.4',
+          ],
+        },
+        expectedErrorMessage:
+          'CSR extendedKeyUsage is not exactly 1.0.18013.5.1.6',
+        expectedLogData: {
+          extendedKeyUsage: [
+            CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication,
+            '1.2.3.4',
+          ],
+        },
+      },
+      {
+        scenario: 'Given CSR contains NameConstraints',
+        csrPemConfig: { nameConstraints: true },
+        expectedErrorMessage: 'CSR contains NameConstraints extension',
+        expectedLogData: {
+          extensionType: '2.5.29.30',
+        },
+      },
+      {
+        scenario: 'Given CSR subject country is missing',
+        csrPemConfig: { subject: { C: null } },
+        expectedErrorMessage: 'CSR subject C is not GB',
+        expectedLogData: {
+          subjectC: [],
+        },
+      },
+      {
         scenario: 'Given CSR subject country is not GB',
         csrPemConfig: { subject: { C: 'FR' } },
         expectedErrorMessage: 'CSR subject C is not GB',
@@ -511,7 +575,48 @@ describe('Handler', () => {
         },
       },
       {
-        scenario: 'Given CSR subject 0 is not Government Digital Service',
+        scenario: 'Given CSR subject state or province is missing',
+        csrPemConfig: { subject: { ST: null } },
+        expectedErrorMessage: 'CSR subject ST is not London',
+        expectedLogData: {
+          subjectST: [],
+        },
+      },
+      {
+        scenario: 'Given CSR subject state or province is not London',
+        csrPemConfig: { subject: { ST: 'Manchester' } },
+        expectedErrorMessage: 'CSR subject ST is not London',
+        expectedLogData: {
+          subjectST: ['Manchester'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject locality is missing',
+        csrPemConfig: { subject: { L: null } },
+        expectedErrorMessage: 'CSR subject L is not London',
+        expectedLogData: {
+          subjectL: [],
+        },
+      },
+      {
+        scenario: 'Given CSR subject locality is not London',
+        csrPemConfig: { subject: { L: 'Cardiff' } },
+        expectedErrorMessage: 'CSR subject L is not London',
+        expectedLogData: {
+          subjectL: ['Cardiff'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject organisation is missing',
+        csrPemConfig: { subject: { O: null } },
+        expectedErrorMessage: 'CSR subject O is not Government Digital Service',
+        expectedLogData: {
+          subjectO: [],
+        },
+      },
+      {
+        scenario:
+          'Given CSR subject organisation is not Government Digital Service',
         csrPemConfig: { subject: { O: 'Invalid Service' } },
         expectedErrorMessage: 'CSR subject O is not Government Digital Service',
         expectedLogData: {
@@ -532,6 +637,36 @@ describe('Handler', () => {
         expectedErrorMessage: 'CSR subject CN is not present',
         expectedLogData: {
           subjectCN: [''],
+        },
+      },
+      {
+        scenario: 'Given CSR subject OU is present',
+        csrPemConfig: {
+          subject: { additionalAttributes: ['OU=Reader Certification'] },
+        },
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
+        expectedLogData: {
+          unsupportedSubjectFields: ['OU'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject 2.5.4.5 (serialNumber) is present',
+        csrPemConfig: {
+          subject: { additionalAttributes: ['2.5.4.5=123456'] },
+        },
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
+        expectedLogData: {
+          unsupportedSubjectFields: ['2.5.4.5'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject E is present',
+        csrPemConfig: {
+          subject: { additionalAttributes: ['E=mock@email-address.com'] },
+        },
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
+        expectedLogData: {
+          unsupportedSubjectFields: ['E'],
         },
       },
     ];
@@ -576,6 +711,33 @@ describe('Handler', () => {
         });
       },
     );
+
+    describe('Given CSR has allowed policy extensions and an unrelated extension', () => {
+      beforeEach(async () => {
+        const csrPem = await createCsrPem({
+          basicConstraintsCa: false,
+          keyUsage: KeyUsageFlags.digitalSignature,
+          extendedKeyUsage: [
+            CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication,
+          ],
+          unknownExtension: true,
+        });
+        event = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          body: JSON.stringify({
+            csrPem,
+          }),
+        });
+
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Accepts the request', () => {
+        expect(result.statusCode).toBe(200);
+      });
+    });
   });
 
   describe('Certificate issuance', () => {

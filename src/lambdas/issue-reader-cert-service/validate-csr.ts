@@ -2,6 +2,8 @@ import {
   Pkcs10CertificateRequest,
   BasicConstraintsExtension,
   Extension,
+  ExtendedKeyUsageExtension,
+  KeyUsagesExtension,
   Name,
 } from '@peculiar/x509';
 import { LogMessage } from '../common/logger/log-message';
@@ -15,6 +17,9 @@ import {
 import {
   BASIC_CONSTRAINTS_OID,
   CSR_POLICY,
+  EXTENDED_KEY_USAGE_OID,
+  KEY_USAGE_OID,
+  NAME_CONSTRAINTS_OID,
 } from '../common/csr-constants/csr-constants';
 
 export async function validateCsr(
@@ -38,11 +43,9 @@ export async function validateCsr(
     return validatePublicKeyAlgorithmResult;
   }
 
-  const basicConstraints = csr.getExtension(BASIC_CONSTRAINTS_OID);
-  const validateBasicConstraintsResult =
-    validateCsrBasicConstraints(basicConstraints);
-  if (validateBasicConstraintsResult.isError) {
-    return validateBasicConstraintsResult;
+  const validateExtensionsResult = validateCsrExtensions(csr);
+  if (validateExtensionsResult.isError) {
+    return validateExtensionsResult;
   }
 
   const validateSubjectResult = validateCsrSubject(csr.subjectName);
@@ -130,8 +133,51 @@ function validateCsrPublicKeyAlgorithm(
   return emptySuccess();
 }
 
+function validateCsrExtensions(
+  csr: Pkcs10CertificateRequest,
+): Result<void, string> {
+  let extensions: Extension[];
+  try {
+    // This is a getter that can throw, hence adding a try catch here
+    extensions = csr.extensions;
+  } catch (error: unknown) {
+    const errorMessage = 'CSR extensions are invalid';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+      data: {
+        error,
+      },
+    });
+    return errorResult(errorMessage);
+  }
+
+  for (const extension of extensions) {
+    const validateExtensionResult = validateCsrExtension(extension);
+    if (validateExtensionResult.isError) {
+      return validateExtensionResult;
+    }
+  }
+
+  return emptySuccess();
+}
+
+function validateCsrExtension(extension: Extension): Result<void, string> {
+  switch (extension.type) {
+    case BASIC_CONSTRAINTS_OID:
+      return validateCsrBasicConstraints(extension);
+    case KEY_USAGE_OID:
+      return validateCsrKeyUsage(extension);
+    case EXTENDED_KEY_USAGE_OID:
+      return validateCsrExtendedKeyUsage(extension);
+    case NAME_CONSTRAINTS_OID:
+      return rejectCsrNameConstraints(extension);
+    default:
+      return emptySuccess();
+  }
+}
+
 function validateCsrBasicConstraints(
-  basicConstraints: Extension | null,
+  basicConstraints: Extension,
 ): Result<void, string> {
   if (
     basicConstraints instanceof BasicConstraintsExtension &&
@@ -150,6 +196,63 @@ function validateCsrBasicConstraints(
   return emptySuccess();
 }
 
+function validateCsrKeyUsage(keyUsage: Extension): Result<void, string> {
+  if (
+    !(keyUsage instanceof KeyUsagesExtension) ||
+    keyUsage.usages !== CSR_POLICY.keyUsage.digitalSignature
+  ) {
+    const errorMessage = 'CSR keyUsage is not digitalSignature';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+      data: {
+        keyUsage:
+          keyUsage instanceof KeyUsagesExtension ? keyUsage.usages : undefined,
+      },
+    });
+    return errorResult(errorMessage);
+  }
+
+  return emptySuccess();
+}
+
+function validateCsrExtendedKeyUsage(
+  extendedKeyUsage: Extension,
+): Result<void, string> {
+  if (
+    !(extendedKeyUsage instanceof ExtendedKeyUsageExtension) ||
+    extendedKeyUsage.usages.length !== 1 ||
+    extendedKeyUsage.usages[0] !==
+      CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication
+  ) {
+    const errorMessage = `CSR extendedKeyUsage is not exactly ${CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication}`;
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+      data: {
+        extendedKeyUsage:
+          extendedKeyUsage instanceof ExtendedKeyUsageExtension
+            ? extendedKeyUsage.usages
+            : undefined,
+      },
+    });
+    return errorResult(errorMessage);
+  }
+
+  return emptySuccess();
+}
+
+function rejectCsrNameConstraints(
+  nameConstraints: Extension,
+): Result<void, string> {
+  const errorMessage = 'CSR contains NameConstraints extension';
+  logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+    errorMessage,
+    data: {
+      extensionType: nameConstraints.type,
+    },
+  });
+  return errorResult(errorMessage);
+}
+
 function validateCsrSubject(subjectName: Name): Result<void, string> {
   const subjectCountryNames = subjectName.getField('C');
   if (
@@ -161,6 +264,36 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
       errorMessage,
       data: {
         subjectC: subjectCountryNames,
+      },
+    });
+    return errorResult(errorMessage);
+  }
+
+  const subjectStateOrProvinceNames = subjectName.getField('ST');
+  if (
+    subjectStateOrProvinceNames.length !== 1 ||
+    subjectStateOrProvinceNames[0] !== CSR_POLICY.subject.ST
+  ) {
+    const errorMessage = 'CSR subject ST is not London';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+      data: {
+        subjectST: subjectStateOrProvinceNames,
+      },
+    });
+    return errorResult(errorMessage);
+  }
+
+  const subjectLocalityNames = subjectName.getField('L');
+  if (
+    subjectLocalityNames.length !== 1 ||
+    subjectLocalityNames[0] !== CSR_POLICY.subject.L
+  ) {
+    const errorMessage = 'CSR subject L is not London';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+      data: {
+        subjectL: subjectLocalityNames,
       },
     });
     return errorResult(errorMessage);
@@ -193,5 +326,30 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
     return errorResult(errorMessage);
   }
 
+  const unsupportedSubjectFields = getUnsupportedSubjectFields(subjectName);
+  if (unsupportedSubjectFields.length > 0) {
+    const errorMessage = 'CSR subject contains unsupported fields';
+    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
+      errorMessage,
+      data: {
+        unsupportedSubjectFields,
+      },
+    });
+    return errorResult(errorMessage);
+  }
+
   return emptySuccess();
+}
+
+function getUnsupportedSubjectFields(subjectName: Name): string[] {
+  const allowedSubjectFields = new Set(['C', 'CN', 'L', 'O', 'ST']);
+  const subjectFields = subjectName
+    .toJSON()
+    .flatMap((relativeDistinguishedName) =>
+      Object.keys(relativeDistinguishedName),
+    );
+
+  return subjectFields.filter(
+    (subjectField) => !allowedSubjectFields.has(subjectField),
+  );
 }

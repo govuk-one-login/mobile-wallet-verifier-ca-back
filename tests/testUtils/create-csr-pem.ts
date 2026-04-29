@@ -1,26 +1,41 @@
 import {
   BasicConstraintsExtension,
+  ExtendedKeyUsageExtension,
+  Extension,
+  KeyUsageFlags,
+  KeyUsagesExtension,
   Pkcs10CertificateRequestGenerator,
 } from '@peculiar/x509';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import { CertificationRequest } from '@peculiar/asn1-csr';
-import { CSR_POLICY } from '../../src/lambdas/common/csr-constants/csr-constants';
+import {
+  CSR_POLICY,
+  KEY_USAGE_OID,
+  NAME_CONSTRAINTS_OID,
+} from '../../src/lambdas/common/csr-constants/csr-constants';
 
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {
   C?: string | null;
-  O?: string | null;
   CN?: string | null;
+  L?: string | null;
+  O?: string | null;
+  ST?: string | null;
   additionalAttributes?: string[];
 };
 
 export interface CreateCsrPemOptions {
+  basicConstraintsCa?: boolean;
+  extendedKeyUsage?: string[];
+  invalidateSignature?: boolean;
   invalidPkcs10?: boolean;
   keyAlgorithm?: CsrKeyAlgorithm;
-  basicConstraintsCa?: boolean;
-  invalidateSignature?: boolean;
-  unsupportedSignatureAlgorithm?: boolean;
+  keyUsage?: KeyUsageFlags;
+  malformedKeyUsageExtension?: boolean;
+  nameConstraints?: boolean;
   subject?: SubjectEntries;
+  unknownExtension?: boolean;
+  unsupportedSignatureAlgorithm?: boolean;
 }
 
 export async function createCsrPem(
@@ -38,9 +53,7 @@ export async function createCsrPem(
     'verify',
   ]);
 
-  const extensions = options.basicConstraintsCa
-    ? [new BasicConstraintsExtension(true, undefined, true)]
-    : [];
+  const extensions = buildExtensions(options);
 
   const csr = await Pkcs10CertificateRequestGenerator.create({
     name: buildSubjectName(options.subject),
@@ -64,6 +77,46 @@ export async function createCsrPem(
   }
 
   return csr.toString('pem');
+}
+
+function buildExtensions(options: CreateCsrPemOptions): Extension[] {
+  const extensions: Extension[] = [];
+
+  if (options.basicConstraintsCa !== undefined) {
+    extensions.push(
+      new BasicConstraintsExtension(
+        options.basicConstraintsCa,
+        undefined,
+        true,
+      ),
+    );
+  }
+
+  if (options.keyUsage !== undefined) {
+    extensions.push(new KeyUsagesExtension(options.keyUsage, true));
+  }
+
+  if (options.malformedKeyUsageExtension) {
+    extensions.push(
+      new Extension(KEY_USAGE_OID, true, Buffer.from([0x30, 0x00])),
+    );
+  }
+
+  if (options.extendedKeyUsage !== undefined) {
+    extensions.push(new ExtendedKeyUsageExtension(options.extendedKeyUsage));
+  }
+
+  if (options.nameConstraints) {
+    extensions.push(
+      new Extension(NAME_CONSTRAINTS_OID, true, Buffer.from([0x30, 0x00])),
+    );
+  }
+
+  if (options.unknownExtension) {
+    extensions.push(new Extension('1.2.3.4', false, Buffer.from([0x05, 0x00])));
+  }
+
+  return extensions;
 }
 
 function getKeyGenerationAlgorithm(
@@ -120,15 +173,19 @@ function toPem(der: Buffer): string {
 function buildSubjectName(subject: SubjectEntries = {}): string {
   const {
     C = CSR_POLICY.subject.C,
-    O = CSR_POLICY.subject.O,
     CN = 'MockCN',
-    additionalAttributes = ['OU=Ignored Subject Attribute'],
+    L = CSR_POLICY.subject.L,
+    O = CSR_POLICY.subject.O,
+    ST = CSR_POLICY.subject.ST,
+    additionalAttributes = [],
   } = subject;
 
   const parts = [
     C === null ? null : `C=${C}`,
-    O === null ? null : `O=${O}`,
     CN === null ? null : `CN=${CN}`,
+    L === null ? null : `L=${L}`,
+    O === null ? null : `O=${O}`,
+    ST === null ? null : `ST=${ST}`,
     ...additionalAttributes,
   ].filter((part): part is string => part !== null);
 

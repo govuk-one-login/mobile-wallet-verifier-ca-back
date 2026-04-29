@@ -104,7 +104,8 @@ components:
             - Extraction of subject public key
             - Allowed key size and algorithm policy
             - Signature algorithm consistency
-            - Required subject fields
+            - CSR extension policy for basicConstraints, keyUsage, extendedKeyUsage, and NameConstraints
+            - Exact subject fields: C=GB, ST=London, L=London, O=Government Digital Service, and non-empty CN
     IssueReaderCertResponse:
       type: object
       required:
