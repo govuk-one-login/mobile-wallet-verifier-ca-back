@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, MockInstance } from 'vitest';
+import {describe, it, expect, vi, beforeEach, MockInstance, afterEach} from 'vitest';
 import {
   IssueCertificateCommand,
   GetCertificateCommand,
@@ -129,11 +129,24 @@ describe('Certificate Service', () => {
   });
 
   describe('getCertificate', () => {
+    let mockSetTimeout: MockInstance;
+
     beforeEach(() => {
       certificate =
         '-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----';
       certificateChain =
         '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----';
+
+      mockSetTimeout = vi
+          .spyOn(global, 'setTimeout')
+          .mockImplementation((callback) => {
+            callback();
+            return {} as NodeJS.Timeout;
+          });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
     });
 
     describe('Given ACM PCA keeps throwing RequestInProgressException', () => {
