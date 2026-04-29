@@ -79,9 +79,9 @@ describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
     expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.ST).toEqual('London');
   });
 
-  it('Has CN as "GOVUK Mobile Wallet Verifier CA"', () => {
+  it('Has CN as "GOVUK Mobile Wallet GovVerifier CA"', () => {
     expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.CN).toEqual(
-      'GOVUK Mobile Wallet Verifier CA',
+      'GOVUK Mobile Wallet GovVerifier CA',
     );
   });
 

@@ -25,6 +25,6 @@ export const EXPECTED_ISSUER_AND_SUBJECT_NAME = {
   C: 'GB',
   O: 'Government Digital Service',
   ST: 'London',
-  CN: 'GOVUK Mobile Wallet Verifier CA',
+  CN: 'GOVUK Mobile Wallet GovVerifier CA',
   L: 'London',
 } as const;
