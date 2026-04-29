@@ -9,6 +9,7 @@ import {
 import {
   describe,
   it,
+  beforeAll,
   beforeEach,
   expect,
   vi,
@@ -46,8 +47,11 @@ describe('Verify JWT', () => {
   };
   let consoleErrorSpy: MockInstance;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     ({ privateKey, publicJwk } = await createKeyPair());
+  });
+
+  beforeEach(async () => {
     mockJwksCache = {
       getJwks: vi.fn().mockResolvedValue(
         successResult({
