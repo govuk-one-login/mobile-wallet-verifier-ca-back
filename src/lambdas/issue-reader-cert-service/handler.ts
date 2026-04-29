@@ -67,6 +67,7 @@ export const handlerConstructor = async (
   if (validateCsrResult.isError) {
     return badRequestResponse(validateCsrResult.value);
   }
+  const csrSubjectCn = validateCsrResult.value;
 
   const certificateAuthorityArn = config.CERTIFICATE_AUTHORITY_ARN;
 
@@ -81,6 +82,7 @@ export const handlerConstructor = async (
   const getCertResult = await dependencies.getCertificate({
     certificateArn: issueCertResult.value,
     certificateAuthorityArn,
+    csrSubjectCn,
   });
   if (getCertResult.isError) {
     return serverErrorResponse;

@@ -810,6 +810,7 @@ describe('Handler', () => {
           certificateArn:
             'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
           certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+          csrSubjectCn: 'MockCN',
         });
       });
 
