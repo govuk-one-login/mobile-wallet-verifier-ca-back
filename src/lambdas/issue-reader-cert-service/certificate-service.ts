@@ -83,68 +83,81 @@ export interface GetCertificateParams {
   csrSubjectCn: string;
 }
 
+const attemptGetCertificate = async (
+  certificateArn: string,
+  certificateAuthorityArn: string,
+): Promise<GetCertificateCommandOutput | 'in-progress' | 'error'> => {
+  try {
+    return await acmpcaClient.send(
+      new GetCertificateCommand({
+        CertificateAuthorityArn: certificateAuthorityArn,
+        CertificateArn: certificateArn,
+      }),
+    );
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'RequestInProgressException') {
+      return 'in-progress';
+    }
+    logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
+      error,
+      errorMessage: 'Unexpected error retrieving certificate',
+    });
+    return 'error';
+  }
+};
+
+const buildCertificateChain = async (
+  response: GetCertificateCommandOutput,
+  csrSubjectCn: string,
+): Promise<Result<string, void>> => {
+  if (!response.Certificate) {
+    logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
+      errorMessage: 'Failed to retrieve certificate',
+    });
+    return emptyFailure();
+  }
+
+  if (!response.CertificateChain) {
+    logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
+      errorMessage: 'Failed to retrieve certificate chain',
+    });
+    return emptyFailure();
+  }
+
+  const validateResult = await validateLeafCertificate(
+    response.Certificate,
+    csrSubjectCn,
+  );
+  if (validateResult.isError) return emptyFailure();
+
+  return successResult(`${response.Certificate}\n${response.CertificateChain}`);
+};
+
 export const getCertificate = async (
   params: GetCertificateParams,
 ): Promise<Result<string, void>> => {
-  let getResponse: GetCertificateCommandOutput;
   const { certificateArn, certificateAuthorityArn, csrSubjectCn } = params;
   const maxRetries = 3;
-  const baseDelay = 1000; // 1 second
+  const baseDelay = 1000;
 
-  // Adding retry logic with exponential backoff to handle
-  // the asynchronous nature of certificate issuance in ACM PCA.
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const getCommand = new GetCertificateCommand({
-        CertificateAuthorityArn: certificateAuthorityArn,
-        CertificateArn: certificateArn,
-      });
+    const response = await attemptGetCertificate(
+      certificateArn,
+      certificateAuthorityArn,
+    );
 
-      getResponse = await acmpcaClient.send(getCommand);
-    } catch (error: unknown) {
-      const isRequestInProgressException =
-        error instanceof Error && error.name === 'RequestInProgressException';
-      if (isRequestInProgressException && attempt < maxRetries - 1) {
-        // Wait with exponential backoff
-        const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
+    if (response === 'error') return emptyFailure();
+
+    if (response === 'in-progress') {
+      if (attempt < maxRetries - 1) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, baseDelay * Math.pow(2, attempt)),
+        );
       }
-
-      if (isRequestInProgressException) continue;
-
-      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
-        error,
-        errorMessage: 'Unexpected error retrieving certificate',
-      });
-      return emptyFailure();
+      continue;
     }
 
-    if (!getResponse.Certificate) {
-      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
-        errorMessage: 'Failed to retrieve certificate',
-      });
-      return emptyFailure();
-    }
-
-    if (!getResponse.CertificateChain) {
-      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
-        errorMessage: 'Failed to retrieve certificate chain',
-      });
-      return emptyFailure();
-    }
-
-    const validateResult = await validateLeafCertificate(
-      getResponse.Certificate,
-      csrSubjectCn,
-    );
-    if (validateResult.isError) {
-      return emptyFailure();
-    }
-
-    return successResult(
-      `${getResponse.Certificate}\n${getResponse.CertificateChain}`,
-    );
+    return buildCertificateChain(response, csrSubjectCn);
   }
 
   logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {

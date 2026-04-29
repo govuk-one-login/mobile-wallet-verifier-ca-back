@@ -1,4 +1,12 @@
-import {describe, it, expect, vi, beforeEach, MockInstance, afterEach} from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  MockInstance,
+  afterEach,
+} from 'vitest';
 import {
   IssueCertificateCommand,
   GetCertificateCommand,
@@ -138,11 +146,11 @@ describe('Certificate Service', () => {
         '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----';
 
       mockSetTimeout = vi
-          .spyOn(global, 'setTimeout')
-          .mockImplementation((callback) => {
-            callback();
-            return {} as NodeJS.Timeout;
-          });
+        .spyOn(global, 'setTimeout')
+        .mockImplementation((callback) => {
+          callback();
+          return {} as NodeJS.Timeout;
+        });
     });
 
     afterEach(() => {
