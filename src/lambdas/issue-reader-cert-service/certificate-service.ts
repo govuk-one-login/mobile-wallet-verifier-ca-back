@@ -80,13 +80,14 @@ export const issueCertificate = async (
 export interface GetCertificateParams {
   certificateArn: string;
   certificateAuthorityArn: string;
+  csrSubjectCn: string;
 }
 
 export const getCertificate = async (
   params: GetCertificateParams,
 ): Promise<Result<string, void>> => {
   let getResponse: GetCertificateCommandOutput;
-  const { certificateArn, certificateAuthorityArn } = params;
+  const { certificateArn, certificateAuthorityArn, csrSubjectCn } = params;
   const maxRetries = 3;
   const baseDelay = 1000; // 1 second
 
@@ -135,6 +136,7 @@ export const getCertificate = async (
 
     const validateResult = await validateLeafCertificate(
       getResponse.Certificate,
+      csrSubjectCn,
     );
     if (validateResult.isError) {
       return emptyFailure();
