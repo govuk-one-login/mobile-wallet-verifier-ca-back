@@ -722,7 +722,7 @@ describe('Handler', () => {
           ],
           unknownExtension: true,
         });
-        const csrEvent = buildEvent({
+        event = buildEvent({
           headers: {
             'X-Firebase-AppCheck': validFireBaseJwt,
           },
@@ -731,7 +731,7 @@ describe('Handler', () => {
           }),
         });
 
-        result = await handlerConstructor(dependencies, csrEvent, context);
+        result = await handlerConstructor(dependencies, event, context);
       });
 
       it('Accepts the request', () => {
