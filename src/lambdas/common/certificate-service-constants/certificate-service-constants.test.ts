@@ -8,6 +8,7 @@ import {
   EXPECTED_CERTIFICATE_VERSION,
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
+  EXPECTED_ISSUER_CN,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -80,9 +81,7 @@ describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
   });
 
   it('Has CN as "GOVUK Mobile Wallet GovVerifier CA"', () => {
-    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.CN).toEqual(
-      'GOVUK Mobile Wallet GovVerifier CA',
-    );
+    expect(EXPECTED_ISSUER_CN).toEqual('GOVUK Mobile Wallet GovVerifier CA');
   });
 
   it('Has L as "London"', () => {
