@@ -330,7 +330,7 @@ function validateSubject(
 ): Result<void, string> {
   try {
     const subjectCn = certificate.subjectName.getField('CN');
-    if (!subjectCn || subjectCn.length !== 1 || subjectCn[0] !== csrSubjectCn) {
+    if (subjectCn.length !== 1 || subjectCn[0] !== csrSubjectCn) {
       const errorMessage =
         'Certificate subject CN does not match CSR subject CN';
       logger.error(
