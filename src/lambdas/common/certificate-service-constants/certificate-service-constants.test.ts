@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
-  VALIDITY_DURATION_MS,
   KEY_USAGE,
   EXTENDED_KEY_USAGE,
   EXPECTED_CERTIFICATE_VERSION,
@@ -22,12 +21,6 @@ describe('TEMPLATE_ARN', () => {
     expect(TEMPLATE_ARN).toEqual(
       'arn:aws:acm-pca:::template/BlankEndEntityCertificate_APIPassthrough/V1',
     );
-  });
-});
-
-describe('VALIDITY_DURATION_MS', () => {
-  it('Is 86400000 (24 hours in milliseconds)', () => {
-    expect(VALIDITY_DURATION_MS).toEqual(24 * 60 * 60 * 1000);
   });
 });
 
