@@ -17,25 +17,25 @@ import {
 type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 type SubjectEntries = {
   C?: string | null;
-  ST?: string | null;
+  CN?: string | null;
   L?: string | null;
   O?: string | null;
-  CN?: string | null;
+  ST?: string | null;
   additionalAttributes?: string[];
 };
 
 export interface CreateCsrPemOptions {
+  basicConstraintsCa?: boolean;
+  extendedKeyUsage?: string[];
+  invalidateSignature?: boolean;
   invalidPkcs10?: boolean;
   keyAlgorithm?: CsrKeyAlgorithm;
-  basicConstraintsCa?: boolean;
   keyUsage?: KeyUsageFlags;
-  extendedKeyUsage?: string[];
-  nameConstraints?: boolean;
-  unknownExtension?: boolean;
   malformedKeyUsageExtension?: boolean;
-  invalidateSignature?: boolean;
-  unsupportedSignatureAlgorithm?: boolean;
+  nameConstraints?: boolean;
   subject?: SubjectEntries;
+  unknownExtension?: boolean;
+  unsupportedSignatureAlgorithm?: boolean;
 }
 
 export async function createCsrPem(
@@ -173,19 +173,19 @@ function toPem(der: Buffer): string {
 function buildSubjectName(subject: SubjectEntries = {}): string {
   const {
     C = CSR_POLICY.subject.C,
-    ST = CSR_POLICY.subject.ST,
+    CN = 'MockCN',
     L = CSR_POLICY.subject.L,
     O = CSR_POLICY.subject.O,
-    CN = 'MockCN',
+    ST = CSR_POLICY.subject.ST,
     additionalAttributes = [],
   } = subject;
 
   const parts = [
     C === null ? null : `C=${C}`,
-    ST === null ? null : `ST=${ST}`,
+    CN === null ? null : `CN=${CN}`,
     L === null ? null : `L=${L}`,
     O === null ? null : `O=${O}`,
-    CN === null ? null : `CN=${CN}`,
+    ST === null ? null : `ST=${ST}`,
     ...additionalAttributes,
   ].filter((part): part is string => part !== null);
 
