@@ -13,10 +13,12 @@ import {
   EXPECTED_CERTIFICATE_VERSION,
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
+  EXPECTED_ISSUER_CN,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 
 export async function validateLeafCertificate(
   certPem: string,
+  csrSubjectCn: string,
 ): Promise<Result<void, string>> {
   const parseCertResult = parseX509Certificate(certPem);
   if (parseCertResult.isError) {
@@ -45,9 +47,14 @@ export async function validateLeafCertificate(
     return validityValidation;
   }
 
-  const issuerSubjectValidation = validateIssuerAndSubject(certificate);
-  if (issuerSubjectValidation.isError) {
-    return issuerSubjectValidation;
+  const issuerValidation = validateIssuer(certificate);
+  if (issuerValidation.isError) {
+    return issuerValidation;
+  }
+
+  const subjectValidation = validateSubject(certificate, csrSubjectCn);
+  if (subjectValidation.isError) {
+    return subjectValidation;
   }
 
   return emptySuccess();
@@ -245,70 +252,54 @@ function validateSignatureAlgorithm(
   return emptySuccess();
 }
 
-function validateIssuerName(name: Name): Result<void, string> {
+function validateName(name: Name): Result<void, string> {
   const C = name.getField('C');
   const O = name.getField('O');
   const ST = name.getField('ST');
-  const CN = name.getField('CN');
   const L = name.getField('L');
 
   if (C.length !== 1 || C[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.C) {
     return errorResult(
-      'Certificate issuer and subject must match expected name values',
+      'Certificate issuer and subject Country name must match expected name values',
     );
   }
   if (O.length !== 1 || O[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.O) {
     return errorResult(
-      'Certificate issuer and subject must match expected name values',
+      'Certificate issuer and subject Organisation must match expected name values',
     );
   }
   if (ST.length !== 1 || ST[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.ST) {
     return errorResult(
-      'Certificate issuer and subject must match expected name values',
-    );
-  }
-  if (CN.length !== 1 || CN[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.CN) {
-    return errorResult(
-      'Certificate issuer and subject must match expected name values',
+      'Certificate issuer and subject State or province name must match expected name values',
     );
   }
   if (L.length !== 1 || L[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.L) {
     return errorResult(
-      'Certificate issuer and subject must match expected name values',
+      'Certificate issuer and subject Locality name must match expected name values',
     );
   }
 
   return emptySuccess();
 }
 
-function validateIssuerAndSubject(
-  certificate: X509Certificate,
-): Result<void, string> {
+function validateIssuer(certificate: X509Certificate): Result<void, string> {
   try {
-    const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
-    const issuerRaw = AsnConvert.serialize(certAsn.tbsCertificate.issuer);
-    const subjectRaw = AsnConvert.serialize(certAsn.tbsCertificate.subject);
-
-    const issuerBytes = new Uint8Array(issuerRaw);
-    const subjectBytes = new Uint8Array(subjectRaw);
-    const binaryMatch =
-      issuerBytes.length === subjectBytes.length &&
-      issuerBytes.every((byte, i) => byte === subjectBytes[i]);
-
-    if (!binaryMatch) {
+    const issuerCn = certificate.issuerName.getField('CN');
+    if (issuerCn.length !== 1 || issuerCn[0] !== EXPECTED_ISSUER_CN) {
       const errorMessage =
-        'Certificate issuer and subject must have identical binary values';
+        'Certificate issuer Common name must match expected name value';
       logger.error(
         LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-        { errorMessage },
+        {
+          errorMessage,
+          data: { certSubjectCn: issuerCn[0], EXPECTED_ISSUER_CN },
+        },
       );
       return errorResult(errorMessage);
     }
-
-    const nameValidation = validateIssuerName(certificate.issuerName);
-    if (nameValidation.isError) {
-      const errorMessage =
-        'Certificate issuer and subject must match expected name values';
+    const issuerValidation = validateName(certificate.issuerName);
+    if (issuerValidation.isError) {
+      const errorMessage = 'Certificate issuer must match expected name values';
       logger.error(
         LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
         {
@@ -330,6 +321,52 @@ function validateIssuerAndSubject(
     return errorResult(errorMessage);
   }
 
+  return emptySuccess();
+}
+
+function validateSubject(
+  certificate: X509Certificate,
+  csrSubjectCn: string,
+): Result<void, string> {
+  try {
+    const subjectCn = certificate.subjectName.getField('CN');
+    if (!subjectCn || subjectCn.length !== 1 || subjectCn[0] !== csrSubjectCn) {
+      const errorMessage =
+        'Certificate subject CN does not match CSR subject CN';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: { certSubjectCn: subjectCn[0], csrSubjectCn },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+
+    const subjectValidation = validateName(certificate.subjectName);
+    if (subjectValidation.isError) {
+      const errorMessage =
+        'Certificate subject must match expected name values';
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage,
+          data: {
+            issuer: certificate.issuer,
+            expected: EXPECTED_ISSUER_AND_SUBJECT_NAME,
+          },
+        },
+      );
+      return errorResult(errorMessage);
+    }
+  } catch (error: unknown) {
+    const errorMessage = 'Failed to parse certificate issuer and subject';
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      { errorMessage, data: { error } },
+    );
+    return errorResult(errorMessage);
+  }
   return emptySuccess();
 }
 
