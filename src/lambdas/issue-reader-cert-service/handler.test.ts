@@ -469,6 +469,14 @@ describe('Handler', () => {
         },
       },
       {
+        scenario: 'Given CSR extensions cannot be parsed',
+        csrPemConfig: { malformedKeyUsageExtension: true },
+        expectedErrorMessage: 'CSR extensions are invalid',
+        expectedLogData: {
+          error: { name: 'TypeError' },
+        },
+      },
+      {
         scenario:
           'Given unexpected error occurs during self signature verification',
         csrPemConfig: { unsupportedSignatureAlgorithm: true },
@@ -703,6 +711,33 @@ describe('Handler', () => {
         });
       },
     );
+
+    describe('Given CSR has allowed policy extensions and an unrelated extension', () => {
+      beforeEach(async () => {
+        const csrPem = await createCsrPem({
+          basicConstraintsCa: false,
+          keyUsage: KeyUsageFlags.digitalSignature,
+          extendedKeyUsage: [
+            CSR_POLICY.extendedKeyUsage.mobileDocumentReaderAuthentication,
+          ],
+          unknownExtension: true,
+        });
+        const csrEvent = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          body: JSON.stringify({
+            csrPem,
+          }),
+        });
+
+        result = await handlerConstructor(dependencies, csrEvent, context);
+      });
+
+      it('Accepts the request', () => {
+        expect(result.statusCode).toBe(200);
+      });
+    });
   });
 
   describe('Certificate issuance', () => {

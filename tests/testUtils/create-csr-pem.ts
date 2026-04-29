@@ -10,6 +10,7 @@ import { AsnConvert } from '@peculiar/asn1-schema';
 import { CertificationRequest } from '@peculiar/asn1-csr';
 import {
   CSR_POLICY,
+  KEY_USAGE_OID,
   NAME_CONSTRAINTS_OID,
 } from '../../src/lambdas/common/csr-constants/csr-constants';
 
@@ -30,6 +31,8 @@ export interface CreateCsrPemOptions {
   keyUsage?: KeyUsageFlags;
   extendedKeyUsage?: string[];
   nameConstraints?: boolean;
+  unknownExtension?: boolean;
+  malformedKeyUsageExtension?: boolean;
   invalidateSignature?: boolean;
   unsupportedSignatureAlgorithm?: boolean;
   subject?: SubjectEntries;
@@ -93,6 +96,12 @@ function buildExtensions(options: CreateCsrPemOptions): Extension[] {
     extensions.push(new KeyUsagesExtension(options.keyUsage, true));
   }
 
+  if (options.malformedKeyUsageExtension) {
+    extensions.push(
+      new Extension(KEY_USAGE_OID, true, Buffer.from([0x30, 0x00])),
+    );
+  }
+
   if (options.extendedKeyUsage !== undefined) {
     extensions.push(new ExtendedKeyUsageExtension(options.extendedKeyUsage));
   }
@@ -101,6 +110,10 @@ function buildExtensions(options: CreateCsrPemOptions): Extension[] {
     extensions.push(
       new Extension(NAME_CONSTRAINTS_OID, true, Buffer.from([0x30, 0x00])),
     );
+  }
+
+  if (options.unknownExtension) {
+    extensions.push(new Extension('1.2.3.4', false, Buffer.from([0x05, 0x00])));
   }
 
   return extensions;
