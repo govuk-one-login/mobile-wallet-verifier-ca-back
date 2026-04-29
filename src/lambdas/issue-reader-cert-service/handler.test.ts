@@ -6,6 +6,7 @@ import {
 import {
   describe,
   it,
+  beforeAll,
   beforeEach,
   expect,
   MockInstance,
@@ -75,11 +76,20 @@ describe('Handler', () => {
     params: GetCertificateParams,
   ) => Promise<Result<string, void>>;
 
+  beforeAll(async () => {
+    ({ privateKey, publicJwk } = await createKeyPair());
+    validFireBaseJwt = await createSignedJwt(privateKey, {
+      audience: JSON.parse(env.AUDIENCE)[0],
+      expOffsetSeconds: 60 * 60,
+      issuer: env.ISSUER,
+      subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
+    });
+    validCsrPem = await createCsrPem();
+  });
+
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
     consoleErrorSpy = vi.spyOn(console, 'error');
-
-    ({ privateKey, publicJwk } = await createKeyPair());
 
     mockJwksCache = {
       getJwks: vi.fn().mockResolvedValue(
@@ -102,14 +112,6 @@ describe('Handler', () => {
           });
         },
       );
-
-    validFireBaseJwt = await createSignedJwt(privateKey, {
-      audience: JSON.parse(env.AUDIENCE)[0],
-      issuer: env.ISSUER,
-      subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
-    });
-
-    validCsrPem = await createCsrPem();
 
     context = buildLambdaContext();
     event = buildEvent({
