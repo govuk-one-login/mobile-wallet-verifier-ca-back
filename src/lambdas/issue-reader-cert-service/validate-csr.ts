@@ -24,7 +24,7 @@ import {
 
 export async function validateCsr(
   csrPem: string,
-): Promise<Result<void, string>> {
+): Promise<Result<string, string>> {
   const parseCsrResult = parsePkcs10CertificateRequest(csrPem);
   if (parseCsrResult.isError) {
     return parseCsrResult;
@@ -53,7 +53,7 @@ export async function validateCsr(
     return validateSubjectResult;
   }
 
-  return emptySuccess();
+  return successResult(validateSubjectResult.value);
 }
 
 function parsePkcs10CertificateRequest(
@@ -253,7 +253,7 @@ function rejectCsrNameConstraints(
   return errorResult(errorMessage);
 }
 
-function validateCsrSubject(subjectName: Name): Result<void, string> {
+function validateCsrSubject(subjectName: Name): Result<string, string> {
   const subjectCountryNames = subjectName.getField('C');
   if (
     subjectCountryNames.length !== 1 ||
@@ -338,7 +338,7 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
     return errorResult(errorMessage);
   }
 
-  return emptySuccess();
+  return successResult(subjectCommonNames[0]);
 }
 
 function getUnsupportedSubjectFields(subjectName: Name): string[] {
