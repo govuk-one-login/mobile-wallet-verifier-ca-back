@@ -41,6 +41,8 @@ const mockCertificateArn = `${mockCaArn}/certificate/mock`;
 const mockCsr =
   '-----BEGIN CERTIFICATE REQUEST-----\nMOCK\n-----END CERTIFICATE REQUEST-----';
 
+const mockCsrSubjectCn = 'Example Verifier Org';
+
 describe('Certificate Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -143,6 +145,7 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
+          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -168,6 +171,7 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
+          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -196,6 +200,7 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
+          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -216,6 +221,7 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
+          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -237,6 +243,7 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
+          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -261,6 +268,7 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
+          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
