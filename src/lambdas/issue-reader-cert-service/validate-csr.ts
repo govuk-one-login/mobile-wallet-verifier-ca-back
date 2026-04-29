@@ -342,7 +342,7 @@ function validateCsrSubject(subjectName: Name): Result<void, string> {
 }
 
 function getUnsupportedSubjectFields(subjectName: Name): string[] {
-  const allowedSubjectFields = ['C', 'CN', 'L', 'O', 'ST'];
+  const allowedSubjectFields = new Set(['C', 'CN', 'L', 'O', 'ST']);
   const subjectFields = subjectName
     .toJSON()
     .flatMap((relativeDistinguishedName) =>
@@ -350,6 +350,6 @@ function getUnsupportedSubjectFields(subjectName: Name): string[] {
     );
 
   return subjectFields.filter(
-    (subjectField) => !allowedSubjectFields.includes(subjectField),
+    (subjectField) => !allowedSubjectFields.has(subjectField),
   );
 }
