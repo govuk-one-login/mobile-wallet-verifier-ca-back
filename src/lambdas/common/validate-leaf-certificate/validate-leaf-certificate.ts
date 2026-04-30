@@ -352,7 +352,7 @@ function validateSubject(
         {
           errorMessage,
           data: {
-            issuer: certificate.issuer,
+            issuer: certificate.subject,
             expected: EXPECTED_ISSUER_AND_SUBJECT_NAME,
           },
         },
@@ -360,7 +360,7 @@ function validateSubject(
       return errorResult(errorMessage);
     }
   } catch (error: unknown) {
-    const errorMessage = 'Failed to parse certificate issuer and subject';
+    const errorMessage = 'Failed to parse certificate subject';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       { errorMessage, data: { error } },
