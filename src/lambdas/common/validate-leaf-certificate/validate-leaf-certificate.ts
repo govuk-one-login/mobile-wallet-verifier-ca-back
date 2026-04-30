@@ -6,15 +6,15 @@ import {
   errorResult,
   emptySuccess,
   successResult,
-} from '../common/result/result.ts';
-import { logger } from '../common/logger/logger.ts';
-import { LogMessage } from '../common/logger/log-message.ts';
+} from '../result/result.ts';
+import { logger } from '../logger/logger.ts';
+import { LogMessage } from '../logger/log-message.ts';
 import {
   EXPECTED_CERTIFICATE_VERSION,
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
   EXPECTED_ISSUER_CN,
-} from '../common/certificate-service-constants/certificate-service-constants.ts';
+} from '../certificate-service-constants/certificate-service-constants.ts';
 
 export function validateLeafCertificate(
   certPem: string,

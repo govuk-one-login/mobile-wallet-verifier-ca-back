@@ -25,9 +25,12 @@ import {
 } from '../common/result/result.ts';
 import '../../../tests/testUtils/matchers.ts';
 
-vi.mock('./validate-leaf-certificate.ts', () => ({
-  validateLeafCertificate: vi.fn().mockReturnValue({ isError: false }),
-}));
+vi.mock(
+  '../common/validate-leaf-certificate/validate-leaf-certificate.ts',
+  () => ({
+    validateLeafCertificate: vi.fn().mockReturnValue({ isError: false }),
+  }),
+);
 
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }));
 
