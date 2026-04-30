@@ -73,7 +73,6 @@ function parseX509Certificate(
       {
         errorMessage,
         data: {
-          certPem,
           error,
         },
       },
