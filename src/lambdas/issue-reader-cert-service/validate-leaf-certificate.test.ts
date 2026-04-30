@@ -99,7 +99,7 @@ describe('validateLeafCertificate', () => {
   describe('Given Leaf certificate verification fails', () => {
     describe('Given certificate is not valid X.509 format', () => {
       beforeEach(async () => {
-        result = await validateLeafCertificate(
+        result = validateLeafCertificate(
           await createValidCertPem({ invalidX509: true }),
           MOCK_CSR_SUBJECT_CN,
         );
@@ -129,7 +129,7 @@ describe('validateLeafCertificate', () => {
             serialNumber: new ArrayBuffer(9),
           },
         } as ReturnType<typeof AsnConvert.parse>);
-        result = await validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
       });
 
       it('Logs error', () => {
@@ -155,10 +155,7 @@ describe('validateLeafCertificate', () => {
               serialNumber: null,
             },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -185,10 +182,7 @@ describe('validateLeafCertificate', () => {
               serialNumber: new ArrayBuffer(0),
             },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -215,10 +209,7 @@ describe('validateLeafCertificate', () => {
               serialNumber: new ArrayBuffer(21),
             },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -250,10 +241,7 @@ describe('validateLeafCertificate', () => {
               serialNumber: shortSerial,
             },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -283,10 +271,7 @@ describe('validateLeafCertificate', () => {
               serialNumber: new ArrayBuffer(9),
             },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -317,10 +302,7 @@ describe('validateLeafCertificate', () => {
               serialNumber: negativeSerial,
             },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -351,10 +333,7 @@ describe('validateLeafCertificate', () => {
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -386,10 +365,7 @@ describe('validateLeafCertificate', () => {
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -419,10 +395,7 @@ describe('validateLeafCertificate', () => {
             notAfter: new Date('2026-01-02T00:00:00Z'),
           });
           mockAsnWithValidSerialAndSignature();
-          result = await validateLeafCertificate(
-            expiredCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(expiredCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -448,10 +421,7 @@ describe('validateLeafCertificate', () => {
             notAfter: new Date(futureDate.getTime() + TWENTY_FOUR_HOURS_IN_MS),
           });
           mockAsnWithValidSerialAndSignature();
-          result = await validateLeafCertificate(
-            futureCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(futureCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -477,10 +447,7 @@ describe('validateLeafCertificate', () => {
             notAfter: new Date(notBefore.getTime() + 26 * 60 * 60 * 1000), // 26 hours - outside 24-25 hour range
           });
           mockAsnWithValidSerialAndSignature();
-          result = await validateLeafCertificate(
-            invalidCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(invalidCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -509,10 +476,7 @@ describe('validateLeafCertificate', () => {
             notAfter: new Date(notBefore.getTime() + 2 * 60 * 60 * 1000), // 2 hours
           });
           mockAsnWithValidSerialAndSignature();
-          result = await validateLeafCertificate(
-            invalidCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(invalidCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -551,10 +515,7 @@ describe('validateLeafCertificate', () => {
           ).mockReturnValue({
             getField: () => ['Wrong Issuer CN'],
           } as unknown as Name);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -600,10 +561,7 @@ describe('validateLeafCertificate', () => {
               return fields[field] ?? [];
             },
           } as unknown as Name);
-          result = await validateLeafCertificate(
-            wrongNameCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(wrongNameCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -632,7 +590,7 @@ describe('validateLeafCertificate', () => {
             notAfter: new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS),
           });
           mockAsnWithValidSerialAndSignature();
-          result = await validateLeafCertificate(validCert, 'Wrong CN');
+          result = validateLeafCertificate(validCert, 'Wrong CN');
         });
 
         it('Logs error', () => {
@@ -676,10 +634,7 @@ describe('validateLeafCertificate', () => {
               return fields[field] ?? [];
             },
           } as unknown as Name);
-          result = await validateLeafCertificate(
-            validCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -708,7 +663,7 @@ describe('validateLeafCertificate', () => {
         notAfter: new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS),
       });
       mockAsnWithValidSerialAndSignature();
-      result = await validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+      result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
     });
 
     it('Returns empty success', () => {
