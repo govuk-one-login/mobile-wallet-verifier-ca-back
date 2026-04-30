@@ -124,7 +124,7 @@ const buildCertificateChain = async (
     return emptyFailure();
   }
 
-  const validateResult = await validateLeafCertificate(
+  const validateResult = validateLeafCertificate(
     response.Certificate,
     csrSubjectCn,
   );

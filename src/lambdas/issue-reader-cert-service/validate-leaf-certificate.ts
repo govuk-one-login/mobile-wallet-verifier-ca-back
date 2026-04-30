@@ -16,10 +16,10 @@ import {
   EXPECTED_ISSUER_CN,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 
-export async function validateLeafCertificate(
+export function validateLeafCertificate(
   certPem: string,
   csrSubjectCn: string,
-): Promise<Result<void, string>> {
+): Result<void, string> {
   const parseCertResult = parseX509Certificate(certPem);
   if (parseCertResult.isError) {
     return parseCertResult;
