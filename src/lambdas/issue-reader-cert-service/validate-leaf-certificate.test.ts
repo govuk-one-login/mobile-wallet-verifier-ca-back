@@ -543,7 +543,7 @@ describe('validateLeafCertificate', () => {
             notBefore,
             notAfter: new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS),
           });
-          mockAsnWithValidSerialAndSignature(false);
+          mockAsnWithValidSerialAndSignature();
           vi.spyOn(
             X509Certificate.prototype,
             'issuerName',
@@ -583,19 +583,19 @@ describe('validateLeafCertificate', () => {
             notBefore,
             notAfter: new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS),
           });
-          mockAsnWithValidSerialAndSignature(false);
+          mockAsnWithValidSerialAndSignature();
           vi.spyOn(
             X509Certificate.prototype,
-            'subjectName',
+            'issuerName',
             'get',
           ).mockReturnValue({
             getField: (field: string) => {
               const fields: Record<string, string[]> = {
-                C: ['GB'],
+                C: ['US'],
                 ST: ['London'],
                 L: ['London'],
                 O: ['Government Digital Service'],
-                CN: [MOCK_CSR_SUBJECT_CN],
+                CN: ['GOVUK Mobile Wallet GovVerifier CA'],
               };
               return fields[field] ?? [];
             },
