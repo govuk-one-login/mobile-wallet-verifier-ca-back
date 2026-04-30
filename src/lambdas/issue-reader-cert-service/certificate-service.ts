@@ -18,7 +18,7 @@ import {
   TEMPLATE_ARN,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
-import { validateLeafCertificate } from './validate-leaf-certificate.ts';
+import { validateLeafCertificate } from '../common/validate-leaf-certificate/validate-leaf-certificate.ts';
 
 const acmpcaClient = new ACMPCAClient({});
 

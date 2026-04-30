@@ -8,12 +8,12 @@ import {
   MockInstance,
 } from 'vitest';
 import { validateLeafCertificate } from './validate-leaf-certificate.ts';
-import '../../../tests/testUtils/matchers.ts';
-import { emptySuccess, errorResult, Result } from '../common/result/result.ts';
+import '../../../../tests/testUtils/matchers.ts';
+import { emptySuccess, errorResult, Result } from '../result/result.ts';
 import {
   createValidCertPem,
   createValidSerialNumber,
-} from '../../../tests/testUtils/create-valid-cert-pem.ts';
+} from '../../../../tests/testUtils/create-valid-cert-pem.ts';
 import { X509Certificate, Name } from '@peculiar/x509';
 import { AsnConvert } from '@peculiar/asn1-schema';
 
