@@ -52,7 +52,7 @@ When(
 );
 
 Then(
-  'the issue reader cert endpoint returns a 401 unauthorized response',
+  'the issue reader cert endpoint returns a 401 response',
   () => {
     assert.ok(
       response,
@@ -64,22 +64,20 @@ Then(
       401,
       `Unexpected response from ${response.url}: ${response.body}`,
     );
-
-    const parsedBody = JSON.parse(response.body);
-    assert.equal(parsedBody.code, 'unauthorized');
   },
 );
 
-Then('the response body contains a JWT signature error message', () => {
+Then('the response body indicates an invalid App Check token', () => {
   assert.ok(
     response,
     'The issue reader cert endpoint must be called before asserting on the response',
   );
 
-  const parsedBody = JSON.parse(response.body);
-
-  assert.equal(parsedBody.message, 'App Check JWT signature is invalid');
   assert.ok(response.headers['content-type']?.includes('application/json'));
+
+  const parsedBody = JSON.parse(response.body);
+  assert.equal(parsedBody.code, 'unauthorized');
+  assert.equal(parsedBody.message, 'App Check JWT signature is invalid');
 });
 
 Then('the issue reader cert endpoint returns a 200 OK response', () => {
