@@ -64,6 +64,9 @@ Then(
       401,
       `Unexpected response from ${response.url}: ${response.body}`,
     );
+
+    const parsedBody = JSON.parse(response.body);
+    assert.equal(parsedBody.code, 'unauthorized');
   },
 );
 
@@ -75,7 +78,6 @@ Then('the response body contains a JWT signature error message', () => {
 
   const parsedBody = JSON.parse(response.body);
 
-  assert.equal(parsedBody.code, 'unauthorized');
   assert.equal(parsedBody.message, 'App Check JWT signature is invalid');
   assert.ok(response.headers['content-type']?.includes('application/json'));
 });
