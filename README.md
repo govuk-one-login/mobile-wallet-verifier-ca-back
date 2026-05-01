@@ -146,8 +146,12 @@ To run the integration tests in a pipeline-like environment, build the test cont
 sh run-tests-locally.sh
 ```
 
+##### Custom dev stack
 
-Current limitation: these tests are currently wired to the main build stack only. Support for running the integration tests against the dev environment will be added in a future iteration.
+To run against a custom dev stack, update `tests/integrationTests/utils/api-instance.ts` before running the tests:
+
+- Set `API_GATEWAY_URL` to your stack's `ApiGatewayDomainName` output.
+- Set `MOCK_SERVICES_API_URL` to `https://mock.verifier-ca.dev.account.gov.uk`.
 
 #### Mock Testing
 
