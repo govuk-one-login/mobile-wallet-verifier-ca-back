@@ -128,11 +128,24 @@ These integration tests are implemented with Cucumber and exercise the deployed 
 
 The Cucumber feature files and step definitions live under `tests/integrationTests`.
 
-Run the integration tests:
+Both commands below to run the integration tests target the build environment by default and write the JUnit report under `results/`.
+
+##### Run without Docker
+
+To run the integration tests from your local Node.js environment, run the Cucumber test suite directly with npm.
 
 ```bash
 npm run test:integration
 ```
+
+##### Pipeline-like Docker run
+
+To run the integration tests in a pipeline-like environment, build the test container from the repository `Dockerfile` and run the Cucumber tests inside it.
+
+```bash
+sh run-tests-locally.sh
+```
+
 
 Current limitation: these tests are currently wired to the main build stack only. Support for running the integration tests against the dev environment will be added in a future iteration.
 
