@@ -146,7 +146,7 @@ To run the integration tests in a pipeline-like environment, build the test cont
 sh run-tests-locally.sh
 ```
 
-##### Custom dev stack
+##### Testing with custom dev stack
 
 To run against a custom dev stack, update `tests/integrationTests/utils/api-instance.ts` before running the tests:
 
