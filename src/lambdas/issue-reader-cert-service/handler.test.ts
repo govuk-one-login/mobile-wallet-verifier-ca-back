@@ -16,6 +16,13 @@ import {
 import { handlerConstructor } from './handler.ts';
 import { logger } from '../common/logger/logger.ts';
 import '../../../tests/testUtils/matchers.ts';
+
+vi.mock(
+  '../common/validate-leaf-certificate/validate-leaf-certificate.ts',
+  () => ({
+    validateLeafCertificate: () => ({ isError: false }),
+  }),
+);
 import { IssueReaderCertDependencies } from './handler-dependencies.ts';
 import {
   buildLambdaContext,
@@ -46,6 +53,7 @@ import { CSR_POLICY } from '../common/csr-constants/csr-constants.ts';
 import {
   GetCertificateParams,
   IssueCertificateParams,
+  CertificateResult,
 } from './certificate-service.ts';
 
 describe('Handler', () => {
@@ -74,7 +82,7 @@ describe('Handler', () => {
   ) => Promise<Result<string, void>>;
   let mockGetCertificate: (
     params: GetCertificateParams,
-  ) => Promise<Result<string, void>>;
+  ) => Promise<Result<CertificateResult, void>>;
 
   beforeAll(async () => {
     ({ privateKey, publicJwk } = await createKeyPair());
@@ -129,13 +137,14 @@ describe('Handler', () => {
         ),
       );
 
-    mockGetCertificate = vi
-      .fn()
-      .mockResolvedValue(
-        successResult(
-          '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
-        ),
-      );
+    mockGetCertificate = vi.fn().mockResolvedValue(
+      successResult({
+        certificate:
+          '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
+        certificateChain:
+          '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
+      }),
+    );
 
     dependencies = {
       env,
@@ -812,7 +821,6 @@ describe('Handler', () => {
           certificateArn:
             'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
           certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
-          csrSubjectCn: 'MockCN',
         });
       });
 
@@ -831,7 +839,7 @@ describe('Handler', () => {
           },
           body: JSON.stringify({
             certChain:
-              '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
+              '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
           }),
         });
       });

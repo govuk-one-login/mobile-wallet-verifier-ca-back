@@ -17,20 +17,17 @@ import {
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
-import { getCertificate, issueCertificate } from './certificate-service.ts';
+import {
+  getCertificate,
+  issueCertificate,
+  CertificateResult,
+} from './certificate-service.ts';
 import {
   emptyFailure,
   Result,
   successResult,
 } from '../common/result/result.ts';
 import '../../../tests/testUtils/matchers.ts';
-
-vi.mock(
-  '../common/validate-leaf-certificate/validate-leaf-certificate.ts',
-  () => ({
-    validateLeafCertificate: vi.fn().mockReturnValue({ isError: false }),
-  }),
-);
 
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }));
 
@@ -42,7 +39,7 @@ vi.mock('@aws-sdk/client-acm-pca', () => ({
   GetCertificateCommand: vi.fn(),
 }));
 
-let result: Result<string, void>;
+let result: Result<CertificateResult | string, void>;
 let certificate: string;
 let certificateChain: string;
 let consoleErrorSpy: MockInstance;
@@ -51,8 +48,6 @@ const mockCaArn =
 const mockCertificateArn = `${mockCaArn}/certificate/mock`;
 const mockCsr =
   '-----BEGIN CERTIFICATE REQUEST-----\nMOCK\n-----END CERTIFICATE REQUEST-----';
-
-const mockCsrSubjectCn = 'Example Verifier Org';
 
 describe('Certificate Service', () => {
   beforeEach(() => {
@@ -165,7 +160,6 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
-          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -191,7 +185,6 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
-          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -220,7 +213,6 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
-          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -230,7 +222,7 @@ describe('Certificate Service', () => {
 
       it('retries and returns success', async () => {
         expect(result).toEqual(
-          successResult(`${certificate}\n${certificateChain}`),
+          successResult({ certificate, certificateChain }),
         );
       });
     });
@@ -241,7 +233,6 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
-          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -263,7 +254,6 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
-          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -288,7 +278,6 @@ describe('Certificate Service', () => {
         result = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
-          csrSubjectCn: mockCsrSubjectCn,
         });
       });
 
@@ -299,9 +288,9 @@ describe('Certificate Service', () => {
         });
       });
 
-      it('returns the concatenated certificate and chain', () => {
+      it('returns certificate and chain', () => {
         expect(result).toEqual(
-          successResult(`${certificate}\n${certificateChain}`),
+          successResult({ certificate, certificateChain }),
         );
       });
     });

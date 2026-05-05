@@ -9,6 +9,7 @@ import {
   getCertificate,
   IssueCertificateParams,
   GetCertificateParams,
+  CertificateResult,
 } from './certificate-service.ts';
 
 export interface IssueReaderCertDependencies {
@@ -24,7 +25,7 @@ export interface IssueReaderCertDependencies {
   ) => Promise<Result<string, void>>;
   getCertificate: (
     params: GetCertificateParams,
-  ) => Promise<Result<string, void>>;
+  ) => Promise<Result<CertificateResult, void>>;
 }
 
 export const dependencies: IssueReaderCertDependencies = {
