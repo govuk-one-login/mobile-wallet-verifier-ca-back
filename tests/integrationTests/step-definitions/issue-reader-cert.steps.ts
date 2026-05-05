@@ -18,6 +18,19 @@ Before(() => {
 });
 
 Given(
+  'I generate an issue reader cert request without an App Check JWT',
+  async () => {
+    const validMockRequest = await requestMockIssueReaderCertRequest();
+    mockRequest = {
+      ...validMockRequest,
+      headers: {
+        'X-Firebase-AppCheck': '',
+      },
+    };
+  },
+);
+
+Given(
   'I generate an issue reader cert request with an App Check JWT signed by an untrusted key pair',
   async () => {
     const validMockRequest = await requestMockIssueReaderCertRequest();
@@ -61,6 +74,22 @@ Then('the issue reader cert endpoint returns a 401 response', () => {
     response.status,
     401,
     `Unexpected response from ${response.url}: ${response.body}`,
+  );
+});
+
+Then('the response body indicates a missing App Check token', () => {
+  assert.ok(
+    response,
+    'The issue reader cert endpoint must be called before asserting on the response',
+  );
+
+  assert.ok(response.headers['content-type']?.includes('application/json'));
+
+  const parsedBody = JSON.parse(response.body);
+  assert.equal(parsedBody.code, 'unauthorized');
+  assert.equal(
+    parsedBody.message,
+    'X-Firebase-AppCheck header missing from event',
   );
 });
 
