@@ -2,7 +2,7 @@
 
 ## Overview
 
-This Repository contains two services (lambda functions) to operate a private certificate authority (CA). These two services are to verify a reader authentication by issuing a short-lived certificate (valid for approximately 24 Hrs) to access credentials from a Holder App.
+This Repository contains a service (lambda function) to operate a private certificate authority (CA). The service verifies reader authentication by issuing a short-lived certificate (valid for approximately 24 Hrs) to access credentials from a Holder App. Mock services are also provided for dev/build environments.
 
 ### Lambda Functions
 
