@@ -29,36 +29,19 @@ export function validateLeafCertificate(
 
   const certificate = parseCertResult.value;
 
-  const versionValidation = validateVersion(certificate);
-  if (versionValidation.isError) {
-    return versionValidation;
+  const validations: Array<Result<void, string>> = [
+    validateVersion(certificate),
+    validateSerialNumber(certificate),
+    validateSignatureAlgorithm(certificate),
+    validateCertificateValidity(certificate),
+    validateIssuer(certificate),
+    validateSubject(certificate, csrSubjectCn),
+  ];
+  for (const validation of validations) {
+    if (validation.isError) {
+      return validation;
+    }
   }
-
-  const serialNumberValidation = validateSerialNumber(certificate);
-  if (serialNumberValidation.isError) {
-    return serialNumberValidation;
-  }
-
-  const signatureValidation = validateSignatureAlgorithm(certificate);
-  if (signatureValidation.isError) {
-    return signatureValidation;
-  }
-
-  const validityValidation = validateCertificateValidity(certificate);
-  if (validityValidation.isError) {
-    return validityValidation;
-  }
-
-  const issuerValidation = validateIssuer(certificate);
-  if (issuerValidation.isError) {
-    return issuerValidation;
-  }
-
-  const subjectValidation = validateSubject(certificate, csrSubjectCn);
-  if (subjectValidation.isError) {
-    return subjectValidation;
-  }
-
   return emptySuccess();
 }
 
