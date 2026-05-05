@@ -86,7 +86,7 @@ function parseX509Certificate(
 // Parse the certificate's ASN.1 structure to access the fields
 const certAsn = (certificate: X509Certificate) => {
   return AsnConvert.parse(certificate.rawData, Certificate);
-}
+};
 
 function validateVersion(certificate: X509Certificate): Result<void, string> {
   try {
@@ -205,7 +205,8 @@ function validateSignatureAlgorithm(
   certificate: X509Certificate,
 ): Result<void, string> {
   try {
-    const tbsAlgorithm = certAsn(certificate).tbsCertificate.signature.algorithm; // Signature algorithm inside Data
+    const tbsAlgorithm =
+      certAsn(certificate).tbsCertificate.signature.algorithm; // Signature algorithm inside Data
     const outerAlgorithm = certAsn(certificate).signatureAlgorithm.algorithm;
 
     if (tbsAlgorithm !== outerAlgorithm) {
