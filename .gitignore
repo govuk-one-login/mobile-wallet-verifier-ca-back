@@ -17,6 +17,7 @@ results/
 
 # Ignore changes to .env
 .env
+docker-vars.env
 
 # IntelliJ IDEA
 *.iml

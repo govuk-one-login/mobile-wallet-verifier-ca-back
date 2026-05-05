@@ -4,6 +4,7 @@ import {
   requestIssueReaderCert,
   requestMockIssueReaderCertRequest,
   MockIssueReaderCertRequest,
+  createUntrustedFirebaseAppCheckJwt,
 } from '../utils/integration-test-helpers.ts';
 import type { HttpResponseSnapshot } from '../utils/api-instance.ts';
 
@@ -15,6 +16,36 @@ Before(() => {
   mockRequest = undefined;
   response = undefined;
 });
+
+Given(
+  'I generate an issue reader cert request without an App Check JWT',
+  async () => {
+    const validMockRequest = await requestMockIssueReaderCertRequest();
+    mockRequest = {
+      ...validMockRequest,
+      headers: {
+        'X-Firebase-AppCheck': '',
+      },
+    };
+  },
+);
+
+Given(
+  'I generate an issue reader cert request with an App Check JWT signed by an untrusted key pair',
+  async () => {
+    const validMockRequest = await requestMockIssueReaderCertRequest();
+    const untrustedJwt = await createUntrustedFirebaseAppCheckJwt(
+      validMockRequest.headers['X-Firebase-AppCheck'],
+    );
+
+    mockRequest = {
+      ...validMockRequest,
+      headers: {
+        'X-Firebase-AppCheck': untrustedJwt,
+      },
+    };
+  },
+);
 
 Given('I generate a valid issue reader cert request', async () => {
   mockRequest = await requestMockIssueReaderCertRequest();
@@ -32,6 +63,48 @@ When(
     response = await requestIssueReaderCert(mockRequest);
   },
 );
+
+Then('the issue reader cert endpoint returns a 401 response', () => {
+  assert.ok(
+    response,
+    'The issue reader cert endpoint must be called before asserting on the response',
+  );
+
+  assert.equal(
+    response.status,
+    401,
+    `Unexpected response from ${response.url}: ${response.body}`,
+  );
+});
+
+Then('the response body indicates a missing App Check token', () => {
+  assert.ok(
+    response,
+    'The issue reader cert endpoint must be called before asserting on the response',
+  );
+
+  assert.ok(response.headers['content-type']?.includes('application/json'));
+
+  const parsedBody = JSON.parse(response.body);
+  assert.equal(parsedBody.code, 'unauthorized');
+  assert.equal(
+    parsedBody.message,
+    'X-Firebase-AppCheck header missing from event',
+  );
+});
+
+Then('the response body indicates an invalid App Check token', () => {
+  assert.ok(
+    response,
+    'The issue reader cert endpoint must be called before asserting on the response',
+  );
+
+  assert.ok(response.headers['content-type']?.includes('application/json'));
+
+  const parsedBody = JSON.parse(response.body);
+  assert.equal(parsedBody.code, 'unauthorized');
+  assert.equal(parsedBody.message, 'App Check JWT signature is invalid');
+});
 
 Then('the issue reader cert endpoint returns a 200 OK response', () => {
   assert.ok(
