@@ -26,3 +26,5 @@ export const EXPECTED_ISSUER_AND_SUBJECT_NAME = {
   L: 'London',
 } as const;
 export const EXPECTED_ISSUER_CN = 'GOVUK Mobile Wallet GovVerifier CA';
+export const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
+export const TWENTY_FIVE_HOURS_IN_MS = 25 * 60 * 60 * 1000;
