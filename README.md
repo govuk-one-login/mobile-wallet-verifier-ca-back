@@ -6,14 +6,6 @@ This Repository contains two services (lambda functions) to operate a private ce
 
 ### Lambda Functions
 
-#### Nonce Service (`/nonce`)
-
-Generates cryptographically secure, single-use nonces for replay protection. Each nonce:
-
-- Is a UUID v4 (36 characters)
-- Has a 5-minute TTL in DynamoDB
-- Can only be consumed once by the certificate issuance service
-
 #### Issue Reader Certificate Service (`/issue-reader-cert`)
 
 Issues short-lived X.509 reader certificates (24-hours validity) after verifying:
@@ -173,12 +165,6 @@ You can use this payload directly to test the `/issue-reader-cert` endpoint.
 
 ### AWS Environment Setup
 
-#### Environment Variables
-
-The certificate issuer service uses these environment variables:
-
-- `NONCE_TABLE_NAME`: DynamoDB table for nonce storage
-
 #### Deployment
 
 The service automatically configures:
@@ -207,7 +193,7 @@ Set to `true` to enable CloudWatch monitoring on the deployed stacks.
 4. The workflow will:
    - Derive the stack identifier from the branch name
    - Build and validate both SAM templates
-   - Deploy `ca-base-<branch>` (DynamoDB nonce table)
+   - Deploy `ca-base-<branch>`
    - Deploy `ca-back-<branch>` (Lambda functions and API Gateway)
 
 ### Clean Up a Feature Branch
