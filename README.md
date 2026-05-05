@@ -2,17 +2,9 @@
 
 ## Overview
 
-This Repository contains two services (lambda functions) to operate a private certificate authority (CA). These two services are to verify a reader authentication by issuing a short-lived certificate (valid for approximately 24 Hrs) to access credentials from a Holder App.
+This Repository contains a service (lambda function) to operate a private certificate authority (CA). The service verifies reader authentication by issuing a short-lived certificate (valid for approximately 24 Hrs) to access credentials from a Holder App. Mock services are also provided for dev/build environments.
 
 ### Lambda Functions
-
-#### Nonce Service (`/nonce`)
-
-Generates cryptographically secure, single-use nonces for replay protection. Each nonce:
-
-- Is a UUID v4 (36 characters)
-- Has a 5-minute TTL in DynamoDB
-- Can only be consumed once by the certificate issuance service
 
 #### Issue Reader Certificate Service (`/issue-reader-cert`)
 
@@ -25,7 +17,7 @@ Issues short-lived X.509 reader certificates (24-hours validity) after verifying
 
 **Mock JWKS Service (`/mock-jwks`)**: Returns public keys for Firebase App Check token verification in test environments.
 
-**Mock Issue Cert Service (`/mock-issue-cert`)**: Generates complete mock certificate requests with Firebase App Check tokens for testing.
+**Mock Issue Cert Request Service (`/mock-issue-cert-request`)**: Generates complete mock certificate requests with Firebase App Check tokens for testing.
 
 ```json
 {
@@ -173,12 +165,6 @@ You can use this payload directly to test the `/issue-reader-cert` endpoint.
 
 ### AWS Environment Setup
 
-#### Environment Variables
-
-The certificate issuer service uses these environment variables:
-
-- `NONCE_TABLE_NAME`: DynamoDB table for nonce storage
-
 #### Deployment
 
 The service automatically configures:
@@ -207,12 +193,12 @@ Set to `true` to enable CloudWatch monitoring on the deployed stacks.
 4. The workflow will:
    - Derive the stack identifier from the branch name
    - Build and validate both SAM templates
-   - Deploy `ca-base-<branch>` (DynamoDB nonce table)
+   - Deploy `ca-base-<branch>`
    - Deploy `ca-back-<branch>` (Lambda functions and API Gateway)
 
 ### Clean Up a Feature Branch
 
 Cleanup happens **automatically** when the pull request is closed (or merged).
 The workflow uses the PR's head branch name to derive the same stack identifier that was used during deployment.
-The Manaual cleanup is also supported by running the `cleanup-feature-branch` workflow from
+Manual cleanup is also supported by running the `cleanup-feature-branch` workflow from
 GitHub Actions and providing the branch name as an input parameter.
