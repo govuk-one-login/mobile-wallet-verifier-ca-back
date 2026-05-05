@@ -18,7 +18,6 @@ import {
   TEMPLATE_ARN,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
-import { validateLeafCertificate } from '../common/validate-leaf-certificate/validate-leaf-certificate.ts';
 
 const acmpcaClient = new ACMPCAClient({});
 
@@ -80,7 +79,11 @@ export const issueCertificate = async (
 export interface GetCertificateParams {
   certificateArn: string;
   certificateAuthorityArn: string;
-  csrSubjectCn: string;
+}
+
+export interface CertificateResult {
+  certificate: string;
+  certificateChain: string;
 }
 
 const attemptGetCertificate = async (
@@ -106,10 +109,9 @@ const attemptGetCertificate = async (
   }
 };
 
-const buildCertificateChain = async (
+const extractCertificates = (
   response: GetCertificateCommandOutput,
-  csrSubjectCn: string,
-): Promise<Result<string, void>> => {
+): Result<CertificateResult, void> => {
   if (!response.Certificate) {
     logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
       errorMessage: 'Failed to retrieve certificate',
@@ -124,19 +126,16 @@ const buildCertificateChain = async (
     return emptyFailure();
   }
 
-  const validateResult = validateLeafCertificate(
-    response.Certificate,
-    csrSubjectCn,
-  );
-  if (validateResult.isError) return emptyFailure();
-
-  return successResult(`${response.Certificate}\n${response.CertificateChain}`);
+  return successResult({
+    certificate: response.Certificate,
+    certificateChain: response.CertificateChain,
+  });
 };
 
 export const getCertificate = async (
   params: GetCertificateParams,
-): Promise<Result<string, void>> => {
-  const { certificateArn, certificateAuthorityArn, csrSubjectCn } = params;
+): Promise<Result<CertificateResult, void>> => {
+  const { certificateArn, certificateAuthorityArn } = params;
   const maxRetries = 3;
   const baseDelay = 1000;
 
@@ -157,7 +156,7 @@ export const getCertificate = async (
       continue;
     }
 
-    return buildCertificateChain(response, csrSubjectCn);
+    return extractCertificates(response);
   }
 
   logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
