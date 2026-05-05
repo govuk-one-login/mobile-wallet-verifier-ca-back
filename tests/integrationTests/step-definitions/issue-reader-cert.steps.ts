@@ -51,21 +51,18 @@ When(
   },
 );
 
-Then(
-  'the issue reader cert endpoint returns a 401 response',
-  () => {
-    assert.ok(
-      response,
-      'The issue reader cert endpoint must be called before asserting on the response',
-    );
+Then('the issue reader cert endpoint returns a 401 response', () => {
+  assert.ok(
+    response,
+    'The issue reader cert endpoint must be called before asserting on the response',
+  );
 
-    assert.equal(
-      response.status,
-      401,
-      `Unexpected response from ${response.url}: ${response.body}`,
-    );
-  },
-);
+  assert.equal(
+    response.status,
+    401,
+    `Unexpected response from ${response.url}: ${response.body}`,
+  );
+});
 
 Then('the response body indicates an invalid App Check token', () => {
   assert.ok(
