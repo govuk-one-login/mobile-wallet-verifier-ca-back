@@ -1,13 +1,22 @@
 import { X509CertificateGenerator } from '@peculiar/x509';
+import {
+  EXPECTED_ISSUER_AND_SUBJECT_NAME,
+  EXPECTED_ISSUER_CN,
+  TWENTY_FOUR_HOURS_IN_MS,
+} from '../../src/lambdas/common/certificate-service-constants/certificate-service-constants.ts';
 
 type CertKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
+
+const DEFAULT_ISSUER_NAME = `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${EXPECTED_ISSUER_CN}`;
 
 export interface CreateValidCertPemOptions {
   keyAlgorithm?: CertKeyAlgorithm;
   invalidX509?: boolean;
   notBefore?: Date;
   notAfter?: Date;
-  name?: string;
+  issuerName?: string;
+  subjectCn?: string;
+  subjectName?: string;
 }
 
 export async function createValidCertPem(
@@ -26,24 +35,36 @@ export async function createValidCertPem(
     'verify',
   ]);
 
+  const notBefore = options.notBefore ?? new Date(Date.now() - 60 * 60 * 1000);
+  const notAfter =
+    options.notAfter ?? new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS);
+  const issuerName = options.issuerName ?? DEFAULT_ISSUER_NAME;
+
+  if (options.subjectCn || options.subjectName) {
+    const subject =
+      options.subjectName ??
+      `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${options.subjectCn}`;
+    const cert = await X509CertificateGenerator.create({
+      issuer: issuerName,
+      subject,
+      publicKey: keys.publicKey,
+      signingKey: keys.privateKey,
+      signingAlgorithm,
+      notBefore,
+      notAfter,
+    });
+    return cert.toString('pem');
+  }
+
   const cert = await X509CertificateGenerator.createSelfSigned({
-    name: options.name ?? 'CN=Test',
+    name: issuerName,
     keys,
     signingAlgorithm,
-    notBefore: options.notBefore ?? new Date('2026-01-01T00:00:00Z'),
-    notAfter: options.notAfter ?? new Date('2026-01-02T00:00:00Z'),
+    notBefore,
+    notAfter,
   });
 
   return cert.toString('pem');
-}
-
-export function createValidSerialNumber(): ArrayBuffer {
-  const serial = new ArrayBuffer(9);
-  const bytes = new Uint8Array(serial);
-  bytes[0] = 0x01; // positive, non-zero
-  bytes[1] = 0x23;
-  bytes[2] = 0x45;
-  return serial;
 }
 
 function getKeyGenerationAlgorithm(
