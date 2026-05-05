@@ -17,7 +17,7 @@ Issues short-lived X.509 reader certificates (24-hours validity) after verifying
 
 **Mock JWKS Service (`/mock-jwks`)**: Returns public keys for Firebase App Check token verification in test environments.
 
-**Mock Issue Cert Service (`/mock-issue-cert`)**: Generates complete mock certificate requests with Firebase App Check tokens for testing.
+**Mock Issue Cert Request Service (`/mock-issue-cert-request`)**: Generates complete mock certificate requests with Firebase App Check tokens for testing.
 
 ```json
 {
