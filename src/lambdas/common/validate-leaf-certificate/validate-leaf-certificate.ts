@@ -83,11 +83,14 @@ function parseX509Certificate(
   return successResult(certificate);
 }
 
+// Parse the certificate's ASN.1 structure to access the fields
+const certAsn = (certificate: X509Certificate) => {
+  return AsnConvert.parse(certificate.rawData, Certificate);
+}
+
 function validateVersion(certificate: X509Certificate): Result<void, string> {
   try {
-    // Parse the certificate's ASN.1 structure to access the version field
-    const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
-    const version = certAsn.tbsCertificate.version;
+    const version = certAsn(certificate).tbsCertificate.version;
 
     if (version !== EXPECTED_CERTIFICATE_VERSION) {
       const errorMessage = 'Certificate version must be v3';
@@ -121,9 +124,7 @@ function validateSerialNumber(
   certificate: X509Certificate,
 ): Result<void, string> {
   try {
-    // Extract serial number directly from ASN.1 structure to have an ArrayBuffer which is already in binary format
-    const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
-    const serialNumber = certAsn.tbsCertificate.serialNumber;
+    const serialNumber = certAsn(certificate).tbsCertificate.serialNumber;
 
     // Check it is present and non-empty
     if (!serialNumber || serialNumber.byteLength === 0) {
@@ -204,9 +205,8 @@ function validateSignatureAlgorithm(
   certificate: X509Certificate,
 ): Result<void, string> {
   try {
-    const certAsn = AsnConvert.parse(certificate.rawData, Certificate);
-    const tbsAlgorithm = certAsn.tbsCertificate.signature.algorithm; // Signature algorithm inside Data
-    const outerAlgorithm = certAsn.signatureAlgorithm.algorithm;
+    const tbsAlgorithm = certAsn(certificate).tbsCertificate.signature.algorithm; // Signature algorithm inside Data
+    const outerAlgorithm = certAsn(certificate).signatureAlgorithm.algorithm;
 
     if (tbsAlgorithm !== outerAlgorithm) {
       const errorMessage =
