@@ -8,6 +8,8 @@ import {
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
   EXPECTED_ISSUER_CN,
+  TWENTY_FOUR_HOURS_IN_MS,
+  TWENTY_FIVE_HOURS_IN_MS,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -79,5 +81,17 @@ describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
 
   it('Has L as "London"', () => {
     expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.L).toEqual('London');
+  });
+});
+
+describe('TWENTY_FOUR_HOURS_IN_MS', () => {
+  it('Is 86400000 milliseconds', () => {
+    expect(TWENTY_FOUR_HOURS_IN_MS).toEqual(86400000);
+  });
+});
+
+describe('TWENTY_FIVE_HOURS_IN_MS', () => {
+  it('Is 90000000 milliseconds', () => {
+    expect(TWENTY_FIVE_HOURS_IN_MS).toEqual(90000000);
   });
 });

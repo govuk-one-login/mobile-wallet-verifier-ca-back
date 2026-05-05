@@ -14,6 +14,8 @@ import {
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
   EXPECTED_ISSUER_CN,
+  TWENTY_FOUR_HOURS_IN_MS,
+  TWENTY_FIVE_HOURS_IN_MS,
 } from '../certificate-service-constants/certificate-service-constants.ts';
 
 export function validateLeafCertificate(
@@ -395,8 +397,6 @@ function validateCertificateValidity(
     }
 
     const validityDurationMs = notAfter.getTime() - notBefore.getTime();
-    const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
-    const TWENTY_FIVE_HOURS_IN_MS = 25 * 60 * 60 * 1000;
 
     if (
       validityDurationMs < TWENTY_FOUR_HOURS_IN_MS ||
