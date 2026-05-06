@@ -5,7 +5,8 @@ import {
   Result,
   errorResult,
   emptySuccess,
-  successResult, emptyFailure,
+  successResult,
+  emptyFailure,
 } from '../result/result.ts';
 import { logger } from '../logger/logger.ts';
 import { LogMessage } from '../logger/log-message.ts';
@@ -16,6 +17,8 @@ import {
   EXPECTED_ISSUER_CN,
   TWENTY_FOUR_HOURS_IN_MS,
   TWENTY_FIVE_HOURS_IN_MS,
+  MIN_BYTE_LENGTH,
+  MAX_BYTE_LENGTH,
 } from '../certificate-service-constants/certificate-service-constants.ts';
 
 export function validateLeafCertificate(
@@ -125,7 +128,10 @@ function validateSerialNumber(
     }
 
     // Shall contain at least 63 bits and should contain at least 71 bits of CSPRNG output (minimum 9 bytes), maximum 20 octets
-    if (serialNumber.byteLength < 9 || serialNumber.byteLength > 20) {
+    if (
+      serialNumber.byteLength < MIN_BYTE_LENGTH ||
+      serialNumber.byteLength > MAX_BYTE_LENGTH
+    ) {
       const errorMessage =
         'Certificate serial number must be between 9 and 20 bytes';
       logger.error(
@@ -134,8 +140,8 @@ function validateSerialNumber(
           errorMessage,
           data: {
             serialNumberLength: serialNumber.byteLength,
-            minLength: 9,
-            maxLength: 20,
+            minLength: MIN_BYTE_LENGTH,
+            maxLength: MAX_BYTE_LENGTH,
           },
         },
       );

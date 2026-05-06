@@ -10,6 +10,8 @@ import {
   EXPECTED_ISSUER_CN,
   TWENTY_FOUR_HOURS_IN_MS,
   TWENTY_FIVE_HOURS_IN_MS,
+  MIN_BYTE_LENGTH,
+  MAX_BYTE_LENGTH,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -51,6 +53,18 @@ describe('EXTENDED_KEY_USAGE', () => {
 describe('EXPECTED_CERTIFICATE_VERSION', () => {
   it('Is 2 (X.509 v3)', () => {
     expect(EXPECTED_CERTIFICATE_VERSION).toEqual(2);
+  });
+});
+
+describe('MIN_BYTE_LENGTH', () => {
+  it('Is 9', () => {
+    expect(MIN_BYTE_LENGTH).toEqual(9);
+  });
+});
+
+describe('MAX_BYTE_LENGTH', () => {
+  it('Is 20', () => {
+    expect(MAX_BYTE_LENGTH).toEqual(20);
   });
 });
 
