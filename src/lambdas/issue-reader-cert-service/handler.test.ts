@@ -17,12 +17,6 @@ import { handlerConstructor } from './handler.ts';
 import { logger } from '../common/logger/logger.ts';
 import '../../../tests/testUtils/matchers.ts';
 
-vi.mock(
-  '../common/validate-leaf-certificate/validate-leaf-certificate.ts',
-  () => ({
-    validateLeafCertificate: () => ({ isError: false }),
-  }),
-);
 import { IssueReaderCertDependencies } from './handler-dependencies.ts';
 import {
   buildLambdaContext,
@@ -30,6 +24,8 @@ import {
 } from '../../../tests/testUtils/build-event.ts';
 import {
   emptyFailure,
+  emptySuccess,
+  errorResult,
   Result,
   successResult,
 } from '../common/result/result.ts';
@@ -55,6 +51,9 @@ import {
   IssueCertificateParams,
   CertificateResult,
 } from './certificate-service.ts';
+import { validateLeafCertificate } from '../common/validate-leaf-certificate/validate-leaf-certificate.ts';
+
+vi.mock('../common/validate-leaf-certificate/validate-leaf-certificate.ts');
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -145,6 +144,8 @@ describe('Handler', () => {
           '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
       }),
     );
+
+    vi.mocked(validateLeafCertificate).mockReturnValue(emptySuccess());
 
     dependencies = {
       env,
@@ -775,6 +776,28 @@ describe('Handler', () => {
       beforeEach(async () => {
         mockGetCertificate = vi.fn().mockResolvedValue(emptyFailure());
         dependencies.getCertificate = mockGetCertificate;
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Returns 500 server error response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            code: 'server_error',
+            message: 'Server Error',
+          }),
+        });
+      });
+    });
+  });
+
+  describe('Leaf certificate validation', () => {
+    describe('Given leaf certificate validation fails', () => {
+      beforeEach(async () => {
+        vi.mocked(validateLeafCertificate).mockReturnValue(
+          errorResult('Certificate not valid X.509 format'),
+        );
         result = await handlerConstructor(dependencies, event, context);
       });
 
