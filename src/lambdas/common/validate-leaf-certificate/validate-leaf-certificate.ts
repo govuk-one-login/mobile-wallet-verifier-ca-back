@@ -5,7 +5,7 @@ import {
   Result,
   errorResult,
   emptySuccess,
-  successResult,
+  successResult, emptyFailure,
 } from '../result/result.ts';
 import { logger } from '../logger/logger.ts';
 import { LogMessage } from '../logger/log-message.ts';
@@ -237,31 +237,23 @@ function validateSignatureAlgorithm(
   return emptySuccess();
 }
 
-function validateName(name: Name): Result<void, string> {
+function validateName(name: Name): Result<void, void> {
   const C = name.getField('C');
   const O = name.getField('O');
   const ST = name.getField('ST');
   const L = name.getField('L');
 
   if (C.length !== 1 || C[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.C) {
-    return errorResult(
-      'Certificate issuer and subject Country name must match expected name values',
-    );
+    return emptyFailure();
   }
   if (O.length !== 1 || O[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.O) {
-    return errorResult(
-      'Certificate issuer and subject Organisation must match expected name values',
-    );
+    return emptyFailure();
   }
   if (ST.length !== 1 || ST[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.ST) {
-    return errorResult(
-      'Certificate issuer and subject State or province name must match expected name values',
-    );
+    return emptyFailure();
   }
   if (L.length !== 1 || L[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.L) {
-    return errorResult(
-      'Certificate issuer and subject Locality name must match expected name values',
-    );
+    return emptyFailure();
   }
 
   return emptySuccess();
