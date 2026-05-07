@@ -3,7 +3,6 @@ import { AsnConvert } from '@peculiar/asn1-schema';
 import { Certificate, Version } from '@peculiar/asn1-x509';
 import {
   Result,
-  errorResult,
   emptySuccess,
   successResult,
   emptyFailure,
@@ -185,50 +184,47 @@ function validateSerialNumber(
 
 function validateSignatureAlgorithm(
   certificate: X509Certificate,
-): Result<void, string> {
+): Result<void, void> {
   let tbsAlgorithm: string;
   let outerAlgorithm: string;
   try {
     tbsAlgorithm = certAsn(certificate).tbsCertificate.signature.algorithm; // Signature algorithm inside Data
     outerAlgorithm = certAsn(certificate).signatureAlgorithm.algorithm;
   } catch (error: unknown) {
-    const errorMessage = 'Failed to parse certificate signature algorithm';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage: 'Failed to parse certificate signature algorithm',
         data: { error },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
   if (tbsAlgorithm !== outerAlgorithm) {
-    const errorMessage =
-      'Certificate signature algorithm OID mismatch between TBS and outer certificate';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage:
+          'Certificate signature algorithm OID mismatch between TBS and outer certificate',
         data: { tbsAlgorithm, outerAlgorithm },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
 
   if (tbsAlgorithm !== EXPECTED_SIGNATURE_ALGORITHM_OID) {
-    const errorMessage =
-      'Certificate signature algorithm must be ECDSA with SHA-384 on P-384';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage:
+          'Certificate signature algorithm must be ECDSA with SHA-384 on P-384',
         data: {
           actualAlgorithm: tbsAlgorithm,
           expectedAlgorithm: EXPECTED_SIGNATURE_ALGORITHM_OID,
         },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
 
   return emptySuccess();
@@ -256,44 +252,41 @@ function validateName(name: Name): Result<void, void> {
   return emptySuccess();
 }
 
-function validateIssuer(certificate: X509Certificate): Result<void, string> {
+function validateIssuer(certificate: X509Certificate): Result<void, void> {
   let issuerCn: string[];
   try {
     issuerCn = certificate.issuerName.getField('CN');
   } catch (error: unknown) {
-    const errorMessage = 'Failed to parse certificate issuer';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-      { errorMessage, data: { error } },
+      { errorMessage: 'Failed to parse certificate issuer', data: { error } },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
   if (issuerCn.length !== 1 || issuerCn[0] !== EXPECTED_ISSUER_CN) {
-    const errorMessage =
-      'Certificate issuer Common name must match expected name value';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
-        data: { certSubjectCn: issuerCn[0], EXPECTED_ISSUER_CN },
+        errorMessage:
+          'Certificate issuer Common name must match expected name value',
+        data: { certIssuerCn: issuerCn[0], EXPECTED_ISSUER_CN },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
   const issuerValidation = validateName(certificate.issuerName);
   if (issuerValidation.isError) {
-    const errorMessage = 'Certificate issuer must match expected name values';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage: 'Certificate issuer must match expected name values',
         data: {
           issuer: certificate.issuer,
           expected: EXPECTED_ISSUER_AND_SUBJECT_NAME,
         },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
 
   return emptySuccess();
@@ -302,75 +295,69 @@ function validateIssuer(certificate: X509Certificate): Result<void, string> {
 function validateSubject(
   certificate: X509Certificate,
   csrSubjectCn: string,
-): Result<void, string> {
+): Result<void, void> {
   let subjectCn: string[];
   try {
     subjectCn = certificate.subjectName.getField('CN');
   } catch (error: unknown) {
-    const errorMessage = 'Failed to parse certificate subject';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-      { errorMessage, data: { error } },
+      { errorMessage: 'Failed to parse certificate subject', data: { error } },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
   if (subjectCn.length !== 1 || subjectCn[0] !== csrSubjectCn) {
-    const errorMessage = 'Certificate subject CN does not match CSR subject CN';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage: 'Certificate subject CN does not match CSR subject CN',
         data: { certSubjectCn: subjectCn[0], csrSubjectCn },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
 
   const subjectValidation = validateName(certificate.subjectName);
   if (subjectValidation.isError) {
-    const errorMessage = 'Certificate subject must match expected name values';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage: 'Certificate subject must match expected name values',
         data: {
-          issuer: certificate.subject,
+          subject: certificate.subject,
           expected: EXPECTED_ISSUER_AND_SUBJECT_NAME,
         },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
   return emptySuccess();
 }
 
 function validateCertificateValidity(
   certificate: X509Certificate,
-): Result<void, string> {
+): Result<void, void> {
+  const now = new Date();
   let notBefore: Date;
   let notAfter: Date;
-  let now = new Date();
   try {
-    now = new Date();
     notBefore = certificate.notBefore;
     notAfter = certificate.notAfter;
   } catch (error: unknown) {
-    const errorMessage = 'Failed to parse certificate validity';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage: 'Failed to parse certificate validity',
         data: { error },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
   if (now < notBefore || now > notAfter) {
-    const errorMessage = 'Certificate is not within its validity period';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage: 'Certificate is not within its validity period',
         data: {
           notBefore: notBefore.toISOString(),
           notAfter: notAfter.toISOString(),
@@ -378,7 +365,7 @@ function validateCertificateValidity(
         },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
 
   const validityDurationMs = notAfter.getTime() - notBefore.getTime();
@@ -387,12 +374,11 @@ function validateCertificateValidity(
     validityDurationMs < TWENTY_FOUR_HOURS_IN_MS ||
     validityDurationMs > TWENTY_FIVE_HOURS_IN_MS
   ) {
-    const errorMessage =
-      'Certificate validity period must be between 24 and 25 hours';
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage,
+        errorMessage:
+          'Certificate validity period must be between 24 and 25 hours',
         data: {
           notBefore: notBefore.toISOString(),
           notAfter: notAfter.toISOString(),
@@ -401,7 +387,7 @@ function validateCertificateValidity(
         },
       },
     );
-    return errorResult(errorMessage);
+    return emptyFailure();
   }
   return emptySuccess();
 }
