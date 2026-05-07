@@ -23,7 +23,6 @@
     "@peculiar/asn1-android": "^2.7.0",
     "@peculiar/asn1-schema": "^2.3.8",
     "@peculiar/asn1-x509": "^2.6.0",
-    "@peculiar/webcrypto": "1.6.0",
     "@peculiar/x509": "2.0.0",
     "esbuild": "^0.28.0",
     "jose": "^6.2.3",
