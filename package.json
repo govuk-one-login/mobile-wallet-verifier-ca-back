@@ -26,7 +26,6 @@
     "@peculiar/x509": "2.0.0",
     "esbuild": "^0.28.0",
     "jose": "^6.2.3",
-    "pkijs": "^3.4.0",
     "reflect-metadata": "^0.2.2"
   },
   "engines": {
