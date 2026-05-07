@@ -66,10 +66,10 @@ jobs:
         run: npm clean-install --ignore-scripts
 
       - name: Setup AWS SAM CLI
-        uses: aws-actions/setup-sam@f84ec7d548307efafe33230528756de3c5841a17
+        uses: aws-actions/setup-sam@89ddb14d60e682855e3fea4be85b3c56485de310
 
       - name: Authenticate with AWS
-        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BASE_APP_DEV_GH_ACTIONS_ROLE_ARN }}
@@ -103,7 +103,7 @@ jobs:
               StackIdentifier="$STACK_IDENTIFIER"
 
       - name: Authenticate with AWS - backend role
-        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
         with:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ secrets.BACKEND_DEV_GH_ACTIONS_ROLE_ARN }}
