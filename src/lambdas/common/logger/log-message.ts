@@ -73,6 +73,12 @@ export class LogMessage implements LogAttributes {
     'Retrieving certificate chain failed',
   );
 
+  static readonly ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE =
+    new LogMessage(
+      'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+      'Leaf certificate validation failed',
+    );
+
   // Mock logs
   static readonly MOCK_ISSUE_CERT_REQUEST_INVALID_CONFIG = new LogMessage(
     'MOBILE_CA_MOCK_ISSUE_CERT_INVALID_CONFIG',

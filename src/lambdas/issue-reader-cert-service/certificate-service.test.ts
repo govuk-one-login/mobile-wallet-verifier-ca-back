@@ -1,4 +1,12 @@
-import { describe, it, expect, vi, beforeEach, MockInstance } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  MockInstance,
+  afterEach,
+} from 'vitest';
 import {
   IssueCertificateCommand,
   GetCertificateCommand,
@@ -8,9 +16,12 @@ import {
   KEY_USAGE,
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
-  VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
-import { getCertificate, issueCertificate } from './certificate-service.ts';
+import {
+  getCertificate,
+  issueCertificate,
+  CertificateResult,
+} from './certificate-service.ts';
 import {
   emptyFailure,
   Result,
@@ -28,7 +39,7 @@ vi.mock('@aws-sdk/client-acm-pca', () => ({
   GetCertificateCommand: vi.fn(),
 }));
 
-let result: Result<string, void>;
+let result: Result<CertificateResult | string, void>;
 let certificate: string;
 let certificateChain: string;
 let consoleErrorSpy: MockInstance;
@@ -112,7 +123,7 @@ describe('Certificate Service', () => {
             }),
             SigningAlgorithm: SIGNING_ALGORITHM,
             TemplateArn: TEMPLATE_ARN,
-            Validity: { Type: VALIDITY.Type, Value: VALIDITY.Value },
+            Validity: { Type: 'DAYS', Value: 1 },
           }),
         );
       });
@@ -129,6 +140,15 @@ describe('Certificate Service', () => {
         '-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----';
       certificateChain =
         '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----';
+
+      vi.spyOn(global, 'setTimeout').mockImplementation((callback) => {
+        callback();
+        return {} as NodeJS.Timeout;
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
     });
 
     describe('Given ACM PCA keeps throwing RequestInProgressException', () => {
@@ -202,7 +222,7 @@ describe('Certificate Service', () => {
 
       it('retries and returns success', async () => {
         expect(result).toEqual(
-          successResult(`${certificate}\n${certificateChain}`),
+          successResult({ certificate, certificateChain }),
         );
       });
     });
@@ -268,9 +288,9 @@ describe('Certificate Service', () => {
         });
       });
 
-      it('returns the concatenated certificate and chain', () => {
+      it('returns certificate and chain', () => {
         expect(result).toEqual(
-          successResult(`${certificate}\n${certificateChain}`),
+          successResult({ certificate, certificateChain }),
         );
       });
     });

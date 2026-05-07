@@ -16,7 +16,6 @@ import {
   KEY_USAGE,
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
-  VALIDITY,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
 
@@ -53,8 +52,8 @@ export const issueCertificate = async (
       SigningAlgorithm: SIGNING_ALGORITHM,
       TemplateArn: TEMPLATE_ARN,
       Validity: {
-        Type: VALIDITY.Type,
-        Value: VALIDITY.Value, // 24 hours
+        Type: 'DAYS',
+        Value: 1,
       },
     });
 
@@ -82,60 +81,82 @@ export interface GetCertificateParams {
   certificateAuthorityArn: string;
 }
 
-export const getCertificate = async (
-  params: GetCertificateParams,
-): Promise<Result<string, void>> => {
-  let getResponse: GetCertificateCommandOutput;
-  const { certificateArn, certificateAuthorityArn } = params;
-  const maxRetries = 3;
-  const baseDelay = 1000; // 1 second
+export interface CertificateResult {
+  certificate: string;
+  certificateChain: string;
+}
 
-  // Adding retry logic with exponential backoff to handle
-  // the asynchronous nature of certificate issuance in ACM PCA.
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const getCommand = new GetCertificateCommand({
+const attemptGetCertificate = async (
+  certificateArn: string,
+  certificateAuthorityArn: string,
+): Promise<GetCertificateCommandOutput | 'in-progress' | 'error'> => {
+  try {
+    return await acmpcaClient.send(
+      new GetCertificateCommand({
         CertificateAuthorityArn: certificateAuthorityArn,
         CertificateArn: certificateArn,
-      });
-
-      getResponse = await acmpcaClient.send(getCommand);
-    } catch (error: unknown) {
-      const isRequestInProgressException =
-        error instanceof Error && error.name === 'RequestInProgressException';
-      if (isRequestInProgressException && attempt < maxRetries - 1) {
-        // Wait with exponential backoff
-        const delay = baseDelay * Math.pow(2, attempt);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
-
-      if (isRequestInProgressException) continue;
-
-      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
-        error,
-        errorMessage: 'Unexpected error retrieving certificate',
-      });
-      return emptyFailure();
-    }
-
-    if (!getResponse.Certificate) {
-      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
-        errorMessage: 'Failed to retrieve certificate',
-      });
-      return emptyFailure();
-    }
-
-    if (!getResponse.CertificateChain) {
-      logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
-        errorMessage: 'Failed to retrieve certificate chain',
-      });
-      return emptyFailure();
-    }
-
-    return successResult(
-      `${getResponse.Certificate}\n${getResponse.CertificateChain}`,
+      }),
     );
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'RequestInProgressException') {
+      return 'in-progress';
+    }
+    logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
+      error,
+      errorMessage: 'Unexpected error retrieving certificate',
+    });
+    return 'error';
+  }
+};
+
+const extractCertificates = (
+  response: GetCertificateCommandOutput,
+): Result<CertificateResult, void> => {
+  if (!response.Certificate) {
+    logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
+      errorMessage: 'Failed to retrieve certificate',
+    });
+    return emptyFailure();
+  }
+
+  if (!response.CertificateChain) {
+    logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
+      errorMessage: 'Failed to retrieve certificate chain',
+    });
+    return emptyFailure();
+  }
+
+  return successResult({
+    certificate: response.Certificate,
+    certificateChain: response.CertificateChain,
+  });
+};
+
+export const getCertificate = async (
+  params: GetCertificateParams,
+): Promise<Result<CertificateResult, void>> => {
+  const { certificateArn, certificateAuthorityArn } = params;
+  const maxRetries = 3;
+  const baseDelay = 1000;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await attemptGetCertificate(
+      certificateArn,
+      certificateAuthorityArn,
+    );
+
+    if (response === 'error') return emptyFailure();
+
+    if (response === 'in-progress') {
+      if (attempt < maxRetries - 1) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, baseDelay * Math.pow(2, attempt)),
+        );
+      }
+      continue;
+    }
+
+    return extractCertificates(response);
   }
 
   logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
