@@ -10,12 +10,7 @@ import {
 import { X509Certificate } from '@peculiar/x509';
 import { validateLeafCertificate } from './validate-leaf-certificate.ts';
 import '../../../../tests/testUtils/matchers.ts';
-import {
-  emptyFailure,
-  emptySuccess,
-  errorResult,
-  Result,
-} from '../result/result.ts';
+import { emptyFailure, emptySuccess, Result } from '../result/result.ts';
 import { createValidCertPem } from '../../../../tests/testUtils/create-valid-cert-pem.ts';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import {
@@ -86,7 +81,7 @@ describe('validateLeafCertificate', () => {
         });
       });
 
-      it('Returns an error result', () => {
+      it('Returns an empty failure', () => {
         expect(result).toEqual(emptyFailure());
       });
     });
@@ -132,7 +127,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -154,7 +149,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -176,7 +171,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns serial number missing error', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -198,7 +193,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns serial number empty error', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -221,7 +216,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns serial number length error', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -246,7 +241,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -268,7 +263,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns serial number zero error', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -294,7 +289,7 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns serial number negative error', () => {
+        it('Returns an empty failure', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
@@ -326,12 +321,8 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult(
-              'Certificate signature algorithm OID mismatch between TBS and outer certificate',
-            ),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
@@ -360,17 +351,42 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult(
-              'Certificate signature algorithm must be ECDSA with SHA-384 on P-384',
-            ),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
     });
 
     describe('Given certificate validity validation fails', () => {
+      describe('Given certificate validity parsing throws unexpectedly', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem({
+            issuerName: VALID_ISSUER_NAME,
+            subjectCn: MOCK_CSR_SUBJECT_CN,
+          });
+          vi.spyOn(
+            X509Certificate.prototype,
+            'notBefore',
+            'get',
+          ).mockImplementation(() => {
+            throw new Error('Mocked notBefore error');
+          });
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Failed to parse certificate validity',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given certificate is expired', () => {
         beforeEach(async () => {
           const expiredCert = await createValidCertPem({
@@ -388,10 +404,8 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate is not within its validity period'),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
@@ -413,10 +427,8 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate is not within its validity period'),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
@@ -439,12 +451,8 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult(
-              'Certificate validity period must be between 24 and 25 hours',
-            ),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
@@ -467,17 +475,39 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult(
-              'Certificate validity period must be between 24 and 25 hours',
-            ),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
     });
 
     describe('Given certificate issuer validation fails', () => {
+      describe('Given certificate issuer parsing throws unexpectedly', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          vi.spyOn(
+            X509Certificate.prototype,
+            'issuerName',
+            'get',
+          ).mockImplementation(() => {
+            throw new Error('Mocked issuerName error');
+          });
+          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Failed to parse certificate issuer',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given issuer CN does not match expected value', () => {
         beforeEach(async () => {
           const wrongIssuerCert = await createValidCertPem({
@@ -498,21 +528,17 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult(
-              'Certificate issuer Common name must match expected name value',
-            ),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
-      describe('Given issuer name fields do not match expected values', () => {
+      describe('Given issuer name fields C do not match expected values', () => {
         beforeEach(async () => {
-          const wrongNameCert = await createValidCertPem({
+          const wrongIssuerC = await createValidCertPem({
             issuerName: `C=US, ST=London, L=London, O=Government Digital Service, CN=${EXPECTED_ISSUER_CN}`,
           });
-          result = validateLeafCertificate(wrongNameCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate(wrongIssuerC, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -523,14 +549,12 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate issuer must match expected name values'),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
-      describe('Given issuer O does not match expected value', () => {
+      describe('Given issuer and subject O does not match expected value', () => {
         beforeEach(async () => {
           const wrongOCert = await createValidCertPem({
             issuerName: `C=GB, ST=London, L=London, O=Wrong Org, CN=${EXPECTED_ISSUER_CN}`,
@@ -538,14 +562,12 @@ describe('validateLeafCertificate', () => {
           result = validateLeafCertificate(wrongOCert, MOCK_CSR_SUBJECT_CN);
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate issuer must match expected name values'),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
-      describe('Given issuer ST does not match expected value', () => {
+      describe('Given issuer and subject ST does not match expected value', () => {
         beforeEach(async () => {
           const wrongSTCert = await createValidCertPem({
             issuerName: `C=GB, ST=Manchester, L=London, O=Government Digital Service, CN=${EXPECTED_ISSUER_CN}`,
@@ -553,14 +575,12 @@ describe('validateLeafCertificate', () => {
           result = validateLeafCertificate(wrongSTCert, MOCK_CSR_SUBJECT_CN);
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate issuer must match expected name values'),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
-      describe('Given issuer L does not match expected value', () => {
+      describe('Given issuer and subject L does not match expected value', () => {
         beforeEach(async () => {
           const wrongLCert = await createValidCertPem({
             issuerName: `C=GB, ST=London, L=Cardiff, O=Government Digital Service, CN=${EXPECTED_ISSUER_CN}`,
@@ -568,10 +588,8 @@ describe('validateLeafCertificate', () => {
           result = validateLeafCertificate(wrongLCert, MOCK_CSR_SUBJECT_CN);
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate issuer must match expected name values'),
-          );
+        it('Returns an empty error', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
     });
@@ -601,10 +619,8 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Failed to parse certificate subject'),
-          );
+        it('Returns a empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
@@ -625,23 +641,18 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate subject CN does not match CSR subject CN'),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
       });
 
-      describe('Given subject name fields do not match expected values', () => {
+      describe('Given subject name fields C do not match expected values', () => {
         beforeEach(async () => {
-          const wrongSubjectCert = await createValidCertPem({
+          const wrongSubjectC = await createValidCertPem({
             issuerName: VALID_ISSUER_NAME,
             subjectName: `C=US, ST=London, L=London, O=Government Digital Service, CN=${MOCK_CSR_SUBJECT_CN}`,
           });
-          result = validateLeafCertificate(
-            wrongSubjectCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate(wrongSubjectC, MOCK_CSR_SUBJECT_CN);
         });
 
         it('Logs error', () => {
@@ -652,70 +663,9 @@ describe('validateLeafCertificate', () => {
           });
         });
 
-        it('Returns an error result', () => {
-          expect(result).toEqual(
-            errorResult('Certificate subject must match expected name values'),
-          );
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
         });
-      });
-    });
-
-    describe('Given certificate validity parsing throws unexpectedly', () => {
-      beforeEach(async () => {
-        const validCert = await createValidCertPem({
-          issuerName: VALID_ISSUER_NAME,
-          subjectCn: MOCK_CSR_SUBJECT_CN,
-        });
-        vi.spyOn(
-          X509Certificate.prototype,
-          'notBefore',
-          'get',
-        ).mockImplementation(() => {
-          throw new Error('Mocked notBefore error');
-        });
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
-      });
-
-      it('Logs error', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode:
-            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
-          errorMessage: 'Failed to parse certificate validity',
-        });
-      });
-
-      it('Returns an error result', () => {
-        expect(result).toEqual(
-          errorResult('Failed to parse certificate validity'),
-        );
-      });
-    });
-
-    describe('Given certificate issuer parsing throws unexpectedly', () => {
-      beforeEach(async () => {
-        const validCert = await createValidCertPem();
-        vi.spyOn(
-          X509Certificate.prototype,
-          'issuerName',
-          'get',
-        ).mockImplementation(() => {
-          throw new Error('Mocked issuerName error');
-        });
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
-      });
-
-      it('Logs error', () => {
-        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-          messageCode:
-            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
-          errorMessage: 'Failed to parse certificate issuer',
-        });
-      });
-
-      it('Returns an error result', () => {
-        expect(result).toEqual(
-          errorResult('Failed to parse certificate issuer'),
-        );
       });
     });
   });
