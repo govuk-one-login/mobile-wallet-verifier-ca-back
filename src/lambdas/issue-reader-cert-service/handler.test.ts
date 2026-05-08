@@ -25,7 +25,6 @@ import {
 import {
   emptyFailure,
   emptySuccess,
-  errorResult,
   Result,
   successResult,
 } from '../common/result/result.ts';
@@ -51,7 +50,6 @@ import {
   IssueCertificateParams,
   CertificateResult,
 } from './certificate-service.ts';
-import { validateLeafCertificate } from '../common/validate-leaf-certificate/validate-leaf-certificate.ts';
 
 vi.mock('../common/validate-leaf-certificate/validate-leaf-certificate.ts');
 
@@ -82,6 +80,10 @@ describe('Handler', () => {
   let mockGetCertificate: (
     params: GetCertificateParams,
   ) => Promise<Result<CertificateResult, void>>;
+  let mockValidateLeafCertificate: (
+    certPem: string,
+    csrSubjectCn: string,
+  ) => Result<void, void>;
 
   beforeAll(async () => {
     ({ privateKey, publicJwk } = await createKeyPair());
@@ -145,13 +147,14 @@ describe('Handler', () => {
       }),
     );
 
-    vi.mocked(validateLeafCertificate).mockReturnValue(emptySuccess());
+    mockValidateLeafCertificate = vi.fn().mockReturnValue(emptySuccess());
 
     dependencies = {
       env,
       verifyAppCheckJwt: verifyAppCheckJwtWithMockedJwksCache,
       issueCertificate: mockIssueCertificate,
       getCertificate: mockGetCertificate,
+      validateLeafCertificate: mockValidateLeafCertificate,
     };
   });
 
@@ -795,9 +798,8 @@ describe('Handler', () => {
   describe('Leaf certificate validation', () => {
     describe('Given leaf certificate validation fails', () => {
       beforeEach(async () => {
-        vi.mocked(validateLeafCertificate).mockReturnValue(
-          errorResult('Certificate not valid X.509 format'),
-        );
+        mockValidateLeafCertificate = vi.fn().mockReturnValue(emptyFailure());
+        dependencies.validateLeafCertificate = mockValidateLeafCertificate;
         result = await handlerConstructor(dependencies, event, context);
       });
 
@@ -845,6 +847,13 @@ describe('Handler', () => {
             'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
           certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
         });
+      });
+
+      it('Calls validateLeafCertificate with correct parameters', () => {
+        expect(mockValidateLeafCertificate).toHaveBeenCalledWith(
+          '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
+          'MockCN',
+        );
       });
 
       it('Logs COMPLETED', () => {
