@@ -12,6 +12,9 @@ import {
   TWENTY_FIVE_HOURS_IN_MS,
   MIN_BYTE_LENGTH,
   MAX_BYTE_LENGTH,
+  CURVE_P384_OID_DER,
+  ALGORITHM_OID,
+  EXPECTED_SPKI_LENGTH,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -107,5 +110,23 @@ describe('TWENTY_FOUR_HOURS_IN_MS', () => {
 describe('TWENTY_FIVE_HOURS_IN_MS', () => {
   it('Is 90000000 milliseconds', () => {
     expect(TWENTY_FIVE_HOURS_IN_MS).toEqual(90000000);
+  });
+});
+
+describe('P384_OID_DER', () => {
+  it('Is "06052b81040022" (DER encoding of OID 1.3.132.0.34)', () => {
+    expect(CURVE_P384_OID_DER).toEqual('06052b81040022');
+  });
+});
+
+describe('ALGORITHM_OID', () => {
+  it('Is "1.2.840.10045.2.1" (EC public key)', () => {
+    expect(ALGORITHM_OID).toEqual('1.2.840.10045.2.1');
+  });
+});
+
+describe('EXPECTED_SPKI_LENGTH', () => {
+  it('Is 120 bytes', () => {
+    expect(EXPECTED_SPKI_LENGTH).toEqual(120);
   });
 });
