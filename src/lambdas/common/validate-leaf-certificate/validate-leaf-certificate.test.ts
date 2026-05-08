@@ -669,6 +669,218 @@ describe('validateLeafCertificate', () => {
       });
     });
   });
+  describe('Given certificate subject public key info validation fails', () => {
+    describe('Given subject public key info parsing throws unexpectedly', () => {
+      beforeEach(async () => {
+        const validCert = await createValidCertPem({
+          issuerName: VALID_ISSUER_NAME,
+          subjectCn: MOCK_CSR_SUBJECT_CN,
+        });
+        mockAsnThrowAfterNCalls(5);
+        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Failed to parse certificate subject public key info',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given certificate public key algorithm is not ECDSA', () => {
+      beforeEach(async () => {
+        const validCert = await createValidCertPem({
+          issuerName: VALID_ISSUER_NAME,
+          subjectCn: MOCK_CSR_SUBJECT_CN,
+        });
+        const validSerial = new ArrayBuffer(16);
+        new Uint8Array(validSerial)[0] = 0x01;
+        mockAsnAfterConstructor({
+          tbsCertificate: {
+            version: 2,
+            serialNumber: validSerial,
+            signature: { algorithm: '1.2.840.10045.4.3.3' },
+            subjectPublicKeyInfo: {
+              algorithm: {
+                algorithm: '1.2.840.113549.1.1.1',
+                parameters: null,
+              },
+              subjectPublicKey: new ArrayBuffer(97),
+            },
+          },
+          signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+        } as ReturnType<typeof AsnConvert.parse>);
+        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Certificate public key algorithm must be ECDSA',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given certificate public key curve parameters are missing', () => {
+      beforeEach(async () => {
+        const validCert = await createValidCertPem({
+          issuerName: VALID_ISSUER_NAME,
+          subjectCn: MOCK_CSR_SUBJECT_CN,
+        });
+        const validSerial = new ArrayBuffer(16);
+        new Uint8Array(validSerial)[0] = 0x01;
+        mockAsnAfterConstructor({
+          tbsCertificate: {
+            version: 2,
+            serialNumber: validSerial,
+            signature: { algorithm: '1.2.840.10045.4.3.3' },
+            subjectPublicKeyInfo: {
+              algorithm: {
+                algorithm: '1.2.840.10045.2.1',
+                parameters: null,
+              },
+              subjectPublicKey: new ArrayBuffer(97),
+            },
+          },
+          signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+        } as ReturnType<typeof AsnConvert.parse>);
+        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage:
+            'Certificate public key curve parameters must be present',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given certificate public key curve is not P-384', () => {
+      beforeEach(async () => {
+        const validCert = await createValidCertPem({
+          issuerName: VALID_ISSUER_NAME,
+          subjectCn: MOCK_CSR_SUBJECT_CN,
+        });
+        const validSerial = new ArrayBuffer(16);
+        new Uint8Array(validSerial)[0] = 0x01;
+        // DER encoding of OID 1.2.840.10045.3.1.7 (P-256)
+        const p256Params = new Uint8Array([
+          0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07,
+        ]).buffer;
+        mockAsnAfterConstructor({
+          tbsCertificate: {
+            version: 2,
+            serialNumber: validSerial,
+            signature: { algorithm: '1.2.840.10045.4.3.3' },
+            subjectPublicKeyInfo: {
+              algorithm: {
+                algorithm: '1.2.840.10045.2.1',
+                parameters: p256Params,
+              },
+              subjectPublicKey: new ArrayBuffer(65),
+            },
+          },
+          signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+        } as ReturnType<typeof AsnConvert.parse>);
+        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Certificate public key curve must be P-384 only',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given certificate subject public key is empty', () => {
+      beforeEach(async () => {
+        const validCert = await createValidCertPem({
+          issuerName: VALID_ISSUER_NAME,
+          subjectCn: MOCK_CSR_SUBJECT_CN,
+        });
+        const validSerial = new ArrayBuffer(16);
+        new Uint8Array(validSerial)[0] = 0x01;
+        const p384Params = new Uint8Array([
+          0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x22,
+        ]).buffer;
+        mockAsnAfterConstructor({
+          tbsCertificate: {
+            version: 2,
+            serialNumber: validSerial,
+            signature: { algorithm: '1.2.840.10045.4.3.3' },
+            subjectPublicKeyInfo: {
+              algorithm: {
+                algorithm: '1.2.840.10045.2.1',
+                parameters: p384Params,
+              },
+              subjectPublicKey: new ArrayBuffer(0),
+            },
+          },
+          signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+        } as ReturnType<typeof AsnConvert.parse>);
+        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Certificate public key must be present',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given SubjectPublicKeyInfo length is not 120 bytes', () => {
+      beforeEach(async () => {
+        const validCert = await createValidCertPem({
+          issuerName: VALID_ISSUER_NAME,
+          subjectCn: MOCK_CSR_SUBJECT_CN,
+        });
+        vi.spyOn(AsnConvert, 'serialize').mockReturnValue(new ArrayBuffer(100));
+        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage:
+            'Certificate SubjectPublicKeyInfo must be 120 bytes for P-384',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+  });
 
   describe('Given leaf certificate is valid', () => {
     beforeEach(async () => {
