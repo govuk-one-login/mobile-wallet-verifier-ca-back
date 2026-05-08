@@ -51,8 +51,6 @@ import {
   CertificateResult,
 } from './certificate-service.ts';
 
-vi.mock('../common/validate-leaf-certificate/validate-leaf-certificate.ts');
-
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
   let context: Context;
