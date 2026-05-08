@@ -31,15 +31,16 @@ export function validateLeafCertificate(
 
   const certificate = parseCertResult.value;
 
-  const validations: Array<Result<void, void>> = [
-    validateVersion(certificate),
-    validateSerialNumber(certificate),
-    validateSignatureAlgorithm(certificate),
-    validateCertificateValidity(certificate),
-    validateIssuer(certificate),
-    validateSubject(certificate, csrSubjectCn),
+  const validations: Array<() => Result<void, void>> = [
+    () => validateVersion(certificate),
+    () => validateSerialNumber(certificate),
+    () => validateSignatureAlgorithm(certificate),
+    () => validateCertificateValidity(certificate),
+    () => validateIssuer(certificate),
+    () => validateSubject(certificate, csrSubjectCn),
   ];
-  for (const validation of validations) {
+  for (const validate of validations) {
+    const validation = validate();
     if (validation.isError) {
       return validation;
     }
