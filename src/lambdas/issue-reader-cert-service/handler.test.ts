@@ -6,6 +6,7 @@ import {
 import {
   describe,
   it,
+  beforeAll,
   beforeEach,
   expect,
   MockInstance,
@@ -15,6 +16,7 @@ import {
 import { handlerConstructor } from './handler.ts';
 import { logger } from '../common/logger/logger.ts';
 import '../../../tests/testUtils/matchers.ts';
+
 import { IssueReaderCertDependencies } from './handler-dependencies.ts';
 import {
   buildLambdaContext,
@@ -22,6 +24,7 @@ import {
 } from '../../../tests/testUtils/build-event.ts';
 import {
   emptyFailure,
+  emptySuccess,
   Result,
   successResult,
 } from '../common/result/result.ts';
@@ -45,6 +48,7 @@ import { CSR_POLICY } from '../common/csr-constants/csr-constants.ts';
 import {
   GetCertificateParams,
   IssueCertificateParams,
+  CertificateResult,
 } from './certificate-service.ts';
 
 describe('Handler', () => {
@@ -73,13 +77,26 @@ describe('Handler', () => {
   ) => Promise<Result<string, void>>;
   let mockGetCertificate: (
     params: GetCertificateParams,
-  ) => Promise<Result<string, void>>;
+  ) => Promise<Result<CertificateResult, void>>;
+  let mockValidateLeafCertificate: (
+    certPem: string,
+    csrSubjectCn: string,
+  ) => Result<void, void>;
+
+  beforeAll(async () => {
+    ({ privateKey, publicJwk } = await createKeyPair());
+    validFireBaseJwt = await createSignedJwt(privateKey, {
+      audience: JSON.parse(env.AUDIENCE)[0],
+      expOffsetSeconds: 60 * 60,
+      issuer: env.ISSUER,
+      subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
+    });
+    validCsrPem = await createCsrPem();
+  });
 
   beforeEach(async () => {
     consoleInfoSpy = vi.spyOn(console, 'info');
     consoleErrorSpy = vi.spyOn(console, 'error');
-
-    ({ privateKey, publicJwk } = await createKeyPair());
 
     mockJwksCache = {
       getJwks: vi.fn().mockResolvedValue(
@@ -103,14 +120,6 @@ describe('Handler', () => {
         },
       );
 
-    validFireBaseJwt = await createSignedJwt(privateKey, {
-      audience: JSON.parse(env.AUDIENCE)[0],
-      issuer: env.ISSUER,
-      subject: JSON.parse(env.ALLOWED_APP_IDS)[0],
-    });
-
-    validCsrPem = await createCsrPem();
-
     context = buildLambdaContext();
     event = buildEvent({
       headers: {
@@ -127,19 +136,23 @@ describe('Handler', () => {
         ),
       );
 
-    mockGetCertificate = vi
-      .fn()
-      .mockResolvedValue(
-        successResult(
-          '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
-        ),
-      );
+    mockGetCertificate = vi.fn().mockResolvedValue(
+      successResult({
+        certificate:
+          '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
+        certificateChain:
+          '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
+      }),
+    );
+
+    mockValidateLeafCertificate = vi.fn().mockReturnValue(emptySuccess());
 
     dependencies = {
       env,
       verifyAppCheckJwt: verifyAppCheckJwtWithMockedJwksCache,
       issueCertificate: mockIssueCertificate,
       getCertificate: mockGetCertificate,
+      validateLeafCertificate: mockValidateLeafCertificate,
     };
   });
 
@@ -780,6 +793,27 @@ describe('Handler', () => {
     });
   });
 
+  describe('Leaf certificate validation', () => {
+    describe('Given leaf certificate validation fails', () => {
+      beforeEach(async () => {
+        mockValidateLeafCertificate = vi.fn().mockReturnValue(emptyFailure());
+        dependencies.validateLeafCertificate = mockValidateLeafCertificate;
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('Returns 500 server error response', () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            code: 'server_error',
+            message: 'Server Error',
+          }),
+        });
+      });
+    });
+  });
+
   describe('Happy path tests', () => {
     describe('Given a valid event', () => {
       beforeEach(async () => {
@@ -813,6 +847,13 @@ describe('Handler', () => {
         });
       });
 
+      it('Calls validateLeafCertificate with correct parameters', () => {
+        expect(mockValidateLeafCertificate).toHaveBeenCalledWith(
+          '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
+          'MockCN',
+        );
+      });
+
       it('Logs COMPLETED', () => {
         expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
           messageCode: 'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
@@ -828,7 +869,7 @@ describe('Handler', () => {
           },
           body: JSON.stringify({
             certChain:
-              '-----BEGIN CERTIFICATE-----\nMOCK_CERT_CHAIN\n-----END CERTIFICATE-----',
+              '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
           }),
         });
       });

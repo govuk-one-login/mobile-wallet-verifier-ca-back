@@ -2,9 +2,16 @@ import { describe, it, expect } from 'vitest';
 import {
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
-  VALIDITY,
   KEY_USAGE,
   EXTENDED_KEY_USAGE,
+  EXPECTED_CERTIFICATE_VERSION,
+  EXPECTED_SIGNATURE_ALGORITHM_OID,
+  EXPECTED_ISSUER_AND_SUBJECT_NAME,
+  EXPECTED_ISSUER_CN,
+  TWENTY_FOUR_HOURS_IN_MS,
+  TWENTY_FIVE_HOURS_IN_MS,
+  MIN_BYTE_LENGTH,
+  MAX_BYTE_LENGTH,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -18,20 +25,6 @@ describe('TEMPLATE_ARN', () => {
     expect(TEMPLATE_ARN).toEqual(
       'arn:aws:acm-pca:::template/BlankEndEntityCertificate_APIPassthrough/V1',
     );
-  });
-});
-
-describe('VALIDITY', () => {
-  describe('Type', () => {
-    it('Is "DAYS"', () => {
-      expect(VALIDITY.Type).toEqual('DAYS');
-    });
-  });
-
-  describe('Value', () => {
-    it('Is 1', () => {
-      expect(VALIDITY.Value).toEqual(1);
-    });
   });
 });
 
@@ -54,5 +47,65 @@ describe('EXTENDED_KEY_USAGE', () => {
         '1.0.18013.5.1.6',
       );
     });
+  });
+});
+
+describe('EXPECTED_CERTIFICATE_VERSION', () => {
+  it('Is 2 (X.509 v3)', () => {
+    expect(EXPECTED_CERTIFICATE_VERSION).toEqual(2);
+  });
+});
+
+describe('MIN_BYTE_LENGTH', () => {
+  it('Is 9', () => {
+    expect(MIN_BYTE_LENGTH).toEqual(9);
+  });
+});
+
+describe('MAX_BYTE_LENGTH', () => {
+  it('Is 20', () => {
+    expect(MAX_BYTE_LENGTH).toEqual(20);
+  });
+});
+
+describe('EXPECTED_SIGNATURE_ALGORITHM_OID', () => {
+  it('Is "1.2.840.10045.4.3.3" (ECDSA with SHA-384 on P-384)', () => {
+    expect(EXPECTED_SIGNATURE_ALGORITHM_OID).toEqual('1.2.840.10045.4.3.3');
+  });
+});
+
+describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
+  it('Has C as "GB"', () => {
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.C).toEqual('GB');
+  });
+
+  it('Has O as "Government Digital Service"', () => {
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.O).toEqual(
+      'Government Digital Service',
+    );
+  });
+
+  it('Has ST as "London"', () => {
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.ST).toEqual('London');
+  });
+
+  it('Has CN as "GOVUK Mobile Wallet GovVerifier CA"', () => {
+    expect(EXPECTED_ISSUER_CN).toEqual('GOVUK Mobile Wallet GovVerifier CA');
+  });
+
+  it('Has L as "London"', () => {
+    expect(EXPECTED_ISSUER_AND_SUBJECT_NAME.L).toEqual('London');
+  });
+});
+
+describe('TWENTY_FOUR_HOURS_IN_MS', () => {
+  it('Is 86400000 milliseconds', () => {
+    expect(TWENTY_FOUR_HOURS_IN_MS).toEqual(86400000);
+  });
+});
+
+describe('TWENTY_FIVE_HOURS_IN_MS', () => {
+  it('Is 90000000 milliseconds', () => {
+    expect(TWENTY_FIVE_HOURS_IN_MS).toEqual(90000000);
   });
 });

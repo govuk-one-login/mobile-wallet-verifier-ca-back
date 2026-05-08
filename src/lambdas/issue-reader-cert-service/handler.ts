@@ -67,6 +67,7 @@ export const handlerConstructor = async (
   if (validateCsrResult.isError) {
     return badRequestResponse(validateCsrResult.value);
   }
+  const csrSubjectCn = validateCsrResult.value;
 
   const certificateAuthorityArn = config.CERTIFICATE_AUTHORITY_ARN;
 
@@ -86,8 +87,17 @@ export const handlerConstructor = async (
     return serverErrorResponse;
   }
 
+  const { certificate, certificateChain } = getCertResult.value;
+  const validateLeafResult = dependencies.validateLeafCertificate(
+    certificate,
+    csrSubjectCn,
+  );
+  if (validateLeafResult.isError) {
+    return serverErrorResponse;
+  }
+
   const response: IssueReaderCertResponseBody = {
-    certChain: getCertResult.value,
+    certChain: `${certificate}\n${certificateChain}`,
   };
 
   logger.info(LogMessage.ISSUE_READER_CERT_COMPLETED);
