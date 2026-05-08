@@ -1,6 +1,10 @@
 import { X509Certificate, Name } from '@peculiar/x509';
 import { AsnConvert } from '@peculiar/asn1-schema';
-import { Certificate, Version } from '@peculiar/asn1-x509';
+import {
+  Certificate,
+  SubjectPublicKeyInfo,
+  Version,
+} from '@peculiar/asn1-x509';
 import {
   Result,
   emptySuccess,
@@ -18,6 +22,9 @@ import {
   TWENTY_FIVE_HOURS_IN_MS,
   MIN_BYTE_LENGTH,
   MAX_BYTE_LENGTH,
+  CURVE_P384_OID_DER,
+  EXPECTED_SPKI_LENGTH,
+  ALGORITHM_OID,
 } from '../certificate-service-constants/certificate-service-constants.ts';
 
 export function validateLeafCertificate(
@@ -38,6 +45,7 @@ export function validateLeafCertificate(
     () => validateCertificateValidity(certificate),
     () => validateIssuer(certificate),
     () => validateSubject(certificate, csrSubjectCn),
+    () => validateSubjectPublicKeyInfo(certificate),
   ];
   for (const validate of validations) {
     const validation = validate();
@@ -390,5 +398,94 @@ function validateCertificateValidity(
     );
     return emptyFailure();
   }
+  return emptySuccess();
+}
+
+function validateSubjectPublicKeyInfo(
+  certificate: X509Certificate,
+): Result<void, void> {
+  let subjectPublicKeyInfo: SubjectPublicKeyInfo;
+  try {
+    subjectPublicKeyInfo =
+      certAsn(certificate).tbsCertificate.subjectPublicKeyInfo;
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse certificate subject public key info',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
+
+  const { algorithm: algorithmIdentifier, subjectPublicKey } =
+    subjectPublicKeyInfo;
+
+  // Check that the algorithm is ECDSA
+  if (algorithmIdentifier.algorithm !== ALGORITHM_OID) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Certificate public key algorithm must be ECDSA',
+        data: { actualAlgorithm: algorithmIdentifier.algorithm },
+      },
+    );
+    return emptyFailure();
+  }
+
+  // Check that the curve is P-384
+  if (!algorithmIdentifier.parameters) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Certificate public key curve parameters must be present',
+      },
+    );
+    return emptyFailure();
+  }
+  // convert the parameters ArrayBuffer to hex and compare against the known DER encoding.
+  // Exact match ensures P-384 is the only curve present.
+  const curveHex = Buffer.from(algorithmIdentifier.parameters).toString('hex');
+  if (curveHex !== CURVE_P384_OID_DER) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Certificate public key curve must be P-384 only',
+        data: { actualCurve: curveHex },
+      },
+    );
+    return emptyFailure();
+  }
+
+  // Check that the subject public key is not empty
+  if (!subjectPublicKey || subjectPublicKey.byteLength === 0) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Certificate public key must be present',
+        data: { publicKey: subjectPublicKey ? 'empty' : 'missing' },
+      },
+    );
+    return emptyFailure();
+  }
+
+  // P-384 SubjectPublicKeyInfo must be exactly 120 bytes
+  const spkiRaw = AsnConvert.serialize(subjectPublicKeyInfo);
+  if (spkiRaw.byteLength !== EXPECTED_SPKI_LENGTH) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Certificate SubjectPublicKeyInfo must be 120 bytes for P-384',
+        data: {
+          actualLength: spkiRaw.byteLength,
+          expectedLength: EXPECTED_SPKI_LENGTH,
+        },
+      },
+    );
+    return emptyFailure();
+  }
+
   return emptySuccess();
 }
