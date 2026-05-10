@@ -21,6 +21,7 @@ import {
   getCertificate,
   issueCertificate,
   CertificateResult,
+  extractIssuerCaCertFromChain,
 } from './certificate-service.ts';
 import {
   emptyFailure,
@@ -292,6 +293,52 @@ describe('Certificate Service', () => {
         expect(result).toEqual(
           successResult({ certificate, certificateChain }),
         );
+      });
+    });
+
+    describe('Given ACM PCA returns a certificate and chain extractIssuerCaCertFromChain', () => {
+      describe('Given an empty certificate chain', () => {
+        it('throws an error', () => {
+          expect(() => extractIssuerCaCertFromChain('')).toThrow(
+              'Certificate chain must contain at least the issuer CA'
+          );
+        });
+      });
+
+      describe('Given a certificate chain with no valid certificates', () => {
+        it('throws an error', () => {
+          const invalidChain = 'invalid certificate data';
+          expect(() => extractIssuerCaCertFromChain(invalidChain)).toThrow(
+              'Certificate chain must contain at least the issuer CA'
+          );
+        });
+      });
+
+      describe('Given a certificate chain with one certificate', () => {
+        it('returns the first certificate', () => {
+          const singleCertChain =
+              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----';
+
+          const result = extractIssuerCaCertFromChain(singleCertChain);
+
+          expect(result).toBe(
+              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----'
+          );
+        });
+      });
+
+      describe('Given a certificate chain with multiple certificates', () => {
+        it('returns the first certificate (intermediate CA)', () => {
+          const multiCertChain =
+              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----' +
+              '-----BEGIN CERTIFICATE-----\nROOT_CA\n-----END CERTIFICATE-----';
+
+          const result = extractIssuerCaCertFromChain(multiCertChain);
+
+          expect(result).toBe(
+              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----'
+          );
+        });
       });
     });
   });
