@@ -164,3 +164,17 @@ export const getCertificate = async (
   });
   return emptyFailure();
 };
+
+export function extractIssuerCaCertFromChain(certificateChain: string): string {
+  const certs = certificateChain
+    .split('-----END CERTIFICATE-----')
+    .filter((cert) => cert.includes('-----BEGIN CERTIFICATE-----'))
+    .map((cert) => cert + '-----END CERTIFICATE-----');
+
+  if (certs.length < 1) {
+    throw new Error('Certificate chain must contain at least the issuer CA');
+  }
+
+  // First certificate in the chain is the immediate issuer (intermediate CA)
+  return certs[0]; // Intermediate CA that issued the leaf certificate
+}
