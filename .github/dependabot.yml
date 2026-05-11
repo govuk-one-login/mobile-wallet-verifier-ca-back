@@ -19,7 +19,7 @@ updates:
     ignore:
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "@peculiar/asn1-schema"
+      - dependency-name: "@peculiar/asn1-*"
     commit-message:
       prefix: "BAU"
 
