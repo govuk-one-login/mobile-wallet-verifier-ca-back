@@ -4,6 +4,10 @@ import {
   Certificate,
   SubjectPublicKeyInfo,
   Version,
+  AuthorityKeyIdentifier,
+  id_ce_authorityKeyIdentifier,
+  id_ce_subjectKeyIdentifier,
+  SubjectKeyIdentifier,
 } from '@peculiar/asn1-x509';
 import {
   Result,
@@ -27,10 +31,16 @@ import {
   ALGORITHM_OID,
 } from '../certificate-service-constants/certificate-service-constants.ts';
 
+export interface ValidateLeafCertificateParams {
+  certPem: string;
+  csrSubjectCn: string;
+  issuerCaCertPem: string;
+}
+
 export function validateLeafCertificate(
-  certPem: string,
-  csrSubjectCn: string,
+  params: ValidateLeafCertificateParams,
 ): Result<void, void> {
+  const { certPem, csrSubjectCn, issuerCaCertPem } = params;
   const parseCertResult = parseX509Certificate(certPem);
   if (parseCertResult.isError) {
     return parseCertResult;
@@ -46,6 +56,11 @@ export function validateLeafCertificate(
     () => validateIssuer(certificate),
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
+    () =>
+      validateAuthorityKeyIdentifier(
+        certificate,
+        extractCaSubjectKeyIdentifier(issuerCaCertPem),
+      ),
   ];
   for (const validate of validations) {
     const validation = validate();
@@ -486,6 +501,90 @@ function validateSubjectPublicKeyInfo(
     );
     return emptyFailure();
   }
+  return emptySuccess();
+}
 
+function extractCaSubjectKeyIdentifier(caCertPem: string): string {
+  const caCert = new X509Certificate(caCertPem);
+
+  const skiExtension = caCert.extensions.find(
+    (ext) => ext.type === id_ce_subjectKeyIdentifier,
+  );
+
+  if (!skiExtension) {
+    throw new Error('CA certificate missing Subject Key Identifier');
+  }
+
+  const subjectKeyId = AsnConvert.parse(
+    skiExtension.value,
+    SubjectKeyIdentifier,
+  );
+  return Buffer.from(subjectKeyId.buffer).toString('hex');
+}
+
+function validateAuthorityKeyIdentifier(
+  certificate: X509Certificate,
+  expectedCaKeyId: string,
+): Result<void, void> {
+  // Find the Authority Key Identifier extension
+  const akiExtension = certificate.extensions.find(
+      (ext) => ext.type === id_ce_authorityKeyIdentifier,
+  );
+
+  if (!akiExtension) {
+    logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage: 'Authority Key Identifier extension must be present',
+        },
+    );
+    return emptyFailure();
+  }
+
+  let authorityKeyId: AuthorityKeyIdentifier;
+  try {
+    authorityKeyId = AsnConvert.parse(
+        akiExtension.value,
+        AuthorityKeyIdentifier,
+    );
+  } catch (error: unknown) {
+    logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage: 'Failed to parse Authority Key Identifier extension',
+          data: {error},
+        },
+    );
+    return emptyFailure();
+  }
+
+  if (!authorityKeyId.keyIdentifier) {
+    logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage:
+              'Authority Key Identifier must contain keyIdentifier field',
+        },
+    );
+    return emptyFailure();
+  }
+
+  const actualKeyId = Buffer.from(authorityKeyId.keyIdentifier.buffer).toString(
+      'hex',
+  );
+  if (actualKeyId !== expectedCaKeyId) {
+    logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage:
+              'Authority Key Identifier does not match expected CA key identifier',
+          data: {
+            actualKeyId,
+            expectedKeyId: expectedCaKeyId,
+          },
+        },
+    );
+    return emptyFailure();
+  }
   return emptySuccess();
 }
