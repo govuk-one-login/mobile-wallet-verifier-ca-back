@@ -11,7 +11,10 @@ import { X509Certificate } from '@peculiar/x509';
 import { validateLeafCertificate } from './validate-leaf-certificate.ts';
 import '../../../../tests/testUtils/matchers.ts';
 import { emptyFailure, emptySuccess, Result } from '../result/result.ts';
-import { createValidCertPem } from '../../../../tests/testUtils/create-valid-cert-pem.ts';
+import {
+  createValidCertPem,
+  createCaAndLeafCertPem,
+} from '../../../../tests/testUtils/create-valid-cert-pem.ts';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import {
   TWENTY_FOUR_HOURS_IN_MS,
@@ -25,6 +28,7 @@ const MOCK_CSR_SUBJECT_CN = 'Example Verifier Org';
 describe('validateLeafCertificate', () => {
   let consoleErrorSpy: MockInstance;
   let result: Result<void, void>;
+  let mockIssuerCaCertPem: string;
 
   // AsnConvert.parse is called once by the X509Certificate constructor, then again
   // by our certAsn() helper for each validation. We let the first call through so
@@ -58,6 +62,10 @@ describe('validateLeafCertificate', () => {
   beforeEach(async () => {
     consoleErrorSpy = vi.spyOn(console, 'error');
     vi.clearAllMocks();
+    if (!mockIssuerCaCertPem) {
+      ({ caCertPem: mockIssuerCaCertPem } =
+        await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN));
+    }
   });
 
   afterEach(() => {
@@ -67,10 +75,11 @@ describe('validateLeafCertificate', () => {
   describe('Given Leaf certificate verification fails', () => {
     describe('Given certificate is not valid X.509 format', () => {
       beforeEach(async () => {
-        result = validateLeafCertificate(
-          await createValidCertPem({ invalidX509: true }),
-          MOCK_CSR_SUBJECT_CN,
-        );
+        result = validateLeafCertificate({
+          certPem: await createValidCertPem({ invalidX509: true }),
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: mockIssuerCaCertPem,
+        });
       });
 
       it('Logs error', () => {
@@ -91,7 +100,11 @@ describe('validateLeafCertificate', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
           mockAsnAfterConstructor(null as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -116,7 +129,11 @@ describe('validateLeafCertificate', () => {
               serialNumber: new ArrayBuffer(9),
             },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -138,7 +155,11 @@ describe('validateLeafCertificate', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
           mockAsnThrowAfterNCalls(2);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -160,7 +181,11 @@ describe('validateLeafCertificate', () => {
           mockAsnAfterConstructor({
             tbsCertificate: { version: 2, serialNumber: null },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -182,7 +207,11 @@ describe('validateLeafCertificate', () => {
           mockAsnAfterConstructor({
             tbsCertificate: { version: 2, serialNumber: new ArrayBuffer(0) },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -204,7 +233,11 @@ describe('validateLeafCertificate', () => {
           mockAsnAfterConstructor({
             tbsCertificate: { version: 2, serialNumber: new ArrayBuffer(21) },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -229,7 +262,11 @@ describe('validateLeafCertificate', () => {
           mockAsnAfterConstructor({
             tbsCertificate: { version: 2, serialNumber: shortSerial },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -252,7 +289,11 @@ describe('validateLeafCertificate', () => {
           mockAsnAfterConstructor({
             tbsCertificate: { version: 2, serialNumber: new ArrayBuffer(9) },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -278,7 +319,11 @@ describe('validateLeafCertificate', () => {
           mockAsnAfterConstructor({
             tbsCertificate: { version: 2, serialNumber: negativeSerial },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -309,7 +354,11 @@ describe('validateLeafCertificate', () => {
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -339,7 +388,11 @@ describe('validateLeafCertificate', () => {
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -371,7 +424,11 @@ describe('validateLeafCertificate', () => {
           ).mockImplementation(() => {
             throw new Error('Mocked notBefore error');
           });
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -393,7 +450,11 @@ describe('validateLeafCertificate', () => {
             notBefore: new Date(Date.now() - 48 * 60 * 60 * 1000),
             notAfter: new Date(Date.now() - 24 * 60 * 60 * 1000),
           });
-          result = validateLeafCertificate(expiredCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: expiredCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -416,7 +477,11 @@ describe('validateLeafCertificate', () => {
             notBefore: futureDate,
             notAfter: new Date(futureDate.getTime() + TWENTY_FOUR_HOURS_IN_MS),
           });
-          result = validateLeafCertificate(futureCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: futureCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -439,7 +504,11 @@ describe('validateLeafCertificate', () => {
             notBefore,
             notAfter: new Date(notBefore.getTime() + 26 * 60 * 60 * 1000),
           });
-          result = validateLeafCertificate(invalidCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: invalidCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -463,7 +532,11 @@ describe('validateLeafCertificate', () => {
             notBefore,
             notAfter: new Date(notBefore.getTime() + 2 * 60 * 60 * 1000),
           });
-          result = validateLeafCertificate(invalidCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: invalidCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -492,7 +565,11 @@ describe('validateLeafCertificate', () => {
           ).mockImplementation(() => {
             throw new Error('Mocked issuerName error');
           });
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -513,10 +590,11 @@ describe('validateLeafCertificate', () => {
           const wrongIssuerCert = await createValidCertPem({
             issuerName: `C=GB, ST=London, L=London, O=Government Digital Service, CN=Wrong Issuer CN`,
           });
-          result = validateLeafCertificate(
-            wrongIssuerCert,
-            MOCK_CSR_SUBJECT_CN,
-          );
+          result = validateLeafCertificate({
+            certPem: wrongIssuerCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -538,7 +616,11 @@ describe('validateLeafCertificate', () => {
           const wrongIssuerC = await createValidCertPem({
             issuerName: `C=US, ST=London, L=London, O=Government Digital Service, CN=${EXPECTED_ISSUER_CN}`,
           });
-          result = validateLeafCertificate(wrongIssuerC, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: wrongIssuerC,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -559,7 +641,11 @@ describe('validateLeafCertificate', () => {
           const wrongOCert = await createValidCertPem({
             issuerName: `C=GB, ST=London, L=London, O=Wrong Org, CN=${EXPECTED_ISSUER_CN}`,
           });
-          result = validateLeafCertificate(wrongOCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: wrongOCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Returns an empty failure', () => {
@@ -572,7 +658,11 @@ describe('validateLeafCertificate', () => {
           const wrongSTCert = await createValidCertPem({
             issuerName: `C=GB, ST=Manchester, L=London, O=Government Digital Service, CN=${EXPECTED_ISSUER_CN}`,
           });
-          result = validateLeafCertificate(wrongSTCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: wrongSTCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Returns an empty failure', () => {
@@ -585,7 +675,11 @@ describe('validateLeafCertificate', () => {
           const wrongLCert = await createValidCertPem({
             issuerName: `C=GB, ST=London, L=Cardiff, O=Government Digital Service, CN=${EXPECTED_ISSUER_CN}`,
           });
-          result = validateLeafCertificate(wrongLCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: wrongLCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Returns an empty error', () => {
@@ -608,7 +702,11 @@ describe('validateLeafCertificate', () => {
           ).mockImplementation(() => {
             throw new Error('Mocked subjectName error');
           });
-          result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -629,7 +727,11 @@ describe('validateLeafCertificate', () => {
           const validCert = await createValidCertPem({
             issuerName: VALID_ISSUER_NAME,
           });
-          result = validateLeafCertificate(validCert, 'Wrong CN');
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: 'Wrong CN',
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -652,7 +754,11 @@ describe('validateLeafCertificate', () => {
             issuerName: VALID_ISSUER_NAME,
             subjectName: `C=US, ST=London, L=London, O=Government Digital Service, CN=${MOCK_CSR_SUBJECT_CN}`,
           });
-          result = validateLeafCertificate(wrongSubjectC, MOCK_CSR_SUBJECT_CN);
+          result = validateLeafCertificate({
+            certPem: wrongSubjectC,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            issuerCaCertPem: mockIssuerCaCertPem,
+          });
         });
 
         it('Logs error', () => {
@@ -677,7 +783,11 @@ describe('validateLeafCertificate', () => {
           subjectCn: MOCK_CSR_SUBJECT_CN,
         });
         mockAsnThrowAfterNCalls(5);
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        result = validateLeafCertificate({
+          certPem: validCert,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: mockIssuerCaCertPem,
+        });
       });
 
       it('Logs error', () => {
@@ -716,7 +826,11 @@ describe('validateLeafCertificate', () => {
           },
           signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
         } as ReturnType<typeof AsnConvert.parse>);
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        result = validateLeafCertificate({
+          certPem: validCert,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: mockIssuerCaCertPem,
+        });
       });
 
       it('Logs error', () => {
@@ -755,7 +869,11 @@ describe('validateLeafCertificate', () => {
           },
           signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
         } as ReturnType<typeof AsnConvert.parse>);
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        result = validateLeafCertificate({
+          certPem: validCert,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: mockIssuerCaCertPem,
+        });
       });
 
       it('Logs error', () => {
@@ -799,7 +917,11 @@ describe('validateLeafCertificate', () => {
           },
           signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
         } as ReturnType<typeof AsnConvert.parse>);
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        result = validateLeafCertificate({
+          certPem: validCert,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: mockIssuerCaCertPem,
+        });
       });
 
       it('Logs error', () => {
@@ -841,7 +963,11 @@ describe('validateLeafCertificate', () => {
           },
           signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
         } as ReturnType<typeof AsnConvert.parse>);
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        result = validateLeafCertificate({
+          certPem: validCert,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: mockIssuerCaCertPem,
+        });
       });
 
       it('Logs error', () => {
@@ -864,7 +990,11 @@ describe('validateLeafCertificate', () => {
           subjectCn: MOCK_CSR_SUBJECT_CN,
         });
         vi.spyOn(AsnConvert, 'serialize').mockReturnValue(new ArrayBuffer(100));
-        result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
+        result = validateLeafCertificate({
+          certPem: validCert,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: mockIssuerCaCertPem,
+        });
       });
 
       it('Logs error', () => {
@@ -884,11 +1014,13 @@ describe('validateLeafCertificate', () => {
 
   describe('Given leaf certificate is valid', () => {
     beforeEach(async () => {
-      const validCert = await createValidCertPem({
-        issuerName: VALID_ISSUER_NAME,
-        subjectCn: MOCK_CSR_SUBJECT_CN,
+      const { caCertPem, leafCertPem } =
+        await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+      result = validateLeafCertificate({
+        certPem: leafCertPem,
+        csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+        issuerCaCertPem: caCertPem,
       });
-      result = validateLeafCertificate(validCert, MOCK_CSR_SUBJECT_CN);
     });
 
     it('Returns empty success', () => {
