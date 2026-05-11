@@ -16,6 +16,7 @@ import {
   createCaAndLeafCertPem,
 } from '../../../../tests/testUtils/create-valid-cert-pem.ts';
 import { AsnConvert } from '@peculiar/asn1-schema';
+import { AuthorityKeyIdentifier } from '@peculiar/asn1-x509';
 import {
   TWENTY_FOUR_HOURS_IN_MS,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
@@ -1003,6 +1004,174 @@ describe('validateLeafCertificate', () => {
             'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
           errorMessage:
             'Certificate SubjectPublicKeyInfo must be 120 bytes for P-384',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+  });
+
+  describe('Given extractCaSubjectKeyIdentifier fails', () => {
+    describe('Given CA certificate is missing Subject Key Identifier extension', () => {
+      beforeEach(async () => {
+        const { leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        const caCertWithoutSki = await createValidCertPem({
+          issuerName: VALID_ISSUER_NAME,
+        });
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertWithoutSki,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage:
+            'Failed to extract Subject Key Identifier from CA certificate',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+  });
+
+  describe('Given authority key identifier validation fails', () => {
+    describe('Given AKI extension is missing from leaf certificate', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+          X509Certificate.prototype,
+          'extensions',
+        )!.get!;
+        let callCount = 0;
+        vi.spyOn(
+          X509Certificate.prototype,
+          'extensions',
+          'get',
+        ).mockImplementation(function (this: X509Certificate) {
+          callCount++;
+          // First call is the CA cert SKI lookup — let it through
+          if (callCount === 1) return realExtensionsGetter.call(this);
+          // Leaf cert AKI lookup — return empty
+          return [];
+        });
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Authority Key Identifier extension must be present',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given AKI extension parsing throws unexpectedly', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        let akiParseCount = 0;
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === AuthorityKeyIdentifier) {
+              akiParseCount++;
+              // First call is during CA cert construction; second is our validation
+              if (akiParseCount > 1) throw new Error('Mocked AKI parse error');
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Failed to parse Authority Key Identifier extension',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given AKI extension is missing keyIdentifier field', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === AuthorityKeyIdentifier) {
+              return new AuthorityKeyIdentifier();
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage:
+            'Authority Key Identifier must contain keyIdentifier field',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given AKI key ID does not match CA subject key ID', () => {
+      beforeEach(async () => {
+        const { leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        const differentCaCertPem = (
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN)
+        ).caCertPem;
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: differentCaCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage:
+            'Authority Key Identifier does not match expected CA key identifier',
         });
       });
 
