@@ -76,6 +76,7 @@ export interface CreateCaAndLeafCertPemResult {
   leafCertPem: string;
 }
 
+// Generates a CA cert with SubjectKeyIdentifierExtension and a leaf cert with a matching AuthorityKeyIdentifierExtension
 export async function createCaAndLeafCertPem(
   subjectCn: string,
 ): Promise<CreateCaAndLeafCertPemResult> {
