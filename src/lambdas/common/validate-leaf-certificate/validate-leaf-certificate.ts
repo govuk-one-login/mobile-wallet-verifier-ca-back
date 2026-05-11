@@ -56,11 +56,11 @@ export function validateLeafCertificate(
     () => validateIssuer(certificate),
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
-    () =>
-      validateAuthorityKeyIdentifier(
-        certificate,
-        extractCaSubjectKeyIdentifier(issuerCaCertPem),
-      ),
+    () => {
+      const caKeyIdResult = extractCaSubjectKeyIdentifier(issuerCaCertPem);
+      if (caKeyIdResult.isError) return caKeyIdResult;
+      return validateAuthorityKeyIdentifier(certificate, caKeyIdResult.value);
+    },
   ];
   for (const validate of validations) {
     const validation = validate();
@@ -504,7 +504,9 @@ function validateSubjectPublicKeyInfo(
   return emptySuccess();
 }
 
-function extractCaSubjectKeyIdentifier(caCertPem: string): string {
+function extractCaSubjectKeyIdentifier(
+  caCertPem: string,
+): Result<string, void> {
   const caCert = new X509Certificate(caCertPem);
 
   const skiExtension = caCert.extensions.find(
@@ -512,14 +514,21 @@ function extractCaSubjectKeyIdentifier(caCertPem: string): string {
   );
 
   if (!skiExtension) {
-    throw new Error('CA certificate missing Subject Key Identifier');
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Failed to extract Subject Key Identifier from CA certificate',
+      },
+    );
+    return emptyFailure();
   }
 
   const subjectKeyId = AsnConvert.parse(
     skiExtension.value,
     SubjectKeyIdentifier,
   );
-  return Buffer.from(subjectKeyId.buffer).toString('hex');
+  return successResult(Buffer.from(subjectKeyId.buffer).toString('hex'));
 }
 
 function validateAuthorityKeyIdentifier(
@@ -528,15 +537,15 @@ function validateAuthorityKeyIdentifier(
 ): Result<void, void> {
   // Find the Authority Key Identifier extension
   const akiExtension = certificate.extensions.find(
-      (ext) => ext.type === id_ce_authorityKeyIdentifier,
+    (ext) => ext.type === id_ce_authorityKeyIdentifier,
   );
 
   if (!akiExtension) {
     logger.error(
-        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-        {
-          errorMessage: 'Authority Key Identifier extension must be present',
-        },
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Authority Key Identifier extension must be present',
+      },
     );
     return emptyFailure();
   }
@@ -544,45 +553,45 @@ function validateAuthorityKeyIdentifier(
   let authorityKeyId: AuthorityKeyIdentifier;
   try {
     authorityKeyId = AsnConvert.parse(
-        akiExtension.value,
-        AuthorityKeyIdentifier,
+      akiExtension.value,
+      AuthorityKeyIdentifier,
     );
   } catch (error: unknown) {
     logger.error(
-        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-        {
-          errorMessage: 'Failed to parse Authority Key Identifier extension',
-          data: {error},
-        },
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse Authority Key Identifier extension',
+        data: { error },
+      },
     );
     return emptyFailure();
   }
 
   if (!authorityKeyId.keyIdentifier) {
     logger.error(
-        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-        {
-          errorMessage:
-              'Authority Key Identifier must contain keyIdentifier field',
-        },
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Authority Key Identifier must contain keyIdentifier field',
+      },
     );
     return emptyFailure();
   }
 
   const actualKeyId = Buffer.from(authorityKeyId.keyIdentifier.buffer).toString(
-      'hex',
+    'hex',
   );
   if (actualKeyId !== expectedCaKeyId) {
     logger.error(
-        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-        {
-          errorMessage:
-              'Authority Key Identifier does not match expected CA key identifier',
-          data: {
-            actualKeyId,
-            expectedKeyId: expectedCaKeyId,
-          },
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Authority Key Identifier does not match expected CA key identifier',
+        data: {
+          actualKeyId,
+          expectedKeyId: expectedCaKeyId,
         },
+      },
     );
     return emptyFailure();
   }
