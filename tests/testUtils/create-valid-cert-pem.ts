@@ -1,4 +1,8 @@
-import { X509CertificateGenerator } from '@peculiar/x509';
+import {
+  X509CertificateGenerator,
+  SubjectKeyIdentifierExtension,
+  AuthorityKeyIdentifierExtension,
+} from '@peculiar/x509';
 import {
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
   EXPECTED_ISSUER_CN,
@@ -65,6 +69,58 @@ export async function createValidCertPem(
   });
 
   return cert.toString('pem');
+}
+
+export interface CreateCaAndLeafCertPemResult {
+  caCertPem: string;
+  leafCertPem: string;
+}
+
+export async function createCaAndLeafCertPem(
+  subjectCn: string,
+): Promise<CreateCaAndLeafCertPemResult> {
+  const caKeys = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-384' },
+    true,
+    ['sign', 'verify'],
+  );
+  const leafKeys = await crypto.subtle.generateKey(
+    { name: 'ECDSA', namedCurve: 'P-384' },
+    true,
+    ['sign', 'verify'],
+  );
+
+  const signingAlgorithm: EcdsaParams = { name: 'ECDSA', hash: 'SHA-384' };
+  const notBefore = new Date(Date.now() - 60 * 60 * 1000);
+  const notAfter = new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS);
+
+  const caCert = await X509CertificateGenerator.createSelfSigned({
+    name: DEFAULT_ISSUER_NAME,
+    keys: caKeys,
+    signingAlgorithm,
+    notBefore,
+    notAfter,
+    extensions: [await SubjectKeyIdentifierExtension.create(caKeys.publicKey)],
+  });
+
+  const subject = `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${subjectCn}`;
+  const leafCert = await X509CertificateGenerator.create({
+    issuer: DEFAULT_ISSUER_NAME,
+    subject,
+    publicKey: leafKeys.publicKey,
+    signingKey: caKeys.privateKey,
+    signingAlgorithm,
+    notBefore,
+    notAfter,
+    extensions: [
+      await AuthorityKeyIdentifierExtension.create(caKeys.publicKey),
+    ],
+  });
+
+  return {
+    caCertPem: caCert.toString('pem'),
+    leafCertPem: leafCert.toString('pem'),
+  };
 }
 
 function getKeyGenerationAlgorithm(
