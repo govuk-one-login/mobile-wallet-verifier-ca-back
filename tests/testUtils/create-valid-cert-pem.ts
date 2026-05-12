@@ -4,6 +4,7 @@ import {
   AuthorityKeyIdentifierExtension,
   KeyUsagesExtension,
   KeyUsageFlags,
+  ExtendedKeyUsageExtension,
 } from '@peculiar/x509';
 import {
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
@@ -119,6 +120,7 @@ export async function createCaAndLeafCertPem(
       await SubjectKeyIdentifierExtension.create(leafKeys.publicKey),
       await AuthorityKeyIdentifierExtension.create(caKeys.publicKey),
       new KeyUsagesExtension(KeyUsageFlags.digitalSignature, true),
+      new ExtendedKeyUsageExtension(['1.0.18013.5.1.6'], true),
     ],
   });
 
