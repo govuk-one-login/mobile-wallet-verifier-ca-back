@@ -1,4 +1,5 @@
 import { X509Certificate, Name } from '@peculiar/x509';
+import { createHash } from 'node:crypto';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import {
   Certificate,
@@ -56,6 +57,7 @@ export function validateLeafCertificate(
     () => validateIssuer(certificate),
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
+    () => validateSubjectKeyIdentifier(certificate),
     () => {
       const caKeyIdResult = extractCaSubjectKeyIdentifier(issuerCaCertPem);
       if (caKeyIdResult.isError) return caKeyIdResult;
@@ -595,5 +597,54 @@ function validateAuthorityKeyIdentifier(
     );
     return emptyFailure();
   }
+  return emptySuccess();
+}
+
+function validateSubjectKeyIdentifier(
+  certificate: X509Certificate,
+): Result<void, void> {
+  const skiExtension = certificate.extensions.find(
+    (ext) => ext.type === id_ce_subjectKeyIdentifier,
+  );
+
+  if (!skiExtension) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      { errorMessage: 'Subject Key Identifier extension must be present' },
+    );
+    return emptyFailure();
+  }
+
+  let subjectKeyId: SubjectKeyIdentifier;
+  try {
+    subjectKeyId = AsnConvert.parse(skiExtension.value, SubjectKeyIdentifier);
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse Subject Key Identifier extension',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
+
+  const spki = certAsn(certificate).tbsCertificate.subjectPublicKeyInfo;
+  const publicKeyBytes = new Uint8Array(spki.subjectPublicKey);
+  const expectedKeyId = createHash('sha1').update(publicKeyBytes).digest('hex');
+  const actualKeyId = Buffer.from(subjectKeyId.buffer).toString('hex');
+
+  if (actualKeyId !== expectedKeyId) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Subject Key Identifier does not match SHA-1 hash of public key',
+        data: { actualKeyId, expectedKeyId },
+      },
+    );
+    return emptyFailure();
+  }
+
   return emptySuccess();
 }
