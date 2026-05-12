@@ -8,7 +8,10 @@ import {
   AuthorityKeyIdentifier,
   id_ce_authorityKeyIdentifier,
   id_ce_subjectKeyIdentifier,
+  id_ce_keyUsage,
   SubjectKeyIdentifier,
+  KeyUsage,
+  KeyUsageFlags,
 } from '@peculiar/asn1-x509';
 import {
   Result,
@@ -57,6 +60,7 @@ export function validateLeafCertificate(
     () => validateIssuer(certificate),
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
+    () => validateKeyUsage(certificate),
     () => validateSubjectKeyIdentifier(certificate),
     () => {
       const caKeyIdResult = extractCaSubjectKeyIdentifier(issuerCaCertPem);
@@ -641,6 +645,48 @@ function validateSubjectKeyIdentifier(
         errorMessage:
           'Subject Key Identifier does not match SHA-1 hash of public key',
         data: { actualKeyId, expectedKeyId },
+      },
+    );
+    return emptyFailure();
+  }
+
+  return emptySuccess();
+}
+
+function validateKeyUsage(certificate: X509Certificate): Result<void, void> {
+  const keyUsageExtension = certificate.extensions.find(
+    (ext) => ext.type === id_ce_keyUsage,
+  );
+
+  if (!keyUsageExtension) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      { errorMessage: 'Key Usage extension must be present' },
+    );
+    return emptyFailure();
+  }
+
+  let keyUsage: KeyUsage;
+  try {
+    keyUsage = AsnConvert.parse(keyUsageExtension.value, KeyUsage);
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse Key Usage extension',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
+
+  const bitStringToNumeric = keyUsage.toNumber();
+  if (bitStringToNumeric !== KeyUsageFlags.digitalSignature) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Key Usage must contain only Digital Signature',
+        data: { actualUsages: keyUsage.toJSON() },
       },
     );
     return emptyFailure();
