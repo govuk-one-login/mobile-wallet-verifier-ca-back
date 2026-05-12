@@ -1063,8 +1063,8 @@ describe('validateLeafCertificate', () => {
           'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
-          // First two calls: CA cert SKI lookup and leaf cert SKI validation — let through
-          if (callCount <= 2) return realExtensionsGetter.call(this);
+          // First three calls: key usage, SKI, and CA cert SKI lookup — let through
+          if (callCount <= 3) return realExtensionsGetter.call(this);
           // Leaf cert AKI lookup — return empty
           return [];
         });
@@ -1189,24 +1189,24 @@ describe('validateLeafCertificate', () => {
     describe('Given SKI extension is missing from leaf certificate', () => {
       beforeEach(async () => {
         const { caCertPem, leafCertPem } =
-            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
         const realExtensionsGetter = Object.getOwnPropertyDescriptor(
-            X509Certificate.prototype,
-            'extensions',
+          X509Certificate.prototype,
+          'extensions',
         )!.get!;
         let callCount = 0;
         vi.spyOn(
-            X509Certificate.prototype,
-            'extensions',
-            'get',
+          X509Certificate.prototype,
+          'extensions',
+          'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
-          if (callCount === 1) {
-            // Leaf cert SKI lookup — return extensions without SKI
+          if (callCount === 2) {
+            // Second call is leaf cert SKI lookup — return extensions without SKI
             const exts = realExtensionsGetter.call(this);
             return exts.filter(
-                (ext: { type: string }) =>
-                    ext.type !== id_ce_subjectKeyIdentifier,
+              (ext: { type: string }) =>
+                ext.type !== id_ce_subjectKeyIdentifier,
             );
           }
           return realExtensionsGetter.call(this);
@@ -1221,7 +1221,7 @@ describe('validateLeafCertificate', () => {
       it('Logs error', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode:
-              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
           errorMessage: 'Subject Key Identifier extension must be present',
         });
       });
@@ -1234,20 +1234,20 @@ describe('validateLeafCertificate', () => {
     describe('Given SKI extension parsing throws unexpectedly', () => {
       beforeEach(async () => {
         const { caCertPem, leafCertPem } =
-            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
         let skiCallCount = 0;
         vi.spyOn(AsnConvert, 'parse').mockImplementation(
-            (...args: Parameters<typeof AsnConvert.parse>) => {
-              if (args[1] === SubjectKeyIdentifier) {
-                skiCallCount++;
-                // First call is from the extensions getter internally;
-                // second call is our explicit parse in validateSubjectKeyIdentifier
-                if (skiCallCount === 2) {
-                  throw new Error('Mocked SKI parse error');
-                }
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === SubjectKeyIdentifier) {
+              skiCallCount++;
+              // First call is from the extensions getter internally;
+              // second call is our explicit parse in validateSubjectKeyIdentifier
+              if (skiCallCount === 2) {
+                throw new Error('Mocked SKI parse error');
               }
-              return asnConvertParse(...args);
-            },
+            }
+            return asnConvertParse(...args);
+          },
         );
         result = validateLeafCertificate({
           certPem: leafCertPem,
@@ -1259,7 +1259,7 @@ describe('validateLeafCertificate', () => {
       it('Logs error', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode:
-              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
           errorMessage: 'Failed to parse Subject Key Identifier extension',
         });
       });
@@ -1272,35 +1272,39 @@ describe('validateLeafCertificate', () => {
     describe('Given SKI does not match SHA-1 hash of public key', () => {
       beforeEach(async () => {
         const { caCertPem, leafCertPem } =
-            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
         const realExtensionsGetter = Object.getOwnPropertyDescriptor(
-            X509Certificate.prototype,
-            'extensions',
+          X509Certificate.prototype,
+          'extensions',
         )!.get!;
         let callCount = 0;
         vi.spyOn(
-            X509Certificate.prototype,
-            'extensions',
-            'get',
+          X509Certificate.prototype,
+          'extensions',
+          'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
           const exts = realExtensionsGetter.call(this);
-          if (callCount === 1) {
-            // First extensions access is for leaf cert SKI validation
+          if (callCount === 2) {
+            // Second extensions access is for leaf cert SKI validation
             // Replace the SKI extension value with a fake one
             return exts.map(
-                (ext: { type: string; value: ArrayBuffer; critical: boolean }) => {
-                  if (ext.type === id_ce_subjectKeyIdentifier) {
-                    const fakeSki = new SubjectKeyIdentifier(
-                        new Uint8Array(20).fill(0xff).buffer,
-                    );
-                    return {
-                      ...ext,
-                      value: AsnConvert.serialize(fakeSki),
-                    };
-                  }
-                  return ext;
-                },
+              (ext: {
+                type: string;
+                value: ArrayBuffer;
+                critical: boolean;
+              }) => {
+                if (ext.type === id_ce_subjectKeyIdentifier) {
+                  const fakeSki = new SubjectKeyIdentifier(
+                    new Uint8Array(20).fill(0xff).buffer,
+                  );
+                  return {
+                    ...ext,
+                    value: AsnConvert.serialize(fakeSki),
+                  };
+                }
+                return ext;
+              },
             );
           }
           return exts;
@@ -1315,9 +1319,9 @@ describe('validateLeafCertificate', () => {
       it('Logs error', () => {
         expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
           messageCode:
-              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
           errorMessage:
-              'Subject Key Identifier does not match SHA-1 hash of public key',
+            'Subject Key Identifier does not match SHA-1 hash of public key',
         });
       });
 
