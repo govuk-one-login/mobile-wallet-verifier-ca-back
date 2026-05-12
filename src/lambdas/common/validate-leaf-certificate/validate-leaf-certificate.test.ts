@@ -20,8 +20,10 @@ import {
   AuthorityKeyIdentifier,
   SubjectKeyIdentifier,
   KeyUsage,
+  ExtendedKeyUsage,
   id_ce_subjectKeyIdentifier,
   id_ce_keyUsage,
+  id_ce_extKeyUsage,
 } from '@peculiar/asn1-x509';
 import {
   TWENTY_FOUR_HOURS_IN_MS,
@@ -1474,6 +1476,167 @@ describe('validateLeafCertificate', () => {
           messageCode:
             'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
           errorMessage: 'Key Usage must contain only Digital Signature',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+  });
+
+  describe('Given extended key usage validation fails', () => {
+    describe('Given EKU extension is missing from leaf certificate', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+          X509Certificate.prototype,
+          'extensions',
+        )!.get!;
+        let callCount = 0;
+        vi.spyOn(
+          X509Certificate.prototype,
+          'extensions',
+          'get',
+        ).mockImplementation(function (this: X509Certificate) {
+          callCount++;
+          if (callCount === 2) {
+            // Second call is validateExtendedKeyUsage — return extensions without EKU
+            const exts = realExtensionsGetter.call(this);
+            return exts.filter(
+              (ext: { type: string }) => ext.type !== id_ce_extKeyUsage,
+            );
+          }
+          return realExtensionsGetter.call(this);
+        });
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Extended Key Usage extension must be present',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given EKU extension parsing throws unexpectedly', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        let ekuCallCount = 0;
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === ExtendedKeyUsage) {
+              ekuCallCount++;
+              // First call is from the extensions getter internally;
+              // second call is our explicit parse in validateExtendedKeyUsage
+              if (ekuCallCount === 2) {
+                throw new Error('Mocked EKU parse error');
+              }
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Failed to parse Extended Key Usage extension',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given EKU contains an unexpected OID', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        let ekuCallCount = 0;
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === ExtendedKeyUsage) {
+              ekuCallCount++;
+              if (ekuCallCount === 2) {
+                return new ExtendedKeyUsage(['1.3.6.1.5.5.7.3.1']);
+              }
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage:
+            'Extended Key Usage must contain only the expected OIDs',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given EKU contains extra OIDs alongside the expected one', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        let ekuCallCount = 0;
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === ExtendedKeyUsage) {
+              ekuCallCount++;
+              if (ekuCallCount === 2) {
+                return new ExtendedKeyUsage([
+                  '1.0.18013.5.1.6',
+                  '1.3.6.1.5.5.7.3.1',
+                ]);
+              }
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage:
+            'Extended Key Usage must contain only the expected OIDs',
         });
       });
 
