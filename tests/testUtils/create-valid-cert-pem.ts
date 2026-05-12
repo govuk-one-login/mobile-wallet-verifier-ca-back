@@ -2,6 +2,8 @@ import {
   X509CertificateGenerator,
   SubjectKeyIdentifierExtension,
   AuthorityKeyIdentifierExtension,
+  KeyUsagesExtension,
+  KeyUsageFlags,
 } from '@peculiar/x509';
 import {
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
@@ -116,6 +118,7 @@ export async function createCaAndLeafCertPem(
     extensions: [
       await SubjectKeyIdentifierExtension.create(leafKeys.publicKey),
       await AuthorityKeyIdentifierExtension.create(caKeys.publicKey),
+      new KeyUsagesExtension(KeyUsageFlags.digitalSignature, true),
     ],
   });
 
