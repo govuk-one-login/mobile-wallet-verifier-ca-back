@@ -1065,8 +1065,8 @@ describe('validateLeafCertificate', () => {
           'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
-          // First three calls: key usage, SKI, and CA cert SKI lookup — let through
-          if (callCount <= 3) return realExtensionsGetter.call(this);
+          // First four calls: key usage, EKU, SKI, and CA cert SKI lookup — let through
+          if (callCount <= 4) return realExtensionsGetter.call(this);
           // Leaf cert AKI lookup — return empty
           return [];
         });
@@ -1203,8 +1203,8 @@ describe('validateLeafCertificate', () => {
           'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
-          if (callCount === 2) {
-            // Second call is leaf cert SKI lookup — return extensions without SKI
+          if (callCount === 3) {
+            // Third call is leaf cert SKI lookup — return extensions without SKI
             const exts = realExtensionsGetter.call(this);
             return exts.filter(
               (ext: { type: string }) =>
@@ -1287,8 +1287,8 @@ describe('validateLeafCertificate', () => {
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
           const exts = realExtensionsGetter.call(this);
-          if (callCount === 2) {
-            // Second extensions access is for leaf cert SKI validation
+          if (callCount === 3) {
+            // Third extensions access is for leaf cert SKI validation
             // Replace the SKI extension value with a fake one
             return exts.map(
               (ext: {
