@@ -9,9 +9,11 @@ import {
   id_ce_authorityKeyIdentifier,
   id_ce_subjectKeyIdentifier,
   id_ce_keyUsage,
+  id_ce_extKeyUsage,
   SubjectKeyIdentifier,
   KeyUsage,
   KeyUsageFlags,
+  ExtendedKeyUsage,
 } from '@peculiar/asn1-x509';
 import {
   Result,
@@ -33,6 +35,7 @@ import {
   CURVE_P384_OID_DER,
   EXPECTED_SPKI_LENGTH,
   ALGORITHM_OID,
+  EXTENDED_KEY_USAGE,
 } from '../certificate-service-constants/certificate-service-constants.ts';
 
 export interface ValidateLeafCertificateParams {
@@ -61,6 +64,7 @@ export function validateLeafCertificate(
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
     () => validateKeyUsage(certificate),
+    () => validateExtendedKeyUsage(certificate),
     () => validateSubjectKeyIdentifier(certificate),
     () => {
       const caKeyIdResult = extractCaSubjectKeyIdentifier(issuerCaCertPem);
@@ -687,6 +691,57 @@ function validateKeyUsage(certificate: X509Certificate): Result<void, void> {
       {
         errorMessage: 'Key Usage must contain only Digital Signature',
         data: { actualUsages: keyUsage.toJSON() },
+      },
+    );
+    return emptyFailure();
+  }
+
+  return emptySuccess();
+}
+
+function validateExtendedKeyUsage(
+  certificate: X509Certificate,
+): Result<void, void> {
+  const ekuExtension = certificate.extensions.find(
+    (ext) => ext.type === id_ce_extKeyUsage,
+  );
+
+  if (!ekuExtension) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      { errorMessage: 'Extended Key Usage extension must be present' },
+    );
+    return emptyFailure();
+  }
+
+  let extendedKeyUsage: ExtendedKeyUsage;
+  try {
+    extendedKeyUsage = AsnConvert.parse(ekuExtension.value, ExtendedKeyUsage);
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse Extended Key Usage extension',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
+
+  const expectedOids = EXTENDED_KEY_USAGE.map(
+    (eku) => eku.ExtendedKeyUsageObjectIdentifier,
+  );
+  const actualOids = Array.from(extendedKeyUsage);
+
+  if (
+    actualOids.length !== expectedOids.length ||
+    !expectedOids.every((oid) => actualOids.includes(oid))
+  ) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Extended Key Usage must contain only the expected OIDs',
+        data: { actualOids, expectedOids },
       },
     );
     return emptyFailure();
