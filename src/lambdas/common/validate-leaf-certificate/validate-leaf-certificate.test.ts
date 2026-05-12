@@ -19,7 +19,9 @@ import { AsnConvert } from '@peculiar/asn1-schema';
 import {
   AuthorityKeyIdentifier,
   SubjectKeyIdentifier,
+  KeyUsage,
   id_ce_subjectKeyIdentifier,
+  id_ce_keyUsage,
 } from '@peculiar/asn1-x509';
 import {
   TWENTY_FOUR_HOURS_IN_MS,
@@ -1322,6 +1324,156 @@ describe('validateLeafCertificate', () => {
             'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
           errorMessage:
             'Subject Key Identifier does not match SHA-1 hash of public key',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+  });
+
+  describe('Given key usage validation fails', () => {
+    describe('Given Key Usage extension is missing from leaf certificate', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+          X509Certificate.prototype,
+          'extensions',
+        )!.get!;
+        let callCount = 0;
+        vi.spyOn(
+          X509Certificate.prototype,
+          'extensions',
+          'get',
+        ).mockImplementation(function (this: X509Certificate) {
+          callCount++;
+          if (callCount === 1) {
+            // First call is validateKeyUsage — return extensions without Key Usage
+            const exts = realExtensionsGetter.call(this);
+            return exts.filter(
+              (ext: { type: string }) => ext.type !== id_ce_keyUsage,
+            );
+          }
+          return realExtensionsGetter.call(this);
+        });
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Key Usage extension must be present',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given Key Usage extension parsing throws unexpectedly', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        let kuCallCount = 0;
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === KeyUsage) {
+              kuCallCount++;
+              // First call is from the extensions getter internally;
+              // second call is our explicit parse in validateKeyUsage
+              if (kuCallCount === 2) {
+                throw new Error('Mocked KeyUsage parse error');
+              }
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Failed to parse Key Usage extension',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given Key Usage contains more than just Digital Signature', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === KeyUsage) {
+              // Return a KeyUsage with digitalSignature + keyEncipherment (1 + 4 = 5)
+              return new KeyUsage(new Uint8Array([0b10100000]).buffer);
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Key Usage must contain only Digital Signature',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given Key Usage does not contain Digital Signature', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            if (args[1] === KeyUsage) {
+              // Return a KeyUsage with only keyEncipherment (bit 2)
+              return new KeyUsage(new Uint8Array([0b00100000]).buffer);
+            }
+            return asnConvertParse(...args);
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Key Usage must contain only Digital Signature',
         });
       });
 
