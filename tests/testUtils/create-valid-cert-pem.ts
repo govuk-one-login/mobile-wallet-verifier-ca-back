@@ -114,6 +114,7 @@ export async function createCaAndLeafCertPem(
     notBefore,
     notAfter,
     extensions: [
+      await SubjectKeyIdentifierExtension.create(leafKeys.publicKey),
       await AuthorityKeyIdentifierExtension.create(caKeys.publicKey),
     ],
   });
