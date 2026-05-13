@@ -1067,9 +1067,9 @@ describe('validateLeafCertificate', () => {
           'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
-          // First four calls: key usage, EKU, SKI, and CA cert SKI lookup — let through
-          if (callCount <= 4) return realExtensionsGetter.call(this);
-          // Leaf cert AKI lookup — return empty
+          // First call: CA cert SKI lookup — let through
+          if (callCount <= 1) return realExtensionsGetter.call(this);
+          // Second call: Leaf cert AKI lookup — return empty
           return [];
         });
         result = validateLeafCertificate({
@@ -1244,9 +1244,9 @@ describe('validateLeafCertificate', () => {
           (...args: Parameters<typeof AsnConvert.parse>) => {
             if (args[1] === SubjectKeyIdentifier) {
               skiCallCount++;
-              // First call is from the extensions getter internally;
-              // second call is our explicit parse in validateSubjectKeyIdentifier
-              if (skiCallCount === 2) {
+              // Earlier calls are from CA cert construction/extractCaSubjectKeyIdentifier;
+              // the last call is our explicit parse in validateSubjectKeyIdentifier
+              if (skiCallCount === 4) {
                 throw new Error('Mocked SKI parse error');
               }
             }
@@ -1351,8 +1351,8 @@ describe('validateLeafCertificate', () => {
           'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
-          if (callCount === 1) {
-            // First call is validateKeyUsage — return extensions without Key Usage
+          if (callCount === 4) {
+            // Fourth call is validateKeyUsage — return extensions without Key Usage
             const exts = realExtensionsGetter.call(this);
             return exts.filter(
               (ext: { type: string }) => ext.type !== id_ce_keyUsage,
@@ -1501,8 +1501,8 @@ describe('validateLeafCertificate', () => {
           'get',
         ).mockImplementation(function (this: X509Certificate) {
           callCount++;
-          if (callCount === 2) {
-            // Second call is validateExtendedKeyUsage — return extensions without EKU
+          if (callCount === 5) {
+            // Fifth call is validateExtendedKeyUsage — return extensions without EKU
             const exts = realExtensionsGetter.call(this);
             return exts.filter(
               (ext: { type: string }) => ext.type !== id_ce_extKeyUsage,
