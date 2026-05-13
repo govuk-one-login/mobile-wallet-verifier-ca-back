@@ -1646,6 +1646,86 @@ describe('validateLeafCertificate', () => {
     });
   });
 
+  describe('Given signature value validation fails', () => {
+    describe('Given signature value parsing throws unexpectedly', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            const parsed = asnConvertParse(...args);
+            if (
+              parsed &&
+              typeof parsed === 'object' &&
+              'signatureValue' in parsed
+            ) {
+              Object.defineProperty(parsed, 'signatureValue', {
+                get() {
+                  throw new Error('Mocked signatureValue error');
+                },
+              });
+            }
+            return parsed;
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Failed to parse certificate signature value',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+
+    describe('Given signature value is empty', () => {
+      beforeEach(async () => {
+        const { caCertPem, leafCertPem } =
+          await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+        vi.spyOn(AsnConvert, 'parse').mockImplementation(
+          (...args: Parameters<typeof AsnConvert.parse>) => {
+            const parsed = asnConvertParse(...args);
+            if (
+              parsed &&
+              typeof parsed === 'object' &&
+              'signatureValue' in parsed
+            ) {
+              parsed.signatureValue = new ArrayBuffer(0);
+            }
+            return parsed;
+          },
+        );
+        result = validateLeafCertificate({
+          certPem: leafCertPem,
+          csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+          issuerCaCertPem: caCertPem,
+        });
+      });
+
+      it('Logs error', () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode:
+            'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+          errorMessage: 'Certificate signature value must be present',
+        });
+      });
+
+      it('Returns an empty failure', () => {
+        expect(result).toEqual(emptyFailure());
+      });
+    });
+  });
+
   describe('Given leaf certificate is valid', () => {
     beforeEach(async () => {
       const { caCertPem, leafCertPem } =
