@@ -63,14 +63,15 @@ export function validateLeafCertificate(
     () => validateIssuer(certificate),
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
-    () => validateKeyUsage(certificate),
-    () => validateExtendedKeyUsage(certificate),
-    () => validateSubjectKeyIdentifier(certificate),
     () => {
       const caKeyIdResult = extractCaSubjectKeyIdentifier(issuerCaCertPem);
       if (caKeyIdResult.isError) return caKeyIdResult;
       return validateAuthorityKeyIdentifier(certificate, caKeyIdResult.value);
     },
+    () => validateSubjectKeyIdentifier(certificate),
+    () => validateKeyUsage(certificate),
+    () => validateExtendedKeyUsage(certificate),
+    () => validateSignatureValue(certificate),
   ];
   for (const validate of validations) {
     const validation = validate();
@@ -742,6 +743,36 @@ function validateExtendedKeyUsage(
       {
         errorMessage: 'Extended Key Usage must contain only the expected OIDs',
         data: { actualOids, expectedOids },
+      },
+    );
+    return emptyFailure();
+  }
+
+  return emptySuccess();
+}
+
+function validateSignatureValue(
+  certificate: X509Certificate,
+): Result<void, void> {
+  let signatureValue: ArrayBuffer;
+  try {
+    signatureValue = certAsn(certificate).signatureValue;
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse certificate signature value',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
+
+  if (!signatureValue || signatureValue.byteLength === 0) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Certificate signature value must be present',
       },
     );
     return emptyFailure();
