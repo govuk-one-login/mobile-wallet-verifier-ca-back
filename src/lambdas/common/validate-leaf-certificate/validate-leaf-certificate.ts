@@ -638,6 +638,11 @@ function validateSubjectKeyIdentifier(
     return emptyFailure();
   }
 
+  // Parses the certificate's ASN.1 structure and extracts the SubjectPublicKeyInfo field from the TBS (To-Be-Signed) portion — this contains the algorithm identifier and the raw public key bits.
+  // Extracts the raw public key bit string as a byte array. This is the DER-encoded public key value.
+  // Computes the SHA-1 hash of those public key bytes. RFC 5280 defines this as the standard method for generating a Subject Key Identifier — it's a 20-byte fingerprint that uniquely identifies the key.
+  // Converts the SKI value that was actually embedded in the certificate extension into a hex string for comparison.
+
   const spki = certAsn(certificate).tbsCertificate.subjectPublicKeyInfo;
   const publicKeyBytes = new Uint8Array(spki.subjectPublicKey);
   const expectedKeyId = createHash('sha1').update(publicKeyBytes).digest('hex');
