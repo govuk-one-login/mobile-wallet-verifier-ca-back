@@ -802,7 +802,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Failed to parse certificate subject public key info',
           });
         });
@@ -845,7 +845,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Certificate public key algorithm must be ECDSA',
           });
         });
@@ -888,9 +888,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Certificate public key curve parameters must be present',
+              'Certificate public key curve parameters must be present',
           });
         });
 
@@ -936,7 +936,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Certificate public key curve must be P-384 only',
           });
         });
@@ -982,7 +982,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Certificate public key must be present',
           });
         });
@@ -998,7 +998,9 @@ describe('validateLeafCertificate', () => {
             issuerName: VALID_ISSUER_NAME,
             subjectCn: MOCK_CSR_SUBJECT_CN,
           });
-          vi.spyOn(AsnConvert, 'serialize').mockReturnValue(new ArrayBuffer(100));
+          vi.spyOn(AsnConvert, 'serialize').mockReturnValue(
+            new ArrayBuffer(100),
+          );
           result = validateLeafCertificate({
             certPem: validCert,
             csrSubjectCn: MOCK_CSR_SUBJECT_CN,
@@ -1009,9 +1011,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Certificate SubjectPublicKeyInfo must be 120 bytes for P-384',
+              'Certificate SubjectPublicKeyInfo must be 120 bytes for P-384',
           });
         });
 
@@ -1025,7 +1027,7 @@ describe('validateLeafCertificate', () => {
       describe('Given CA certificate is missing Subject Key Identifier extension', () => {
         beforeEach(async () => {
           const { leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const caCertWithoutSki = await createValidCertPem({
             issuerName: VALID_ISSUER_NAME,
           });
@@ -1039,9 +1041,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Failed to extract Subject Key Identifier from CA certificate',
+              'Failed to extract Subject Key Identifier from CA certificate',
           });
         });
 
@@ -1055,16 +1057,16 @@ describe('validateLeafCertificate', () => {
       describe('Given AKI extension is missing from leaf certificate', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const realExtensionsGetter = Object.getOwnPropertyDescriptor(
-              X509Certificate.prototype,
-              'extensions',
+            X509Certificate.prototype,
+            'extensions',
           )!.get!;
           let callCount = 0;
           vi.spyOn(
-              X509Certificate.prototype,
-              'extensions',
-              'get',
+            X509Certificate.prototype,
+            'extensions',
+            'get',
           ).mockImplementation(function (this: X509Certificate) {
             callCount++;
             // First call: CA cert SKI lookup — let through
@@ -1082,7 +1084,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Authority Key Identifier extension must be present',
           });
         });
@@ -1095,17 +1097,18 @@ describe('validateLeafCertificate', () => {
       describe('Given AKI extension parsing throws unexpectedly', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           let akiParseCount = 0;
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === AuthorityKeyIdentifier) {
-                  akiParseCount++;
-                  // First call is during CA cert construction; second is our validation
-                  if (akiParseCount > 1) throw new Error('Mocked AKI parse error');
-                }
-                return asnConvertParse(...args);
-              },
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === AuthorityKeyIdentifier) {
+                akiParseCount++;
+                // First call is during CA cert construction; second is our validation
+                if (akiParseCount > 1)
+                  throw new Error('Mocked AKI parse error');
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1117,7 +1120,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Failed to parse Authority Key Identifier extension',
           });
         });
@@ -1130,14 +1133,14 @@ describe('validateLeafCertificate', () => {
       describe('Given AKI extension is missing keyIdentifier field', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === AuthorityKeyIdentifier) {
-                  return new AuthorityKeyIdentifier();
-                }
-                return asnConvertParse(...args);
-              },
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === AuthorityKeyIdentifier) {
+                return new AuthorityKeyIdentifier();
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1149,9 +1152,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Authority Key Identifier must contain keyIdentifier field',
+              'Authority Key Identifier must contain keyIdentifier field',
           });
         });
 
@@ -1163,9 +1166,9 @@ describe('validateLeafCertificate', () => {
       describe('Given AKI key ID does not match CA subject key ID', () => {
         beforeEach(async () => {
           const { leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const differentCaCertPem = (
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN)
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN)
           ).caCertPem;
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1177,9 +1180,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Authority Key Identifier does not match expected CA key identifier',
+              'Authority Key Identifier does not match expected CA key identifier',
           });
         });
 
@@ -1193,24 +1196,24 @@ describe('validateLeafCertificate', () => {
       describe('Given SKI extension is missing from leaf certificate', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const realExtensionsGetter = Object.getOwnPropertyDescriptor(
-              X509Certificate.prototype,
-              'extensions',
+            X509Certificate.prototype,
+            'extensions',
           )!.get!;
           let callCount = 0;
           vi.spyOn(
-              X509Certificate.prototype,
-              'extensions',
-              'get',
+            X509Certificate.prototype,
+            'extensions',
+            'get',
           ).mockImplementation(function (this: X509Certificate) {
             callCount++;
             if (callCount === 3) {
               // Third call is leaf cert SKI lookup — return extensions without SKI
               const exts = realExtensionsGetter.call(this);
               return exts.filter(
-                  (ext: { type: string }) =>
-                      ext.type !== id_ce_subjectKeyIdentifier,
+                (ext: { type: string }) =>
+                  ext.type !== id_ce_subjectKeyIdentifier,
               );
             }
             return realExtensionsGetter.call(this);
@@ -1225,7 +1228,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Subject Key Identifier extension must be present',
           });
         });
@@ -1238,20 +1241,20 @@ describe('validateLeafCertificate', () => {
       describe('Given SKI extension parsing throws unexpectedly', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           let skiCallCount = 0;
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === SubjectKeyIdentifier) {
-                  skiCallCount++;
-                  // Earlier calls are from CA cert construction/extractCaSubjectKeyIdentifier;
-                  // the last call is our explicit parse in validateSubjectKeyIdentifier
-                  if (skiCallCount === 4) {
-                    throw new Error('Mocked SKI parse error');
-                  }
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === SubjectKeyIdentifier) {
+                skiCallCount++;
+                // Earlier calls are from CA cert construction/extractCaSubjectKeyIdentifier;
+                // the last call is our explicit parse in validateSubjectKeyIdentifier
+                if (skiCallCount === 4) {
+                  throw new Error('Mocked SKI parse error');
                 }
-                return asnConvertParse(...args);
-              },
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1263,7 +1266,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Failed to parse Subject Key Identifier extension',
           });
         });
@@ -1276,16 +1279,16 @@ describe('validateLeafCertificate', () => {
       describe('Given SKI does not match SHA-1 hash of public key', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const realExtensionsGetter = Object.getOwnPropertyDescriptor(
-              X509Certificate.prototype,
-              'extensions',
+            X509Certificate.prototype,
+            'extensions',
           )!.get!;
           let callCount = 0;
           vi.spyOn(
-              X509Certificate.prototype,
-              'extensions',
-              'get',
+            X509Certificate.prototype,
+            'extensions',
+            'get',
           ).mockImplementation(function (this: X509Certificate) {
             callCount++;
             const exts = realExtensionsGetter.call(this);
@@ -1293,22 +1296,22 @@ describe('validateLeafCertificate', () => {
               // Third extensions access is for leaf cert SKI validation
               // Replace the SKI extension value with a fake one
               return exts.map(
-                  (ext: {
-                    type: string;
-                    value: ArrayBuffer;
-                    critical: boolean;
-                  }) => {
-                    if (ext.type === id_ce_subjectKeyIdentifier) {
-                      const fakeSki = new SubjectKeyIdentifier(
-                          new Uint8Array(20).fill(0xff).buffer,
-                      );
-                      return {
-                        ...ext,
-                        value: AsnConvert.serialize(fakeSki),
-                      };
-                    }
-                    return ext;
-                  },
+                (ext: {
+                  type: string;
+                  value: ArrayBuffer;
+                  critical: boolean;
+                }) => {
+                  if (ext.type === id_ce_subjectKeyIdentifier) {
+                    const fakeSki = new SubjectKeyIdentifier(
+                      new Uint8Array(20).fill(0xff).buffer,
+                    );
+                    return {
+                      ...ext,
+                      value: AsnConvert.serialize(fakeSki),
+                    };
+                  }
+                  return ext;
+                },
               );
             }
             return exts;
@@ -1323,9 +1326,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Subject Key Identifier does not match SHA-1 hash of public key',
+              'Subject Key Identifier does not match SHA-1 hash of public key',
           });
         });
 
@@ -1339,23 +1342,23 @@ describe('validateLeafCertificate', () => {
       describe('Given Key Usage extension is missing from leaf certificate', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const realExtensionsGetter = Object.getOwnPropertyDescriptor(
-              X509Certificate.prototype,
-              'extensions',
+            X509Certificate.prototype,
+            'extensions',
           )!.get!;
           let callCount = 0;
           vi.spyOn(
-              X509Certificate.prototype,
-              'extensions',
-              'get',
+            X509Certificate.prototype,
+            'extensions',
+            'get',
           ).mockImplementation(function (this: X509Certificate) {
             callCount++;
             if (callCount === 4) {
               // Fourth call is validateKeyUsage — return extensions without Key Usage
               const exts = realExtensionsGetter.call(this);
               return exts.filter(
-                  (ext: { type: string }) => ext.type !== id_ce_keyUsage,
+                (ext: { type: string }) => ext.type !== id_ce_keyUsage,
               );
             }
             return realExtensionsGetter.call(this);
@@ -1370,7 +1373,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Key Usage extension must be present',
           });
         });
@@ -1383,20 +1386,20 @@ describe('validateLeafCertificate', () => {
       describe('Given Key Usage extension parsing throws unexpectedly', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           let kuCallCount = 0;
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === KeyUsage) {
-                  kuCallCount++;
-                  // First call is from the extensions getter internally;
-                  // second call is our explicit parse in validateKeyUsage
-                  if (kuCallCount === 2) {
-                    throw new Error('Mocked KeyUsage parse error');
-                  }
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === KeyUsage) {
+                kuCallCount++;
+                // First call is from the extensions getter internally;
+                // second call is our explicit parse in validateKeyUsage
+                if (kuCallCount === 2) {
+                  throw new Error('Mocked KeyUsage parse error');
                 }
-                return asnConvertParse(...args);
-              },
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1408,7 +1411,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Failed to parse Key Usage extension',
           });
         });
@@ -1421,15 +1424,15 @@ describe('validateLeafCertificate', () => {
       describe('Given Key Usage contains more than just Digital Signature', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === KeyUsage) {
-                  // Return a KeyUsage with digitalSignature + keyEncipherment (1 + 4 = 5)
-                  return new KeyUsage(new Uint8Array([0b10100000]).buffer);
-                }
-                return asnConvertParse(...args);
-              },
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === KeyUsage) {
+                // Return a KeyUsage with digitalSignature + keyEncipherment (1 + 4 = 5)
+                return new KeyUsage(new Uint8Array([0b10100000]).buffer);
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1441,7 +1444,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Key Usage must contain only Digital Signature',
           });
         });
@@ -1454,15 +1457,15 @@ describe('validateLeafCertificate', () => {
       describe('Given Key Usage does not contain Digital Signature', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === KeyUsage) {
-                  // Return a KeyUsage with only keyEncipherment (bit 2)
-                  return new KeyUsage(new Uint8Array([0b00100000]).buffer);
-                }
-                return asnConvertParse(...args);
-              },
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === KeyUsage) {
+                // Return a KeyUsage with only keyEncipherment (bit 2)
+                return new KeyUsage(new Uint8Array([0b00100000]).buffer);
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1474,7 +1477,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Key Usage must contain only Digital Signature',
           });
         });
@@ -1489,23 +1492,23 @@ describe('validateLeafCertificate', () => {
       describe('Given EKU extension is missing from leaf certificate', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const realExtensionsGetter = Object.getOwnPropertyDescriptor(
-              X509Certificate.prototype,
-              'extensions',
+            X509Certificate.prototype,
+            'extensions',
           )!.get!;
           let callCount = 0;
           vi.spyOn(
-              X509Certificate.prototype,
-              'extensions',
-              'get',
+            X509Certificate.prototype,
+            'extensions',
+            'get',
           ).mockImplementation(function (this: X509Certificate) {
             callCount++;
             if (callCount === 5) {
               // Fifth call is validateExtendedKeyUsage — return extensions without EKU
               const exts = realExtensionsGetter.call(this);
               return exts.filter(
-                  (ext: { type: string }) => ext.type !== id_ce_extKeyUsage,
+                (ext: { type: string }) => ext.type !== id_ce_extKeyUsage,
               );
             }
             return realExtensionsGetter.call(this);
@@ -1520,7 +1523,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Extended Key Usage extension must be present',
           });
         });
@@ -1533,20 +1536,20 @@ describe('validateLeafCertificate', () => {
       describe('Given EKU extension parsing throws unexpectedly', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           let ekuCallCount = 0;
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === ExtendedKeyUsage) {
-                  ekuCallCount++;
-                  // First call is from the extensions getter internally;
-                  // second call is our explicit parse in validateExtendedKeyUsage
-                  if (ekuCallCount === 2) {
-                    throw new Error('Mocked EKU parse error');
-                  }
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === ExtendedKeyUsage) {
+                ekuCallCount++;
+                // First call is from the extensions getter internally;
+                // second call is our explicit parse in validateExtendedKeyUsage
+                if (ekuCallCount === 2) {
+                  throw new Error('Mocked EKU parse error');
                 }
-                return asnConvertParse(...args);
-              },
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1558,7 +1561,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Failed to parse Extended Key Usage extension',
           });
         });
@@ -1571,18 +1574,18 @@ describe('validateLeafCertificate', () => {
       describe('Given EKU contains an unexpected OID', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           let ekuCallCount = 0;
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === ExtendedKeyUsage) {
-                  ekuCallCount++;
-                  if (ekuCallCount === 2) {
-                    return new ExtendedKeyUsage(['1.3.6.1.5.5.7.3.1']);
-                  }
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === ExtendedKeyUsage) {
+                ekuCallCount++;
+                if (ekuCallCount === 2) {
+                  return new ExtendedKeyUsage(['1.3.6.1.5.5.7.3.1']);
                 }
-                return asnConvertParse(...args);
-              },
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1594,9 +1597,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Extended Key Usage must contain only the expected OIDs',
+              'Extended Key Usage must contain only the expected OIDs',
           });
         });
 
@@ -1608,21 +1611,21 @@ describe('validateLeafCertificate', () => {
       describe('Given EKU contains extra OIDs alongside the expected one', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           let ekuCallCount = 0;
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                if (args[1] === ExtendedKeyUsage) {
-                  ekuCallCount++;
-                  if (ekuCallCount === 2) {
-                    return new ExtendedKeyUsage([
-                      '1.0.18013.5.1.6',
-                      '1.3.6.1.5.5.7.3.1',
-                    ]);
-                  }
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === ExtendedKeyUsage) {
+                ekuCallCount++;
+                if (ekuCallCount === 2) {
+                  return new ExtendedKeyUsage([
+                    '1.0.18013.5.1.6',
+                    '1.3.6.1.5.5.7.3.1',
+                  ]);
                 }
-                return asnConvertParse(...args);
-              },
+              }
+              return asnConvertParse(...args);
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1634,9 +1637,9 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-                'Extended Key Usage must contain only the expected OIDs',
+              'Extended Key Usage must contain only the expected OIDs',
           });
         });
 
@@ -1650,23 +1653,23 @@ describe('validateLeafCertificate', () => {
       describe('Given signature value parsing throws unexpectedly', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                const parsed = asnConvertParse(...args);
-                if (
-                    parsed &&
-                    typeof parsed === 'object' &&
-                    'signatureValue' in parsed
-                ) {
-                  Object.defineProperty(parsed, 'signatureValue', {
-                    get() {
-                      throw new Error('Mocked signatureValue error');
-                    },
-                  });
-                }
-                return parsed;
-              },
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              const parsed = asnConvertParse(...args);
+              if (
+                parsed &&
+                typeof parsed === 'object' &&
+                'signatureValue' in parsed
+              ) {
+                Object.defineProperty(parsed, 'signatureValue', {
+                  get() {
+                    throw new Error('Mocked signatureValue error');
+                  },
+                });
+              }
+              return parsed;
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1678,7 +1681,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Failed to parse certificate signature value',
           });
         });
@@ -1691,19 +1694,19 @@ describe('validateLeafCertificate', () => {
       describe('Given signature value is empty', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
-              await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           vi.spyOn(AsnConvert, 'parse').mockImplementation(
-              (...args: Parameters<typeof AsnConvert.parse>) => {
-                const parsed = asnConvertParse(...args);
-                if (
-                    parsed &&
-                    typeof parsed === 'object' &&
-                    'signatureValue' in parsed
-                ) {
-                  parsed.signatureValue = new ArrayBuffer(0);
-                }
-                return parsed;
-              },
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              const parsed = asnConvertParse(...args);
+              if (
+                parsed &&
+                typeof parsed === 'object' &&
+                'signatureValue' in parsed
+              ) {
+                parsed.signatureValue = new ArrayBuffer(0);
+              }
+              return parsed;
+            },
           );
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1715,7 +1718,7 @@ describe('validateLeafCertificate', () => {
         it('Logs error', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
-                'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Certificate signature value must be present',
           });
         });
