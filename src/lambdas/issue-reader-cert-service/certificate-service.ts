@@ -9,6 +9,7 @@ import {
   Result,
   successResult,
   emptyFailure,
+  errorResult,
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import {
@@ -165,16 +166,19 @@ export const getCertificate = async (
   return emptyFailure();
 };
 
-export function extractIssuerCaCertFromChain(certificateChain: string): string {
+export function extractIssuerCaCertFromChain(certificateChain: string): Result<string, string> {
   const certs = certificateChain
     .split('-----END CERTIFICATE-----')
     .filter((cert) => cert.includes('-----BEGIN CERTIFICATE-----'))
     .map((cert) => cert + '-----END CERTIFICATE-----');
 
   if (certs.length < 1) {
-    throw new Error('Certificate chain must contain at least the issuer CA');
+    logger.error(LogMessage.ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE, {
+      errorMessage: 'Certificate chain must contain at least the issuer CA',
+    });
+    return errorResult('Certificate chain must contain at least the issuer CA');
   }
 
   // First certificate in the chain is the immediate issuer (intermediate CA)
-  return certs[0]; // Intermediate CA that issued the leaf certificate
+  return successResult(certs[0]); // Intermediate CA that issued the leaf certificate
 }
