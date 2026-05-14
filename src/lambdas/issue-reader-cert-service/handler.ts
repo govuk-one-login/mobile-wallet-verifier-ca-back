@@ -89,7 +89,11 @@ export const handlerConstructor = async (
   }
 
   const { certificate, certificateChain } = getCertResult.value;
-  const issuerCaCertPem = extractIssuerCaCertFromChain(certificateChain);
+  const extractIssuerResult = extractIssuerCaCertFromChain(certificateChain);
+  if (extractIssuerResult.isError) {
+    return serverErrorResponse;
+  }
+  const issuerCaCertPem = extractIssuerResult.value;
   const validateLeafResult = dependencies.validateLeafCertificate({
     certPem: certificate,
     csrSubjectCn,
