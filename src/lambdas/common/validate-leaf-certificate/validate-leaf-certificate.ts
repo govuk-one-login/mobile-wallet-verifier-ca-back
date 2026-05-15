@@ -37,30 +37,37 @@ import {
   ALGORITHM_OID,
   EXTENDED_KEY_USAGE,
 } from '../certificate-service-constants/certificate-service-constants.ts';
+import { extractIssuerCaCertFromChain } from '../../issue-reader-cert-service/certificate-service.ts';
 
 export interface ValidateLeafCertificateParams {
   certPem: string;
   csrSubjectCn: string;
-  issuerCaCertPem: string;
+  certificateChain: string;
 }
 
 export function validateLeafCertificate(
   params: ValidateLeafCertificateParams,
 ): Result<void, void> {
-  const { certPem, csrSubjectCn, issuerCaCertPem } = params;
+  const { certPem, csrSubjectCn, certificateChain } = params;
   const parseCertResult = parseX509Certificate(certPem);
   if (parseCertResult.isError) {
     return parseCertResult;
   }
 
   const certificate = parseCertResult.value;
+  const issuerCaCertPemResult = extractIssuerCaCertFromChain(certificateChain);
+  if (issuerCaCertPemResult.isError) {
+    return issuerCaCertPemResult;
+  }
+
+  const issuerCaCertPem = issuerCaCertPemResult.value;
 
   const validations: Array<() => Result<void, void>> = [
     () => validateVersion(certificate),
     () => validateSerialNumber(certificate),
     () => validateSignatureAlgorithm(certificate),
     () => validateCertificateValidity(certificate),
-    () => validateIssuer(certificate),
+    () => validateIssuer(certificate, issuerCaCertPem),
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
     () => {
@@ -324,8 +331,6 @@ function validateIssuer(certificate: X509Certificate): Result<void, void> {
     return emptyFailure();
   }
 
-  return emptySuccess();
-}
 
 function validateSubject(
   certificate: X509Certificate,

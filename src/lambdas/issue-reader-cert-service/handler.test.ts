@@ -852,7 +852,7 @@ describe('Handler', () => {
           certPem:
             '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
           csrSubjectCn: 'MockCN',
-          issuerCaCertPem:
+          certificateChain:
             '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
         });
       });

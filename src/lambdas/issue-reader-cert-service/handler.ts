@@ -22,7 +22,6 @@ import {
   unauthorizedResponse,
 } from '../common/lambda-responses/lambda-responses.ts';
 import { validateCsr } from './validate-csr.ts';
-import { extractIssuerCaCertFromChain } from './certificate-service.ts';
 
 export const handlerConstructor = async (
   dependencies: IssueReaderCertDependencies,
@@ -89,15 +88,11 @@ export const handlerConstructor = async (
   }
 
   const { certificate, certificateChain } = getCertResult.value;
-  const extractIssuerResult = extractIssuerCaCertFromChain(certificateChain);
-  if (extractIssuerResult.isError) {
-    return serverErrorResponse;
-  }
-  const issuerCaCertPem = extractIssuerResult.value;
+
   const validateLeafResult = dependencies.validateLeafCertificate({
     certPem: certificate,
     csrSubjectCn,
-    issuerCaCertPem,
+    certificateChain,
   });
   if (validateLeafResult.isError) {
     return serverErrorResponse;
