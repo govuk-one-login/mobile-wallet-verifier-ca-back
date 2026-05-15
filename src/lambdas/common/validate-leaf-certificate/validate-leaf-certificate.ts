@@ -496,6 +496,19 @@ function validateSubjectPublicKeyInfo(
     return emptyFailure();
   }
 
+  // ISO 18013-5 requires the EC public key to be in uncompressed form (0x04 prefix)
+  if (new Uint8Array(subjectPublicKey)[0] !== 0x04) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Certificate public key must be in uncompressed form (0x04 prefix)',
+        data: { firstByte: new Uint8Array(subjectPublicKey)[0] },
+      },
+    );
+    return emptyFailure();
+  }
+
   // P-384 SubjectPublicKeyInfo must be exactly 120 bytes
   const spkiRaw = AsnConvert.serialize(subjectPublicKeyInfo);
   if (spkiRaw.byteLength !== EXPECTED_SPKI_LENGTH) {

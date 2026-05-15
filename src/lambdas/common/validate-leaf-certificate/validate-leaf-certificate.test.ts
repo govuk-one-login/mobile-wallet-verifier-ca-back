@@ -957,6 +957,53 @@ describe('validateLeafCertificate', () => {
         });
       });
 
+      describe('Given certificate public key is not in uncompressed form', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const validSerial = new ArrayBuffer(16);
+          new Uint8Array(validSerial)[0] = 0x01;
+          const p384Params = new Uint8Array([
+            0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x22,
+          ]).buffer;
+          const compressedPublicKey = new Uint8Array(49).fill(0);
+          compressedPublicKey[0] = 0x02;
+          mockAsnAfterConstructor({
+            tbsCertificate: {
+              version: 2,
+              serialNumber: validSerial,
+              signature: { algorithm: '1.2.840.10045.4.3.3' },
+              subjectPublicKeyInfo: {
+                algorithm: {
+                  algorithm: '1.2.840.10045.2.1',
+                  parameters: p384Params,
+                },
+                subjectPublicKey: compressedPublicKey.buffer,
+              },
+            },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+          } as ReturnType<typeof AsnConvert.parse>);
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Certificate public key must be in uncompressed form (0x04 prefix)',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given SubjectPublicKeyInfo length is not 120 bytes', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
