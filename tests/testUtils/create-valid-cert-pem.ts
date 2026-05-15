@@ -79,9 +79,17 @@ export interface CreateCaAndLeafCertPemResult {
   leafCertPem: string;
 }
 
+export interface CreateCaAndLeafCertPemOptions {
+  notBefore?: Date;
+  notAfter?: Date;
+  subjectName?: string;
+  caWithoutSki?: boolean;
+}
+
 // Generates a CA cert with SubjectKeyIdentifierExtension and a leaf cert with a matching AuthorityKeyIdentifierExtension
 export async function createCaAndLeafCertPem(
   subjectCn: string,
+  options: CreateCaAndLeafCertPemOptions = {},
 ): Promise<CreateCaAndLeafCertPemResult> {
   const caKeys = await crypto.subtle.generateKey(
     { name: 'ECDSA', namedCurve: 'P-384' },
@@ -95,8 +103,9 @@ export async function createCaAndLeafCertPem(
   );
 
   const signingAlgorithm: EcdsaParams = { name: 'ECDSA', hash: 'SHA-384' };
-  const notBefore = new Date(Date.now() - 60 * 60 * 1000);
-  const notAfter = new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS);
+  const notBefore = options.notBefore ?? new Date(Date.now() - 60 * 60 * 1000);
+  const notAfter =
+    options.notAfter ?? new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS);
 
   const caCert = await X509CertificateGenerator.createSelfSigned({
     name: DEFAULT_ISSUER_NAME,
@@ -104,10 +113,14 @@ export async function createCaAndLeafCertPem(
     signingAlgorithm,
     notBefore,
     notAfter,
-    extensions: [await SubjectKeyIdentifierExtension.create(caKeys.publicKey)],
+    extensions: options.caWithoutSki
+      ? []
+      : [await SubjectKeyIdentifierExtension.create(caKeys.publicKey)],
   });
 
-  const subject = `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${subjectCn}`;
+  const subject =
+    options.subjectName ??
+    `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${subjectCn}`;
   const leafCert = await X509CertificateGenerator.create({
     issuer: DEFAULT_ISSUER_NAME,
     subject,
