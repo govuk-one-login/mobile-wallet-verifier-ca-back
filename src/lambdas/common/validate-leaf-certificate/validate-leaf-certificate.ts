@@ -27,7 +27,6 @@ import {
   EXPECTED_CERTIFICATE_VERSION,
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
-  EXPECTED_ISSUER_CN,
   TWENTY_FOUR_HOURS_IN_MS,
   TWENTY_FIVE_HOURS_IN_MS,
   MIN_BYTE_LENGTH,
@@ -294,10 +293,30 @@ function validateName(name: Name): Result<void, void> {
   return emptySuccess();
 }
 
-function validateIssuer(certificate: X509Certificate): Result<void, void> {
-  let issuerCn: string[];
+function validateIssuer(
+  certificate: X509Certificate,
+  issuerCaCertPem: string,
+): Result<void, void> {
   try {
-    issuerCn = certificate.issuerName.getField('CN');
+    const leafIssuerBytes = AsnConvert.serialize(
+      certAsn(certificate).tbsCertificate.issuer,
+    );
+    const caCert = new X509Certificate(issuerCaCertPem);
+    const caSubjectBytes = AsnConvert.serialize(
+      certAsn(caCert).tbsCertificate.subject,
+    );
+    const leafIssuerHex = Buffer.from(leafIssuerBytes).toString('hex');
+    const caSubjectHex = Buffer.from(caSubjectBytes).toString('hex');
+    if (leafIssuerHex !== caSubjectHex) {
+      logger.error(
+        LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+        {
+          errorMessage:
+            'Certificate issuer does not match CA certificate subject',
+        },
+      );
+      return emptyFailure();
+    }
   } catch (error: unknown) {
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
@@ -305,32 +324,8 @@ function validateIssuer(certificate: X509Certificate): Result<void, void> {
     );
     return emptyFailure();
   }
-  if (issuerCn.length !== 1 || issuerCn[0] !== EXPECTED_ISSUER_CN) {
-    logger.error(
-      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-      {
-        errorMessage:
-          'Certificate issuer Common name must match expected name value',
-        data: { certIssuerCn: issuerCn[0], EXPECTED_ISSUER_CN },
-      },
-    );
-    return emptyFailure();
-  }
-  const issuerValidation = validateName(certificate.issuerName);
-  if (issuerValidation.isError) {
-    logger.error(
-      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
-      {
-        errorMessage: 'Certificate issuer must match expected name values',
-        data: {
-          issuer: certificate.issuer,
-          expected: EXPECTED_ISSUER_AND_SUBJECT_NAME,
-        },
-      },
-    );
-    return emptyFailure();
-  }
-
+  return emptySuccess();
+}
 
 function validateSubject(
   certificate: X509Certificate,
