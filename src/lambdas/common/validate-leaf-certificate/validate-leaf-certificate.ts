@@ -111,12 +111,12 @@ const certAsn = (certificate: X509Certificate) => {
   return AsnConvert.parse(certificate.rawData, Certificate);
 };
 
-const KNOWN_EXTENSION_OIDS = [
+const KNOWN_EXTENSION_OIDS = new Set([
   id_ce_authorityKeyIdentifier,
   id_ce_subjectKeyIdentifier,
   id_ce_keyUsage,
   id_ce_extKeyUsage,
-];
+]);
 
 function validateVersion(certificate: X509Certificate): Result<void, void> {
   let version: Version;
@@ -852,7 +852,7 @@ function validateNoUnknownCriticalExtensions(
   certificate: X509Certificate,
 ): Result<void, void> {
   const unknownCritical = certificate.extensions.find(
-    (ext) => !KNOWN_EXTENSION_OIDS.includes(ext.type) && ext.critical,
+    (ext) => !KNOWN_EXTENSION_OIDS.has(ext.type) && ext.critical,
   );
   if (unknownCritical) {
     logger.error(
