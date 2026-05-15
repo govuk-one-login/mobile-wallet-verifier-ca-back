@@ -301,12 +301,17 @@ describe('Certificate Service', () => {
       describe('Given an empty certificate chain', () => {
         it('logs error and returns error result', () => {
           const result = extractIssuerCaCertFromChain('');
-          
+
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-            errorMessage: 'Certificate chain must contain at least the issuer CA',
+            errorMessage:
+              'Certificate chain must contain at least the issuer CA',
           });
-          expect(result).toEqual(errorResult('Certificate chain must contain at least the issuer CA'));
+          expect(result).toEqual(
+            errorResult(
+              'Certificate chain must contain at least the issuer CA',
+            ),
+          );
         });
       });
 
@@ -314,12 +319,17 @@ describe('Certificate Service', () => {
         it('logs error and returns error result', () => {
           const invalidChain = 'invalid certificate data';
           const result = extractIssuerCaCertFromChain(invalidChain);
-          
+
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-            errorMessage: 'Certificate chain must contain at least the issuer CA',
+            errorMessage:
+              'Certificate chain must contain at least the issuer CA',
           });
-          expect(result).toEqual(errorResult('Certificate chain must contain at least the issuer CA'));
+          expect(result).toEqual(
+            errorResult(
+              'Certificate chain must contain at least the issuer CA',
+            ),
+          );
         });
       });
 
@@ -330,9 +340,11 @@ describe('Certificate Service', () => {
 
           const result = extractIssuerCaCertFromChain(singleCertChain);
 
-          expect(result).toEqual(successResult(
-            '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----',
-          ));
+          expect(result).toEqual(
+            successResult(
+              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----',
+            ),
+          );
         });
       });
 
@@ -344,9 +356,11 @@ describe('Certificate Service', () => {
 
           const result = extractIssuerCaCertFromChain(multiCertChain);
 
-          expect(result).toEqual(successResult(
-            '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----',
-          ));
+          expect(result).toEqual(
+            successResult(
+              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----',
+            ),
+          );
         });
       });
     });

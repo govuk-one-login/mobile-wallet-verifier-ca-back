@@ -166,7 +166,9 @@ export const getCertificate = async (
   return emptyFailure();
 };
 
-export function extractIssuerCaCertFromChain(certificateChain: string): Result<string, string> {
+export function extractIssuerCaCertFromChain(
+  certificateChain: string,
+): Result<string, string> {
   const certs = certificateChain
     .split('-----END CERTIFICATE-----')
     .filter((cert) => cert.includes('-----BEGIN CERTIFICATE-----'))
