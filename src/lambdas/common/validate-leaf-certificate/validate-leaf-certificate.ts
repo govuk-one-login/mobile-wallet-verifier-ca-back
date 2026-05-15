@@ -69,11 +69,8 @@ export function validateLeafCertificate(
     () => validateIssuer(certificate, issuerCaCertPem),
     () => validateSubject(certificate, csrSubjectCn),
     () => validateSubjectPublicKeyInfo(certificate),
-    () => {
-      const caKeyIdResult = extractCaSubjectKeyIdentifier(issuerCaCertPem);
-      if (caKeyIdResult.isError) return caKeyIdResult;
-      return validateAuthorityKeyIdentifier(certificate, caKeyIdResult.value);
-    },
+    () =>
+      validateAuthorityKeyIdMatchesCaSubjectKeyId(certificate, issuerCaCertPem),
     () => validateSubjectKeyIdentifier(certificate),
     () => validateKeyUsage(certificate),
     () => validateExtendedKeyUsage(certificate),
@@ -583,6 +580,15 @@ function extractCaSubjectKeyIdentifier(
     return emptyFailure();
   }
   return successResult(Buffer.from(subjectKeyId.buffer).toString('hex'));
+}
+
+function validateAuthorityKeyIdMatchesCaSubjectKeyId(
+  certificate: X509Certificate,
+  issuerCaCertPem: string,
+): Result<void, void> {
+  const caKeyIdResult = extractCaSubjectKeyIdentifier(issuerCaCertPem);
+  if (caKeyIdResult.isError) return caKeyIdResult;
+  return validateAuthorityKeyIdentifier(certificate, caKeyIdResult.value);
 }
 
 function validateAuthorityKeyIdentifier(
