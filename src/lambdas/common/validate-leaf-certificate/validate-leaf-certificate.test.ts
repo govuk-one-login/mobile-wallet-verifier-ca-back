@@ -25,10 +25,7 @@ import {
   id_ce_keyUsage,
   id_ce_extKeyUsage,
 } from '@peculiar/asn1-x509';
-import {
-  TWENTY_FOUR_HOURS_IN_MS,
-  EXPECTED_ISSUER_AND_SUBJECT_NAME,
-} from '../certificate-service-constants/certificate-service-constants.ts';
+import { TWENTY_FOUR_HOURS_IN_MS } from '../certificate-service-constants/certificate-service-constants.ts';
 
 const MOCK_CSR_SUBJECT_CN = 'Example Verifier Org';
 
