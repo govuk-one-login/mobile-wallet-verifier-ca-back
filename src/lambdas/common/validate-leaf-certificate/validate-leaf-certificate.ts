@@ -531,7 +531,19 @@ function validateSubjectPublicKeyInfo(
 function extractCaSubjectKeyIdentifier(
   caCertPem: string,
 ): Result<string, void> {
-  const caCert = new X509Certificate(caCertPem);
+  let caCert: X509Certificate;
+  try {
+    caCert = new X509Certificate(caCertPem);
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'CA certificate is not valid X.509 format',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
 
   const skiExtension = caCert.extensions.find(
     (ext) => ext.type === id_ce_subjectKeyIdentifier,

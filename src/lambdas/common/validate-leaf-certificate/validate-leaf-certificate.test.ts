@@ -1041,6 +1041,42 @@ describe('validateLeafCertificate', () => {
     });
 
     describe('Given extractCaSubjectKeyIdentifier fails', () => {
+      describe('Given CA certificate is not valid X.509 format', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          // Mock AsnConvert.parse to throw when parsing the CA cert inside extractCaSubjectKeyIdentifier
+          // (after validateIssuer's certAsn calls have already succeeded)
+          let parseCallCount = 0;
+          vi.spyOn(AsnConvert, 'parse').mockImplementation(
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              parseCallCount++;
+              // Let through all calls up to and including validateIssuer's certAsn(caCert),
+              // then throw to simulate an invalid CA cert in extractCaSubjectKeyIdentifier
+              if (parseCallCount <= 9) return asnConvertParse(...args);
+              throw new Error('Mocked invalid CA cert');
+            },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'CA certificate is not valid X.509 format',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given CA certificate is missing Subject Key Identifier extension', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
