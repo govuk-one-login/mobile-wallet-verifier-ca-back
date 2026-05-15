@@ -77,6 +77,7 @@ export function validateLeafCertificate(
     () => validateSubjectKeyIdentifier(certificate),
     () => validateKeyUsage(certificate),
     () => validateExtendedKeyUsage(certificate),
+    () => validateNoUnknownCriticalExtensions(certificate),
     () => validateSignatureValue(certificate),
   ];
   for (const validate of validations) {
@@ -112,6 +113,13 @@ function parseX509Certificate(certPem: string): Result<X509Certificate, void> {
 const certAsn = (certificate: X509Certificate) => {
   return AsnConvert.parse(certificate.rawData, Certificate);
 };
+
+const KNOWN_EXTENSION_OIDS = [
+  id_ce_authorityKeyIdentifier,
+  id_ce_subjectKeyIdentifier,
+  id_ce_keyUsage,
+  id_ce_extKeyUsage,
+];
 
 function validateVersion(certificate: X509Certificate): Result<void, void> {
   let version: Version;
@@ -596,6 +604,16 @@ function validateAuthorityKeyIdentifier(
     return emptyFailure();
   }
 
+  if (akiExtension.critical) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Extension must be non-critical',
+        data: { extensionType: akiExtension.type },
+      },
+    );
+    return emptyFailure();
+  }
   let authorityKeyId: AuthorityKeyIdentifier;
   try {
     authorityKeyId = AsnConvert.parse(
@@ -659,6 +677,17 @@ function validateSubjectKeyIdentifier(
     return emptyFailure();
   }
 
+  if (skiExtension.critical) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Extension must be non-critical',
+        data: { extensionType: skiExtension.type },
+      },
+    );
+    return emptyFailure();
+  }
+
   let subjectKeyId: SubjectKeyIdentifier;
   try {
     subjectKeyId = AsnConvert.parse(skiExtension.value, SubjectKeyIdentifier);
@@ -711,6 +740,17 @@ function validateKeyUsage(certificate: X509Certificate): Result<void, void> {
     return emptyFailure();
   }
 
+  if (!keyUsageExtension.critical) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Extension must be critical',
+        data: { extensionType: keyUsageExtension.type },
+      },
+    );
+    return emptyFailure();
+  }
+
   let keyUsage: KeyUsage;
   try {
     keyUsage = AsnConvert.parse(keyUsageExtension.value, KeyUsage);
@@ -755,6 +795,17 @@ function validateExtendedKeyUsage(
     return emptyFailure();
   }
 
+  if (!ekuExtension.critical) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Extension must be critical',
+        data: { extensionType: ekuExtension.type },
+      },
+    );
+    return emptyFailure();
+  }
+
   let extendedKeyUsage: ExtendedKeyUsage;
   try {
     extendedKeyUsage = AsnConvert.parse(ekuExtension.value, ExtendedKeyUsage);
@@ -788,6 +839,25 @@ function validateExtendedKeyUsage(
     return emptyFailure();
   }
 
+  return emptySuccess();
+}
+
+function validateNoUnknownCriticalExtensions(
+  certificate: X509Certificate,
+): Result<void, void> {
+  const unknownCritical = certificate.extensions.find(
+    (ext) => !KNOWN_EXTENSION_OIDS.includes(ext.type) && ext.critical,
+  );
+  if (unknownCritical) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Certificate contains an unknown critical extension',
+        data: { extensionType: unknownCritical.type },
+      },
+    );
+    return emptyFailure();
+  }
   return emptySuccess();
 }
 

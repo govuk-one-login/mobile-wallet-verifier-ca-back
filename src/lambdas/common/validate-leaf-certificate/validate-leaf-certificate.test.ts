@@ -24,6 +24,7 @@ import {
   id_ce_subjectKeyIdentifier,
   id_ce_keyUsage,
   id_ce_extKeyUsage,
+  id_ce_authorityKeyIdentifier,
 } from '@peculiar/asn1-x509';
 import { TWENTY_FOUR_HOURS_IN_MS } from '../certificate-service-constants/certificate-service-constants.ts';
 
@@ -1278,6 +1279,47 @@ describe('validateLeafCertificate', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
+
+      describe('Given AKI extension is marked critical', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+            X509Certificate.prototype,
+            'extensions',
+          )!.get!;
+          vi.spyOn(
+            X509Certificate.prototype,
+            'extensions',
+            'get',
+          ).mockImplementation(function (this: X509Certificate) {
+            return realExtensionsGetter
+              .call(this)
+              .map((ext: { type: string; critical: boolean }) =>
+                ext.type === id_ce_authorityKeyIdentifier
+                  ? { ...ext, critical: true }
+                  : ext,
+              );
+          });
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Extension must be non-critical',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
     });
 
     describe('Given subject key identifier validation fails', () => {
@@ -1417,6 +1459,47 @@ describe('validateLeafCertificate', () => {
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
               'Subject Key Identifier does not match SHA-1 hash of public key',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
+      describe('Given SKI extension is marked critical', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+            X509Certificate.prototype,
+            'extensions',
+          )!.get!;
+          vi.spyOn(
+            X509Certificate.prototype,
+            'extensions',
+            'get',
+          ).mockImplementation(function (this: X509Certificate) {
+            return realExtensionsGetter
+              .call(this)
+              .map((ext: { type: string; critical: boolean }) =>
+                ext.type === id_ce_subjectKeyIdentifier
+                  ? { ...ext, critical: true }
+                  : ext,
+              );
+          });
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Extension must be non-critical',
           });
         });
 
@@ -1567,6 +1650,45 @@ describe('validateLeafCertificate', () => {
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage: 'Key Usage must contain only Digital Signature',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
+      describe('Given Key Usage extension is marked non-critical', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+            X509Certificate.prototype,
+            'extensions',
+          )!.get!;
+          vi.spyOn(
+            X509Certificate.prototype,
+            'extensions',
+            'get',
+          ).mockImplementation(function (this: X509Certificate) {
+            return realExtensionsGetter
+              .call(this)
+              .map((ext: { type: string; critical: boolean }) =>
+                ext.type === id_ce_keyUsage ? { ...ext, critical: false } : ext,
+              );
+          });
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Extension must be critical',
           });
         });
 
@@ -1728,6 +1850,87 @@ describe('validateLeafCertificate', () => {
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
               'Extended Key Usage must contain only the expected OIDs',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
+      describe('Given EKU extension is marked non-critical', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+            X509Certificate.prototype,
+            'extensions',
+          )!.get!;
+          vi.spyOn(
+            X509Certificate.prototype,
+            'extensions',
+            'get',
+          ).mockImplementation(function (this: X509Certificate) {
+            return realExtensionsGetter
+              .call(this)
+              .map((ext: { type: string; critical: boolean }) =>
+                ext.type === id_ce_extKeyUsage
+                  ? { ...ext, critical: false }
+                  : ext,
+              );
+          });
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Extension must be critical',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+    });
+
+    describe('Given no unknown critical extensions validation fails', () => {
+      describe('Given certificate contains an unknown critical extension', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+            X509Certificate.prototype,
+            'extensions',
+          )!.get!;
+          vi.spyOn(
+            X509Certificate.prototype,
+            'extensions',
+            'get',
+          ).mockImplementation(function (this: X509Certificate) {
+            return [
+              ...realExtensionsGetter.call(this),
+              { type: '1.2.3.4', critical: true, value: new ArrayBuffer(0) },
+            ];
+          });
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Certificate contains an unknown critical extension',
           });
         });
 
