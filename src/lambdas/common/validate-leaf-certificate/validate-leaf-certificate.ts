@@ -560,10 +560,20 @@ function extractCaSubjectKeyIdentifier(
     return emptyFailure();
   }
 
-  const subjectKeyId = AsnConvert.parse(
-    skiExtension.value,
-    SubjectKeyIdentifier,
-  );
+  let subjectKeyId: SubjectKeyIdentifier;
+  try {
+    subjectKeyId = AsnConvert.parse(skiExtension.value, SubjectKeyIdentifier);
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Failed to parse Subject Key Identifier from CA certificate',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
   return successResult(Buffer.from(subjectKeyId.buffer).toString('hex'));
 }
 

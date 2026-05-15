@@ -1103,6 +1103,42 @@ describe('validateLeafCertificate', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
+
+      describe('Given CA Subject Key Identifier extension parsing throws unexpectedly', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          let skiCallCount = 0;
+          vi.spyOn(AsnConvert, 'parse').mockImplementation(
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              if (args[1] === SubjectKeyIdentifier) {
+                skiCallCount++;
+                if (skiCallCount === 2)
+                  throw new Error('Mocked SKI parse error');
+              }
+              return asnConvertParse(...args);
+            },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Failed to parse Subject Key Identifier from CA certificate',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
     });
 
     describe('Given authority key identifier validation fails', () => {
