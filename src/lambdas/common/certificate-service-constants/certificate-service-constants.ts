@@ -16,6 +16,9 @@ export const EXTENDED_KEY_USAGE = [
   },
 ] as const;
 
+// DER-encoded EKU extension value for mDL Reader Auth (1.0.18013.5.1.6), base64-encoded for ACM PCA CustomExtensions
+export const EXTENDED_KEY_USAGE_DER_BASE64 = 'MAkGByiBjF0FAQY=';
+
 // Certificate validation constants
 export const EXPECTED_CERTIFICATE_VERSION = 2; // X.509 version field encoding: v1=0, v2=1, v3=2 (ASN.1 INTEGER values)
 export const MIN_BYTE_LENGTH = 9; // Serial number minimum byte length

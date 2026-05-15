@@ -12,7 +12,7 @@ import {
   GetCertificateCommand,
 } from '@aws-sdk/client-acm-pca';
 import {
-  EXTENDED_KEY_USAGE,
+  EXTENDED_KEY_USAGE_DER_BASE64,
   KEY_USAGE,
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
@@ -115,10 +115,11 @@ describe('Certificate Service', () => {
             ApiPassthrough: expect.objectContaining({
               Extensions: expect.objectContaining({
                 KeyUsage: { DigitalSignature: KEY_USAGE.DigitalSignature },
-                ExtendedKeyUsage: [
+                CustomExtensions: [
                   {
-                    ExtendedKeyUsageObjectIdentifier:
-                      EXTENDED_KEY_USAGE[0].ExtendedKeyUsageObjectIdentifier,
+                    ObjectIdentifier: '2.5.29.37',
+                    Value: EXTENDED_KEY_USAGE_DER_BASE64,
+                    Critical: true,
                   },
                 ],
               }),

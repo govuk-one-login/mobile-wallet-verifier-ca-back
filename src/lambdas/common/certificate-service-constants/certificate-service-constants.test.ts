@@ -4,6 +4,7 @@ import {
   TEMPLATE_ARN,
   KEY_USAGE,
   EXTENDED_KEY_USAGE,
+  EXTENDED_KEY_USAGE_DER_BASE64,
   EXPECTED_CERTIFICATE_VERSION,
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
@@ -50,6 +51,12 @@ describe('EXTENDED_KEY_USAGE', () => {
         '1.0.18013.5.1.6',
       );
     });
+  });
+});
+
+describe('EXTENDED_KEY_USAGE_DER_BASE64', () => {
+  it('Is the base64 DER encoding of the mDL Reader Auth EKU OID (1.0.18013.5.1.6)', () => {
+    expect(EXTENDED_KEY_USAGE_DER_BASE64).toEqual('MAkGByiBjF0FAQY=');
   });
 });
 
