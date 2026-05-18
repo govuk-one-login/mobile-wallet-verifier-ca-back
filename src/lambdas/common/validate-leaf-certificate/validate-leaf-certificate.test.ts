@@ -2042,6 +2042,46 @@ describe('validateLeafCertificate', () => {
     });
 
     describe('Given no unknown critical extensions validation fails', () => {
+      describe('Given certificate extensions getter throws during unknown critical extension check', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+            X509Certificate.prototype,
+            'extensions',
+          )!.get!;
+          let callCount = 0;
+          vi.spyOn(
+            X509Certificate.prototype,
+            'extensions',
+            'get',
+          ).mockImplementation(function (this: X509Certificate) {
+            callCount++;
+            // Calls 1-5: CA SKI, leaf AKI, leaf SKI, leaf KU, leaf EKU — let through
+            if (callCount <= 5) return realExtensionsGetter.call(this);
+            // Call 6: validateNoUnknownCriticalExtensions — throw
+            throw new Error('Mocked extensions error');
+          });
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Failed to parse certificate extensions',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given certificate contains an unknown critical extension', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
