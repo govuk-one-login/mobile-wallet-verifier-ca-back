@@ -371,6 +371,30 @@ describe('validateLeafCertificate', () => {
     });
 
     describe('Given certificate signature algorithm validation fails', () => {
+      describe('Given certificate signature algorithm parsing throws unexpectedly', () => {
+        beforeEach(async () => {
+          const validCert = await createValidCertPem();
+          mockAsnThrowAfterNCalls(3);
+          result = validateLeafCertificate({
+            certPem: validCert,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: mockCertificateChain,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Failed to parse certificate signature algorithm',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given TBS and outer signature algorithm OIDs do not match', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
