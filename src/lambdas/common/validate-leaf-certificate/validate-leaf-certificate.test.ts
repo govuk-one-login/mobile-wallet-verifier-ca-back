@@ -1005,6 +1005,40 @@ describe('validateLeafCertificate', () => {
         });
       });
 
+      describe('Given SubjectPublicKeyInfo serialization throws unexpectedly', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realSerialize = AsnConvert.serialize.bind(AsnConvert);
+          let serializeCallCount = 0;
+          vi.spyOn(AsnConvert, 'serialize').mockImplementation(
+            (...args: Parameters<typeof AsnConvert.serialize>) => {
+              serializeCallCount++;
+              // First 2 calls are from validateIssuer binary comparison (leaf issuer + CA subject)
+              if (serializeCallCount <= 2) return realSerialize(...args);
+              throw new Error('Mocked serialize error');
+            },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Failed to serialize SubjectPublicKeyInfo',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given SubjectPublicKeyInfo length is not 120 bytes', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =

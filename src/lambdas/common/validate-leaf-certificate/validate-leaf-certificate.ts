@@ -515,7 +515,19 @@ function validateSubjectPublicKeyInfo(
   }
 
   // P-384 SubjectPublicKeyInfo must be exactly 120 bytes
-  const spkiRaw = AsnConvert.serialize(subjectPublicKeyInfo);
+  let spkiRaw: ArrayBuffer;
+  try {
+    spkiRaw = AsnConvert.serialize(subjectPublicKeyInfo);
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to serialize SubjectPublicKeyInfo',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
   if (spkiRaw.byteLength !== EXPECTED_SPKI_LENGTH) {
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
