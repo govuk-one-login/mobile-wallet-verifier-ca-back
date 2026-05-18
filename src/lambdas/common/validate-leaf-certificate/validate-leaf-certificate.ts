@@ -725,7 +725,20 @@ function validateSubjectKeyIdentifier(
   // Computes the SHA-1 hash of those public key bytes. RFC 5280 defines this as the standard method for generating a Subject Key Identifier — it's a 20-byte fingerprint that uniquely identifies the key.
   // Converts the SKI value that was actually embedded in the certificate extension into a hex string for comparison.
 
-  const spki = certAsn(certificate).tbsCertificate.subjectPublicKeyInfo;
+  let spki: SubjectPublicKeyInfo;
+  try {
+    spki = certAsn(certificate).tbsCertificate.subjectPublicKeyInfo;
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage:
+          'Failed to parse SubjectPublicKeyInfo for Subject Key Identifier validation',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
   const publicKeyBytes = new Uint8Array(spki.subjectPublicKey);
   const expectedKeyId = createHash('sha1').update(publicKeyBytes).digest('hex');
   const actualKeyId = Buffer.from(subjectKeyId.buffer).toString('hex');

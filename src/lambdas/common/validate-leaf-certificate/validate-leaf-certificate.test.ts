@@ -1440,6 +1440,49 @@ describe('validateLeafCertificate', () => {
         });
       });
 
+      describe('Given SubjectPublicKeyInfo parsing throws during SKI validation', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          let skiParseCount = 0;
+          vi.spyOn(AsnConvert, 'parse').mockImplementation(
+            (...args: Parameters<typeof AsnConvert.parse>) => {
+              const result = asnConvertParse(...args);
+              if (args[1] === SubjectKeyIdentifier) {
+                skiParseCount++;
+                // After the leaf cert's SKI extension is parsed (4th SubjectKeyIdentifier parse),
+                // the next certAsn call is in validateSubjectKeyIdentifier for SPKI.
+                // We override tbsCertificate to throw on subjectPublicKeyInfo access.
+                if (skiParseCount === 4) {
+                  vi.spyOn(AsnConvert, 'parse').mockImplementation(() => {
+                    throw new Error('Mocked certAsn error in SKI validation');
+                  });
+                }
+              }
+              return result;
+            },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage:
+              'Failed to parse SubjectPublicKeyInfo for Subject Key Identifier validation',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given SKI does not match SHA-1 hash of public key', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
