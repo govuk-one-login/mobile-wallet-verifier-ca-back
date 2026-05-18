@@ -1177,6 +1177,46 @@ describe('validateLeafCertificate', () => {
     });
 
     describe('Given authority key identifier validation fails', () => {
+      describe('Given certificate extensions getter throws during AKI lookup', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } =
+            await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+          const realExtensionsGetter = Object.getOwnPropertyDescriptor(
+            X509Certificate.prototype,
+            'extensions',
+          )!.get!;
+          let callCount = 0;
+          vi.spyOn(
+            X509Certificate.prototype,
+            'extensions',
+            'get',
+          ).mockImplementation(function (this: X509Certificate) {
+            callCount++;
+            // First call: CA cert SKI lookup — let through
+            if (callCount <= 1) return realExtensionsGetter.call(this);
+            // Second call: leaf cert AKI lookup via findExtension — throw
+            throw new Error('Mocked extensions error');
+          });
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Failed to parse certificate extensions',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
       describe('Given AKI extension is missing from leaf certificate', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
