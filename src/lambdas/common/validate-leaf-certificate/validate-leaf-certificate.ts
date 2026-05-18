@@ -36,7 +36,7 @@ import {
   ALGORITHM_OID,
   EXTENDED_KEY_USAGE,
 } from '../certificate-service-constants/certificate-service-constants.ts';
-import { extractIssuerCaCertFromChain } from '../../issue-reader-cert-service/certificate-service.ts';
+import { extractIssuerCaCertFromChain } from './extract-issuer-ca-cert-from-chain.ts';
 
 export interface ValidateLeafCertificateParams {
   certPem: string;

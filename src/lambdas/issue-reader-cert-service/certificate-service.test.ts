@@ -21,13 +21,11 @@ import {
   getCertificate,
   issueCertificate,
   CertificateResult,
-  extractIssuerCaCertFromChain,
 } from './certificate-service.ts';
 import {
   emptyFailure,
   Result,
   successResult,
-  errorResult,
 } from '../common/result/result.ts';
 import '../../../tests/testUtils/matchers.ts';
 
@@ -295,74 +293,6 @@ describe('Certificate Service', () => {
         expect(result).toEqual(
           successResult({ certificate, certificateChain }),
         );
-      });
-    });
-
-    describe('Given ACM PCA returns a certificate and chain extractIssuerCaCertFromChain', () => {
-      describe('Given an empty certificate chain', () => {
-        it('logs error and returns error result', () => {
-          const result = extractIssuerCaCertFromChain('');
-
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-            errorMessage:
-              'Certificate chain must contain at least the issuer CA',
-          });
-          expect(result).toEqual(
-            errorResult(
-              'Certificate chain must contain at least the issuer CA',
-            ),
-          );
-        });
-      });
-
-      describe('Given a certificate chain with no valid certificates', () => {
-        it('logs error and returns error result', () => {
-          const invalidChain = 'invalid certificate data';
-          const result = extractIssuerCaCertFromChain(invalidChain);
-
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
-            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_GET_CERTIFICATE_FAILURE',
-            errorMessage:
-              'Certificate chain must contain at least the issuer CA',
-          });
-          expect(result).toEqual(
-            errorResult(
-              'Certificate chain must contain at least the issuer CA',
-            ),
-          );
-        });
-      });
-
-      describe('Given a certificate chain with one certificate', () => {
-        it('returns success result with the first certificate', () => {
-          const singleCertChain =
-            '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----';
-
-          const result = extractIssuerCaCertFromChain(singleCertChain);
-
-          expect(result).toEqual(
-            successResult(
-              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----',
-            ),
-          );
-        });
-      });
-
-      describe('Given a certificate chain with multiple certificates', () => {
-        it('returns success result with the first certificate (intermediate CA)', () => {
-          const multiCertChain =
-            '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----' +
-            '-----BEGIN CERTIFICATE-----\nROOT_CA\n-----END CERTIFICATE-----';
-
-          const result = extractIssuerCaCertFromChain(multiCertChain);
-
-          expect(result).toEqual(
-            successResult(
-              '-----BEGIN CERTIFICATE-----\nINTERMEDIATE_CA\n-----END CERTIFICATE-----',
-            ),
-          );
-        });
       });
     });
   });
