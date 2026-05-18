@@ -50,6 +50,7 @@ import {
   IssueCertificateParams,
   CertificateResult,
 } from './certificate-service.ts';
+import { ValidateLeafCertificateParams } from '../common/validate-leaf-certificate/validate-leaf-certificate.ts';
 
 describe('Handler', () => {
   let event: APIGatewayProxyEvent;
@@ -79,8 +80,7 @@ describe('Handler', () => {
     params: GetCertificateParams,
   ) => Promise<Result<CertificateResult, void>>;
   let mockValidateLeafCertificate: (
-    certPem: string,
-    csrSubjectCn: string,
+    params: ValidateLeafCertificateParams,
   ) => Result<void, void>;
 
   beforeAll(async () => {
@@ -848,10 +848,13 @@ describe('Handler', () => {
       });
 
       it('Calls validateLeafCertificate with correct parameters', () => {
-        expect(mockValidateLeafCertificate).toHaveBeenCalledWith(
-          '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
-          'MockCN',
-        );
+        expect(mockValidateLeafCertificate).toHaveBeenCalledWith({
+          certPem:
+            '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
+          csrSubjectCn: 'MockCN',
+          certificateChain:
+            '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
+        });
       });
 
       it('Logs COMPLETED', () => {

@@ -16,6 +16,9 @@ export const EXTENDED_KEY_USAGE = [
   },
 ] as const;
 
+// DER-encoded EKU extension value for mDL Reader Auth (1.0.18013.5.1.6), base64-encoded for ACM PCA CustomExtensions
+export const EXTENDED_KEY_USAGE_DER_BASE64 = 'MAkGByiBjF0FAQY=';
+
 // Certificate validation constants
 export const EXPECTED_CERTIFICATE_VERSION = 2; // X.509 version field encoding: v1=0, v2=1, v3=2 (ASN.1 INTEGER values)
 export const MIN_BYTE_LENGTH = 9; // Serial number minimum byte length
@@ -30,3 +33,6 @@ export const EXPECTED_ISSUER_AND_SUBJECT_NAME = {
 export const EXPECTED_ISSUER_CN = 'GOVUK Mobile Wallet GovVerifier CA';
 export const TWENTY_FOUR_HOURS_IN_MS = 24 * 60 * 60 * 1000;
 export const TWENTY_FIVE_HOURS_IN_MS = 25 * 60 * 60 * 1000;
+export const CURVE_P384_OID_DER = '06052b81040022'; // DER encoding of OID 1.3.132.0.34 (secp384r1/P-384)
+export const ALGORITHM_OID = '1.2.840.10045.2.1';
+export const EXPECTED_SPKI_LENGTH = 120;

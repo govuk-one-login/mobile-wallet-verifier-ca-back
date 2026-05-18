@@ -12,7 +12,7 @@ import {
   GetCertificateCommand,
 } from '@aws-sdk/client-acm-pca';
 import {
-  EXTENDED_KEY_USAGE,
+  EXTENDED_KEY_USAGE_DER_BASE64,
   KEY_USAGE,
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
@@ -39,7 +39,8 @@ vi.mock('@aws-sdk/client-acm-pca', () => ({
   GetCertificateCommand: vi.fn(),
 }));
 
-let result: Result<CertificateResult | string, void>;
+let getCertificateResult: Result<CertificateResult, void>;
+let issueCertificateResult: Result<string, void>;
 let certificate: string;
 let certificateChain: string;
 let consoleErrorSpy: MockInstance;
@@ -59,7 +60,7 @@ describe('Certificate Service', () => {
     describe('Given ACM PCA throws', () => {
       beforeEach(async () => {
         mockSend.mockRejectedValue(new Error('ACM PCA error'));
-        result = await issueCertificate({
+        issueCertificateResult = await issueCertificate({
           csrPem: mockCsr,
           certificateAuthorityArn: mockCaArn,
         });
@@ -73,14 +74,14 @@ describe('Certificate Service', () => {
       });
 
       it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
+        expect(issueCertificateResult).toEqual(emptyFailure());
       });
     });
 
     describe('Given ACM PCA returns no certificate ARN', () => {
       beforeEach(async () => {
         mockSend.mockResolvedValue({});
-        result = await issueCertificate({
+        issueCertificateResult = await issueCertificate({
           csrPem: mockCsr,
           certificateAuthorityArn: mockCaArn,
         });
@@ -94,14 +95,14 @@ describe('Certificate Service', () => {
       });
 
       it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
+        expect(issueCertificateResult).toEqual(emptyFailure());
       });
     });
 
     describe('Given ACM PCA returns a certificate ARN', () => {
       beforeEach(async () => {
         mockSend.mockResolvedValue({ CertificateArn: mockCertificateArn });
-        result = await issueCertificate({
+        issueCertificateResult = await issueCertificate({
           csrPem: mockCsr,
           certificateAuthorityArn: mockCaArn,
         });
@@ -113,10 +114,11 @@ describe('Certificate Service', () => {
             ApiPassthrough: expect.objectContaining({
               Extensions: expect.objectContaining({
                 KeyUsage: { DigitalSignature: KEY_USAGE.DigitalSignature },
-                ExtendedKeyUsage: [
+                CustomExtensions: [
                   {
-                    ExtendedKeyUsageObjectIdentifier:
-                      EXTENDED_KEY_USAGE[0].ExtendedKeyUsageObjectIdentifier,
+                    ObjectIdentifier: '2.5.29.37',
+                    Value: EXTENDED_KEY_USAGE_DER_BASE64,
+                    Critical: true,
                   },
                 ],
               }),
@@ -129,7 +131,9 @@ describe('Certificate Service', () => {
       });
 
       it('returns success with the certificate ARN', async () => {
-        expect(result).toEqual(successResult(mockCertificateArn));
+        expect(issueCertificateResult).toEqual(
+          successResult(mockCertificateArn),
+        );
       });
     });
   });
@@ -157,7 +161,7 @@ describe('Certificate Service', () => {
           name: 'RequestInProgressException',
         });
         mockSend.mockRejectedValue(inProgressError);
-        result = await getCertificate({
+        getCertificateResult = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
         });
@@ -175,14 +179,14 @@ describe('Certificate Service', () => {
       });
 
       it('returns an error result after exhausting retries', () => {
-        expect(result).toEqual(emptyFailure());
+        expect(getCertificateResult).toEqual(emptyFailure());
       });
     });
 
     describe('Given ACM PCA throws a non-retryable error', () => {
       beforeEach(async () => {
         mockSend.mockRejectedValue(new Error('Access denied'));
-        result = await getCertificate({
+        getCertificateResult = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
         });
@@ -196,7 +200,7 @@ describe('Certificate Service', () => {
       });
 
       it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
+        expect(getCertificateResult).toEqual(emptyFailure());
       });
     });
 
@@ -210,7 +214,7 @@ describe('Certificate Service', () => {
           CertificateChain: certificateChain,
         });
 
-        result = await getCertificate({
+        getCertificateResult = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
         });
@@ -221,7 +225,7 @@ describe('Certificate Service', () => {
       });
 
       it('retries and returns success', async () => {
-        expect(result).toEqual(
+        expect(getCertificateResult).toEqual(
           successResult({ certificate, certificateChain }),
         );
       });
@@ -230,7 +234,7 @@ describe('Certificate Service', () => {
     describe('Given ACM PCA returns no certificate', () => {
       beforeEach(async () => {
         mockSend.mockResolvedValue({});
-        result = await getCertificate({
+        getCertificateResult = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
         });
@@ -244,14 +248,14 @@ describe('Certificate Service', () => {
       });
 
       it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
+        expect(getCertificateResult).toEqual(emptyFailure());
       });
     });
 
     describe('Given ACM PCA returns no certificate chain', () => {
       beforeEach(async () => {
         mockSend.mockResolvedValue({ Certificate: certificate });
-        result = await getCertificate({
+        getCertificateResult = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
         });
@@ -265,7 +269,7 @@ describe('Certificate Service', () => {
       });
 
       it('returns an error result', () => {
-        expect(result).toEqual(emptyFailure());
+        expect(getCertificateResult).toEqual(emptyFailure());
       });
     });
 
@@ -275,7 +279,7 @@ describe('Certificate Service', () => {
           Certificate: certificate,
           CertificateChain: certificateChain,
         });
-        result = await getCertificate({
+        getCertificateResult = await getCertificate({
           certificateArn: mockCertificateArn,
           certificateAuthorityArn: mockCaArn,
         });
@@ -289,7 +293,7 @@ describe('Certificate Service', () => {
       });
 
       it('returns certificate and chain', () => {
-        expect(result).toEqual(
+        expect(getCertificateResult).toEqual(
           successResult({ certificate, certificateChain }),
         );
       });

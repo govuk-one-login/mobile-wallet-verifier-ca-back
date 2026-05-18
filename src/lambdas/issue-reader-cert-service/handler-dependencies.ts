@@ -11,7 +11,10 @@ import {
   GetCertificateParams,
   CertificateResult,
 } from './certificate-service.ts';
-import { validateLeafCertificate } from '../common/validate-leaf-certificate/validate-leaf-certificate.ts';
+import {
+  validateLeafCertificate,
+  ValidateLeafCertificateParams,
+} from '../common/validate-leaf-certificate/validate-leaf-certificate.ts';
 
 export interface IssueReaderCertDependencies {
   env: NodeJS.ProcessEnv;
@@ -28,8 +31,7 @@ export interface IssueReaderCertDependencies {
     params: GetCertificateParams,
   ) => Promise<Result<CertificateResult, void>>;
   validateLeafCertificate: (
-    certPem: string,
-    csrSubjectCn: string,
+    params: ValidateLeafCertificateParams,
   ) => Result<void, void>;
 }
 

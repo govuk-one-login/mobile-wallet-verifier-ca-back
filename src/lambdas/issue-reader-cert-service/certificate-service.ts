@@ -12,7 +12,7 @@ import {
 } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import {
-  EXTENDED_KEY_USAGE,
+  EXTENDED_KEY_USAGE_DER_BASE64,
   KEY_USAGE,
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
@@ -38,11 +38,12 @@ export const issueCertificate = async (
           KeyUsage: {
             DigitalSignature: KEY_USAGE.DigitalSignature,
           },
-          ExtendedKeyUsage: [
+          CustomExtensions: [
             {
-              // mDL Reader Auth
-              ExtendedKeyUsageObjectIdentifier:
-                EXTENDED_KEY_USAGE[0].ExtendedKeyUsageObjectIdentifier,
+              // mDL Reader Auth - EKU must be critical per ISO 18013-5
+              ObjectIdentifier: '2.5.29.37',
+              Value: EXTENDED_KEY_USAGE_DER_BASE64,
+              Critical: true,
             },
           ],
         },

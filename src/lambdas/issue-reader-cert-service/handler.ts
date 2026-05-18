@@ -88,10 +88,12 @@ export const handlerConstructor = async (
   }
 
   const { certificate, certificateChain } = getCertResult.value;
-  const validateLeafResult = dependencies.validateLeafCertificate(
-    certificate,
+
+  const validateLeafResult = dependencies.validateLeafCertificate({
+    certPem: certificate,
     csrSubjectCn,
-  );
+    certificateChain,
+  });
   if (validateLeafResult.isError) {
     return serverErrorResponse;
   }
