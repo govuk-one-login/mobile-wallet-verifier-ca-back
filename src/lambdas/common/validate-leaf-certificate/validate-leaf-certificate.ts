@@ -1,4 +1,4 @@
-import { X509Certificate, Name } from '@peculiar/x509';
+import { X509Certificate, Name, Extension } from '@peculiar/x509';
 import { createHash } from 'node:crypto';
 import { AsnConvert } from '@peculiar/asn1-schema';
 import {
@@ -110,6 +110,28 @@ function parseX509Certificate(certPem: string): Result<X509Certificate, void> {
 const certAsn = (certificate: X509Certificate) => {
   return AsnConvert.parse(certificate.rawData, Certificate);
 };
+
+function findExtension(
+  certificate: X509Certificate,
+  extensionType: string,
+): Result<Extension | undefined, void> {
+  let extension: Extension | undefined;
+  try {
+    extension = certificate.extensions.find(
+      (ext) => ext.type === extensionType,
+    );
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse certificate extensions',
+        data: { error, extensionType },
+      },
+    );
+    return emptyFailure();
+  }
+  return successResult(extension);
+}
 
 const KNOWN_EXTENSION_OIDS = new Set([
   id_ce_authorityKeyIdentifier,
@@ -562,9 +584,9 @@ function extractCaSubjectKeyIdentifier(
     return emptyFailure();
   }
 
-  const skiExtension = caCert.extensions.find(
-    (ext) => ext.type === id_ce_subjectKeyIdentifier,
-  );
+  const skiExtensionResult = findExtension(caCert, id_ce_subjectKeyIdentifier);
+  if (skiExtensionResult.isError) return skiExtensionResult;
+  const skiExtension = skiExtensionResult.value;
 
   if (!skiExtension) {
     logger.error(
@@ -608,9 +630,12 @@ function validateAuthorityKeyIdentifier(
   expectedCaKeyId: string,
 ): Result<void, void> {
   // Find the Authority Key Identifier extension
-  const akiExtension = certificate.extensions.find(
-    (ext) => ext.type === id_ce_authorityKeyIdentifier,
+  const akiExtensionResult = findExtension(
+    certificate,
+    id_ce_authorityKeyIdentifier,
   );
+  if (akiExtensionResult.isError) return akiExtensionResult;
+  const akiExtension = akiExtensionResult.value;
 
   if (!akiExtension) {
     logger.error(
@@ -683,9 +708,12 @@ function validateAuthorityKeyIdentifier(
 function validateSubjectKeyIdentifier(
   certificate: X509Certificate,
 ): Result<void, void> {
-  const skiExtension = certificate.extensions.find(
-    (ext) => ext.type === id_ce_subjectKeyIdentifier,
+  const skiExtensionResult = findExtension(
+    certificate,
+    id_ce_subjectKeyIdentifier,
   );
+  if (skiExtensionResult.isError) return skiExtensionResult;
+  const skiExtension = skiExtensionResult.value;
 
   if (!skiExtension) {
     logger.error(
@@ -759,9 +787,9 @@ function validateSubjectKeyIdentifier(
 }
 
 function validateKeyUsage(certificate: X509Certificate): Result<void, void> {
-  const keyUsageExtension = certificate.extensions.find(
-    (ext) => ext.type === id_ce_keyUsage,
-  );
+  const keyUsageExtensionResult = findExtension(certificate, id_ce_keyUsage);
+  if (keyUsageExtensionResult.isError) return keyUsageExtensionResult;
+  const keyUsageExtension = keyUsageExtensionResult.value;
 
   if (!keyUsageExtension) {
     logger.error(
@@ -814,9 +842,9 @@ function validateKeyUsage(certificate: X509Certificate): Result<void, void> {
 function validateExtendedKeyUsage(
   certificate: X509Certificate,
 ): Result<void, void> {
-  const ekuExtension = certificate.extensions.find(
-    (ext) => ext.type === id_ce_extKeyUsage,
-  );
+  const ekuExtensionResult = findExtension(certificate, id_ce_extKeyUsage);
+  if (ekuExtensionResult.isError) return ekuExtensionResult;
+  const ekuExtension = ekuExtensionResult.value;
 
   if (!ekuExtension) {
     logger.error(
@@ -876,7 +904,20 @@ function validateExtendedKeyUsage(
 function validateNoUnknownCriticalExtensions(
   certificate: X509Certificate,
 ): Result<void, void> {
-  const unknownCritical = certificate.extensions.find(
+  let extensions: Extension[];
+  try {
+    extensions = certificate.extensions;
+  } catch (error: unknown) {
+    logger.error(
+      LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
+      {
+        errorMessage: 'Failed to parse certificate extensions',
+        data: { error },
+      },
+    );
+    return emptyFailure();
+  }
+  const unknownCritical = extensions.find(
     (ext) => !KNOWN_EXTENSION_OIDS.has(ext.type) && ext.critical,
   );
   if (unknownCritical) {
