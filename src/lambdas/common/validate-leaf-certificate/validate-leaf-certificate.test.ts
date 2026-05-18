@@ -782,6 +782,90 @@ describe('validateLeafCertificate', () => {
           expect(result).toEqual(emptyFailure());
         });
       });
+
+      describe('Given subject name fields O do not match expected values', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
+            MOCK_CSR_SUBJECT_CN,
+            {
+              subjectName: `C=GB, ST=London, L=London, O=Wrong Org, CN=${MOCK_CSR_SUBJECT_CN}`,
+            },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Certificate subject must match expected name values',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
+      describe('Given subject name fields ST do not match expected values', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
+            MOCK_CSR_SUBJECT_CN,
+            {
+              subjectName: `C=GB, ST=Manchester, L=London, O=Government Digital Service, CN=${MOCK_CSR_SUBJECT_CN}`,
+            },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Certificate subject must match expected name values',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
+
+      describe('Given subject name fields L do not match expected values', () => {
+        beforeEach(async () => {
+          const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
+            MOCK_CSR_SUBJECT_CN,
+            {
+              subjectName: `C=GB, ST=London, L=Manchester, O=Government Digital Service, CN=${MOCK_CSR_SUBJECT_CN}`,
+            },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Logs error', () => {
+          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+            messageCode:
+              'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
+            errorMessage: 'Certificate subject must match expected name values',
+          });
+        });
+
+        it('Returns an empty failure', () => {
+          expect(result).toEqual(emptyFailure());
+        });
+      });
     });
 
     describe('Given certificate subject public key info validation fails', () => {
