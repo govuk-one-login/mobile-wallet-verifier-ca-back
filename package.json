@@ -18,8 +18,8 @@
   "license": "MIT",
   "dependencies": {
     "@aws-lambda-powertools/logger": "2.33.0",
-    "@aws-sdk/client-acm-pca": "3.1046.0",
-    "@aws-sdk/client-secrets-manager": "3.1046.0",
+    "@aws-sdk/client-acm-pca": "3.1051.0",
+    "@aws-sdk/client-secrets-manager": "3.1051.0",
     "@peculiar/asn1-schema": "2.6.0",
     "@peculiar/asn1-x509": "2.6.0",
     "@peculiar/x509": "2.0.0",
@@ -31,23 +31,23 @@
     "node": ">=22.0.0 <23.0.0"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "12.8.3",
+    "@cucumber/cucumber": "12.9.0",
     "@eslint/js": "9.39.2",
     "@types/aws-lambda": "8.10.161",
     "@types/js-yaml": "4.0.9",
     "@types/jsonwebtoken": "9.0.10",
     "@types/node": "22.19.19",
-    "@vitest/coverage-v8": "4.1.6",
-    "eslint": "10.3.0",
+    "@vitest/coverage-v8": "4.1.7",
+    "eslint": "10.4.0",
     "glob": "13.0.6",
     "husky": "9.1.7",
     "jiti": "2.7.0",
     "js-yaml": "4.1.1",
     "prettier": "3.8.3",
     "ts-node": "10.9.2",
-    "tsx": "4.21.0",
+    "tsx": "4.22.3",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.59.3",
-    "vitest": "4.1.6"
+    "typescript-eslint": "8.59.4",
+    "vitest": "4.1.7"
   }
 }
