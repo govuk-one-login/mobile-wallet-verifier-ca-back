@@ -18,8 +18,8 @@
   "license": "MIT",
   "dependencies": {
     "@aws-lambda-powertools/logger": "2.33.1",
-    "@aws-sdk/client-acm-pca": "3.1055.0",
-    "@aws-sdk/client-secrets-manager": "3.1055.0",
+    "@aws-sdk/client-acm-pca": "3.1061.0",
+    "@aws-sdk/client-secrets-manager": "3.1061.0",
     "@peculiar/asn1-schema": "2.6.0",
     "@peculiar/asn1-x509": "2.6.0",
     "@peculiar/x509": "2.0.0",
@@ -37,17 +37,17 @@
     "@types/js-yaml": "4.0.9",
     "@types/jsonwebtoken": "9.0.10",
     "@types/node": "22.19.19",
-    "@vitest/coverage-v8": "4.1.7",
-    "eslint": "10.4.0",
+    "@vitest/coverage-v8": "4.1.8",
+    "eslint": "10.4.1",
     "glob": "13.0.6",
     "husky": "9.1.7",
     "jiti": "2.7.0",
-    "js-yaml": "4.1.1",
+    "js-yaml": "4.2.0",
     "prettier": "3.8.3",
     "ts-node": "10.9.2",
-    "tsx": "4.22.3",
+    "tsx": "4.22.4",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.60.0",
-    "vitest": "4.1.7"
+    "typescript-eslint": "8.60.1",
+    "vitest": "4.1.8"
   }
 }
