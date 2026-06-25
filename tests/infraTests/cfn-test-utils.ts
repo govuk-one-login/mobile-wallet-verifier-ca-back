@@ -26,12 +26,17 @@ const createCfnTags = (tag: string, fnName: string) => [
   defineScalarTag(tag, { resolve: (data: string) => ({ [fnName]: data }) }),
   defineSequenceTag(tag, {
     create: () => [] as unknown[],
-    addItem: (arr: unknown[], item: unknown) => { arr.push(item); },
+    addItem: (arr: unknown[], item: unknown) => {
+      arr.push(item);
+    },
     finalize: (arr: unknown[]) => ({ [fnName]: arr }),
   }),
   defineMappingTag(tag, {
     create: () => ({}) as Record<string, unknown>,
-    addPair: (obj: Record<string, unknown>, key: unknown, value: unknown) => { obj[key as string] = value; return ''; },
+    addPair: (obj: Record<string, unknown>, key: unknown, value: unknown) => {
+      obj[key as string] = value;
+      return '';
+    },
     has: (obj: Record<string, unknown>, key: unknown) => (key as string) in obj,
     keys: (obj: Record<string, unknown>) => Object.keys(obj),
     get: (obj: Record<string, unknown>, key: unknown) => obj[key as string],
