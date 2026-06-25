@@ -1,5 +1,12 @@
 import { readFileSync } from 'fs';
-import { load, DEFAULT_SCHEMA, Type } from 'js-yaml';
+import {
+  load,
+  CORE_SCHEMA,
+  Schema,
+  defineScalarTag,
+  defineSequenceTag,
+  defineMappingTag,
+} from 'js-yaml';
 
 // CloudFormation Template Interface
 export interface CloudFormationTemplate {
@@ -15,44 +22,52 @@ export interface CloudFormationTemplate {
 }
 
 // Handle CloudFormation intrinsic functions that can appear in different contexts
-const createCfnType = (tag: string, fnName: string): Type[] => [
-  new Type(tag, {
-    kind: 'scalar',
-    construct: (data: string) => ({ [fnName]: data }),
+const createCfnTags = (tag: string, fnName: string) => [
+  defineScalarTag(tag, { resolve: (data: string) => ({ [fnName]: data }) }),
+  defineSequenceTag(tag, {
+    create: () => [] as unknown[],
+    addItem: (arr: unknown[], item: unknown) => {
+      arr.push(item);
+    },
+    finalize: (arr: unknown[]) => ({ [fnName]: arr }),
   }),
-  new Type(tag, {
-    kind: 'sequence',
-    construct: (data: unknown[]) => ({ [fnName]: data }),
-  }),
-  new Type(tag, {
-    kind: 'mapping',
-    construct: (data: Record<string, unknown>) => ({ [fnName]: data }),
+  defineMappingTag(tag, {
+    create: () => ({}) as Record<string, unknown>,
+    addPair: (obj: Record<string, unknown>, key: unknown, value: unknown) => {
+      obj[key as string] = value;
+      return '';
+    },
+    has: (obj: Record<string, unknown>, key: unknown) => (key as string) in obj,
+    keys: (obj: Record<string, unknown>) => Object.keys(obj),
+    get: (obj: Record<string, unknown>, key: unknown) => obj[key as string],
+    finalize: (obj: Record<string, unknown>) => ({ [fnName]: obj }),
   }),
 ];
 
-const cfnTypes: Type[] = [
-  ...createCfnType('!Sub', 'Fn::Sub'),
-  ...createCfnType('!Ref', 'Ref'),
-  ...createCfnType('!GetAtt', 'Fn::GetAtt'),
-  ...createCfnType('!FindInMap', 'Fn::FindInMap'),
-  ...createCfnType('!ImportValue', 'Fn::ImportValue'),
-  ...createCfnType('!If', 'Fn::If'),
-  ...createCfnType('!Not', 'Fn::Not'),
-  ...createCfnType('!Equals', 'Fn::Equals'),
-  ...createCfnType('!Or', 'Fn::Or'),
-  ...createCfnType('!And', 'Fn::And'),
-  ...createCfnType('!Condition', 'Condition'),
-  ...createCfnType('!Join', 'Fn::Join'),
-  ...createCfnType('!Select', 'Fn::Select'),
-  ...createCfnType('!Split', 'Fn::Split'),
+const cfnTags = [
+  ...createCfnTags('!Sub', 'Fn::Sub'),
+  ...createCfnTags('!Ref', 'Ref'),
+  ...createCfnTags('!GetAtt', 'Fn::GetAtt'),
+  ...createCfnTags('!FindInMap', 'Fn::FindInMap'),
+  ...createCfnTags('!ImportValue', 'Fn::ImportValue'),
+  ...createCfnTags('!If', 'Fn::If'),
+  ...createCfnTags('!Not', 'Fn::Not'),
+  ...createCfnTags('!Equals', 'Fn::Equals'),
+  ...createCfnTags('!Or', 'Fn::Or'),
+  ...createCfnTags('!And', 'Fn::And'),
+  ...createCfnTags('!Condition', 'Condition'),
+  ...createCfnTags('!Join', 'Fn::Join'),
+  ...createCfnTags('!Select', 'Fn::Select'),
+  ...createCfnTags('!Split', 'Fn::Split'),
 ];
+
+const cfnSchema = new Schema([...CORE_SCHEMA.tags, ...cfnTags]);
 
 // Utility Functions
 export function loadCloudFormationTemplate(
   templatePath: string,
 ): CloudFormationTemplate {
   const templateContent = readFileSync(templatePath, 'utf8');
-  const cfnSchema = DEFAULT_SCHEMA.extend(cfnTypes);
   return load(templateContent, { schema: cfnSchema }) as CloudFormationTemplate;
 }
 
