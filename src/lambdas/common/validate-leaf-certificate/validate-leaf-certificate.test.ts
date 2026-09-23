@@ -26,7 +26,12 @@ import {
   id_ce_extKeyUsage,
   id_ce_authorityKeyIdentifier,
 } from '@peculiar/asn1-x509';
-import { TWENTY_FOUR_HOURS_IN_MS } from '../certificate-service-constants/certificate-service-constants.ts';
+import {
+  NINETY_DAYS_IN_MS,
+  PCA_NOT_BEFORE_BACKDATE_MS,
+  EXPECTED_VALIDITY_SPAN_MS,
+  VALIDITY_SPAN_MAX_MS,
+} from '../certificate-service-constants/certificate-service-constants.ts';
 
 const MOCK_CSR_SUBJECT_CN = 'Example Verifier Org';
 
@@ -540,7 +545,7 @@ describe('validateLeafCertificate', () => {
             {
               notBefore: futureDate,
               notAfter: new Date(
-                futureDate.getTime() + TWENTY_FOUR_HOURS_IN_MS,
+                futureDate.getTime() + EXPECTED_VALIDITY_SPAN_MS,
               ),
             },
           );
@@ -564,14 +569,41 @@ describe('validateLeafCertificate', () => {
         });
       });
 
-      describe('Given certificate validity period is greater than 25 hours', () => {
+      describe('Given certificate validity span matches the expected PCA output (90 days + 1 hour)', () => {
+        beforeEach(async () => {
+          // Mirrors real PCA output: notBefore backdated 1 hour, notAfter 90 days
+          // after issuance, so the span is exactly 90 days + 1 hour.
+          const issuance = new Date();
+          const notBefore = new Date(
+            issuance.getTime() - PCA_NOT_BEFORE_BACKDATE_MS,
+          );
+          const notAfter = new Date(issuance.getTime() + NINETY_DAYS_IN_MS);
+          const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
+            MOCK_CSR_SUBJECT_CN,
+            { notBefore, notAfter },
+          );
+          result = validateLeafCertificate({
+            certPem: leafCertPem,
+            csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+            certificateChain: caCertPem,
+          });
+        });
+
+        it('Returns an empty success', () => {
+          expect(result).toEqual(emptySuccess());
+        });
+      });
+
+      describe('Given certificate validity period is greater than the allowed window', () => {
         beforeEach(async () => {
           const notBefore = new Date(Date.now() - 60 * 60 * 1000);
           const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
             MOCK_CSR_SUBJECT_CN,
             {
               notBefore,
-              notAfter: new Date(notBefore.getTime() + 26 * 60 * 60 * 1000),
+              notAfter: new Date(
+                notBefore.getTime() + VALIDITY_SPAN_MAX_MS + 60 * 60 * 1000,
+              ),
             },
           );
           result = validateLeafCertificate({
@@ -586,7 +618,7 @@ describe('validateLeafCertificate', () => {
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-              'Certificate validity period must be between 24 and 25 hours',
+              'Certificate validity period must be 90 days (plus the PCA notBefore backdate)',
           });
         });
 
@@ -595,7 +627,7 @@ describe('validateLeafCertificate', () => {
         });
       });
 
-      describe('Given certificate validity period is less than 24 hours', () => {
+      describe('Given certificate validity period is less than the allowed window', () => {
         beforeEach(async () => {
           const notBefore = new Date(Date.now() - 60 * 60 * 1000);
           const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
@@ -617,7 +649,7 @@ describe('validateLeafCertificate', () => {
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-              'Certificate validity period must be between 24 and 25 hours',
+              'Certificate validity period must be 90 days (plus the PCA notBefore backdate)',
           });
         });
 

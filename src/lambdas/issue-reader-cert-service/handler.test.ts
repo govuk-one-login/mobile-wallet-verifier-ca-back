@@ -139,9 +139,9 @@ describe('Handler', () => {
     mockGetCertificate = vi.fn().mockResolvedValue(
       successResult({
         certificate:
-          '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
+          '-----BEGIN CERTIFICATE-----\nMOCK_LEAF_L4\n-----END CERTIFICATE-----',
         certificateChain:
-          '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
+          '-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_L3\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CA\n-----END CERTIFICATE-----',
       }),
     );
 
@@ -850,10 +850,10 @@ describe('Handler', () => {
       it('Calls validateLeafCertificate with correct parameters', () => {
         expect(mockValidateLeafCertificate).toHaveBeenCalledWith({
           certPem:
-            '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----',
+            '-----BEGIN CERTIFICATE-----\nMOCK_LEAF_L4\n-----END CERTIFICATE-----',
           csrSubjectCn: 'MockCN',
           certificateChain:
-            '-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
+            '-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_L3\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CA\n-----END CERTIFICATE-----',
         });
       });
 
@@ -863,7 +863,7 @@ describe('Handler', () => {
         });
       });
 
-      it('Returns 200 OK response with certificate chain', () => {
+      it('Returns 200 OK response with the full chain: L4 leaf first, then L3 intermediate and Root CA', () => {
         expect(result).toStrictEqual({
           statusCode: 200,
           headers: {
@@ -872,7 +872,7 @@ describe('Handler', () => {
           },
           body: JSON.stringify({
             certChain:
-              '-----BEGIN CERTIFICATE-----\nMOCK_CERT\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_CHAIN\n-----END CERTIFICATE-----',
+              '-----BEGIN CERTIFICATE-----\nMOCK_LEAF_L4\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_L3\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CA\n-----END CERTIFICATE-----',
           }),
         });
       });

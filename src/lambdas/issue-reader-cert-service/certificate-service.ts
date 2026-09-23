@@ -14,7 +14,9 @@ import { logger } from '../common/logger/logger.ts';
 import {
   EXTENDED_KEY_USAGE_DER_BASE64,
   KEY_USAGE,
+  PRIVACY_POLICY_SIA_DER_BASE64,
   SIGNING_ALGORITHM,
+  SUBJECT_INFO_ACCESS_OID,
   TEMPLATE_ARN,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
@@ -45,6 +47,11 @@ export const issueCertificate = async (
               Value: EXTENDED_KEY_USAGE_DER_BASE64,
               Critical: true,
             },
+            {
+              ObjectIdentifier: SUBJECT_INFO_ACCESS_OID,
+              Value: PRIVACY_POLICY_SIA_DER_BASE64,
+              Critical: false,
+            },
           ],
         },
       },
@@ -54,7 +61,7 @@ export const issueCertificate = async (
       TemplateArn: TEMPLATE_ARN,
       Validity: {
         Type: 'DAYS',
-        Value: 1,
+        Value: 90,
       },
     });
 
