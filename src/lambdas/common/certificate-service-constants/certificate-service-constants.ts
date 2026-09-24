@@ -1,6 +1,6 @@
 // X.509 extensions are identified by OIDs (Object Identifiers)
 
-export const SIGNING_ALGORITHM = 'SHA384WITHECDSA';
+export const SIGNING_ALGORITHM = 'SHA256WITHECDSA';
 
 export const TEMPLATE_ARN =
   'arn:aws:acm-pca:::template/BlankEndEntityCertificate_APIPassthrough/V1';
@@ -23,7 +23,7 @@ export const EXTENDED_KEY_USAGE_DER_BASE64 = 'MAkGByiBjF0FAQY=';
 export const EXPECTED_CERTIFICATE_VERSION = 2; // X.509 version field encoding: v1=0, v2=1, v3=2 (ASN.1 INTEGER values)
 export const MIN_BYTE_LENGTH = 9; // Serial number minimum byte length
 export const MAX_BYTE_LENGTH = 20; // Serial number maximum byte length
-export const EXPECTED_SIGNATURE_ALGORITHM_OID = '1.2.840.10045.4.3.3'; // ECDSA with SHA-384 on P-384
+export const EXPECTED_SIGNATURE_ALGORITHM_OID = '1.2.840.10045.4.3.2'; // ECDSA with SHA-256 (leaf is signed by the P-256 Test DVS Verifier CA)
 export const EXPECTED_ISSUER_AND_SUBJECT_NAME = {
   C: 'GB',
   O: 'Government Digital Service',

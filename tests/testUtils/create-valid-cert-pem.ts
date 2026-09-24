@@ -91,18 +91,20 @@ export async function createCaAndLeafCertPem(
   subjectCn: string,
   options: CreateCaAndLeafCertPemOptions = {},
 ): Promise<CreateCaAndLeafCertPemResult> {
+  // The Test DVS Verifier CA is P-256; it signs the leaf with SHA-256.
   const caKeys = await crypto.subtle.generateKey(
-    { name: 'ECDSA', namedCurve: 'P-384' },
+    { name: 'ECDSA', namedCurve: 'P-256' },
     true,
     ['sign', 'verify'],
   );
+  // Reader (leaf) certs remain P-384.
   const leafKeys = await crypto.subtle.generateKey(
     { name: 'ECDSA', namedCurve: 'P-384' },
     true,
     ['sign', 'verify'],
   );
 
-  const signingAlgorithm: EcdsaParams = { name: 'ECDSA', hash: 'SHA-384' };
+  const signingAlgorithm: EcdsaParams = { name: 'ECDSA', hash: 'SHA-256' };
   const notBefore = options.notBefore ?? new Date(Date.now() - 60 * 60 * 1000);
   const notAfter =
     options.notAfter ?? new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS);
@@ -177,9 +179,11 @@ function getSigningAlgorithm(
         hash: 'SHA-256',
       };
     case 'ec-p384':
+      // Reader leaf key is P-384, but it is signed by the P-256 Test DVS Verifier CA,
+      // so the signature over the cert is ECDSA with SHA-256.
       return {
         name: 'ECDSA',
-        hash: 'SHA-384',
+        hash: 'SHA-256',
       };
     case 'rsa':
       return {

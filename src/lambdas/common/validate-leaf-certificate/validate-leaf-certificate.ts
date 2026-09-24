@@ -285,7 +285,7 @@ function validateSignatureAlgorithm(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
         errorMessage:
-          'Certificate signature algorithm must be ECDSA with SHA-384 on P-384',
+          'Certificate signature algorithm must be ECDSA with SHA-256',
         data: {
           actualAlgorithm: tbsAlgorithm,
           expectedAlgorithm: EXPECTED_SIGNATURE_ALGORITHM_OID,

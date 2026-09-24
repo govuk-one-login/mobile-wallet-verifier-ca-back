@@ -432,7 +432,7 @@ describe('validateLeafCertificate', () => {
         });
       });
 
-      describe('Given signature algorithm OID is not the expected ECDSA with SHA-384', () => {
+      describe('Given signature algorithm OID is not the expected ECDSA with SHA-256', () => {
         beforeEach(async () => {
           const validCert = await createValidCertPem();
           const validSerial = new ArrayBuffer(16);
@@ -442,9 +442,9 @@ describe('validateLeafCertificate', () => {
               tbsCertificate: {
                 version: 2,
                 serialNumber: validSerial,
-                signature: { algorithm: '1.2.840.10045.4.3.2' },
+                signature: { algorithm: '1.2.840.10045.4.3.3' },
               },
-              signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
+              signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
             } as ReturnType<typeof AsnConvert.parse>,
             3,
           );
@@ -460,7 +460,7 @@ describe('validateLeafCertificate', () => {
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-              'Certificate signature algorithm must be ECDSA with SHA-384 on P-384',
+              'Certificate signature algorithm must be ECDSA with SHA-256',
           });
         });
 
@@ -904,7 +904,7 @@ describe('validateLeafCertificate', () => {
             tbsCertificate: {
               version: 2,
               serialNumber: validSerial,
-              signature: { algorithm: '1.2.840.10045.4.3.3' },
+              signature: { algorithm: '1.2.840.10045.4.3.2' },
               subjectPublicKeyInfo: {
                 algorithm: {
                   algorithm: '1.2.840.113549.1.1.1',
@@ -913,7 +913,7 @@ describe('validateLeafCertificate', () => {
                 subjectPublicKey: new ArrayBuffer(97),
               },
             },
-            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -945,7 +945,7 @@ describe('validateLeafCertificate', () => {
             tbsCertificate: {
               version: 2,
               serialNumber: validSerial,
-              signature: { algorithm: '1.2.840.10045.4.3.3' },
+              signature: { algorithm: '1.2.840.10045.4.3.2' },
               subjectPublicKeyInfo: {
                 algorithm: {
                   algorithm: '1.2.840.10045.2.1',
@@ -954,7 +954,7 @@ describe('validateLeafCertificate', () => {
                 subjectPublicKey: new ArrayBuffer(97),
               },
             },
-            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -991,7 +991,7 @@ describe('validateLeafCertificate', () => {
             tbsCertificate: {
               version: 2,
               serialNumber: validSerial,
-              signature: { algorithm: '1.2.840.10045.4.3.3' },
+              signature: { algorithm: '1.2.840.10045.4.3.2' },
               subjectPublicKeyInfo: {
                 algorithm: {
                   algorithm: '1.2.840.10045.2.1',
@@ -1000,7 +1000,7 @@ describe('validateLeafCertificate', () => {
                 subjectPublicKey: new ArrayBuffer(65),
               },
             },
-            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1035,7 +1035,7 @@ describe('validateLeafCertificate', () => {
             tbsCertificate: {
               version: 2,
               serialNumber: validSerial,
-              signature: { algorithm: '1.2.840.10045.4.3.3' },
+              signature: { algorithm: '1.2.840.10045.4.3.2' },
               subjectPublicKeyInfo: {
                 algorithm: {
                   algorithm: '1.2.840.10045.2.1',
@@ -1044,7 +1044,7 @@ describe('validateLeafCertificate', () => {
                 subjectPublicKey: new ArrayBuffer(0),
               },
             },
-            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
           result = validateLeafCertificate({
             certPem: leafCertPem,
@@ -1081,7 +1081,7 @@ describe('validateLeafCertificate', () => {
             tbsCertificate: {
               version: 2,
               serialNumber: validSerial,
-              signature: { algorithm: '1.2.840.10045.4.3.3' },
+              signature: { algorithm: '1.2.840.10045.4.3.2' },
               subjectPublicKeyInfo: {
                 algorithm: {
                   algorithm: '1.2.840.10045.2.1',
@@ -1090,7 +1090,7 @@ describe('validateLeafCertificate', () => {
                 subjectPublicKey: compressedPublicKey.buffer,
               },
             },
-            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.3' },
+            signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
           } as ReturnType<typeof AsnConvert.parse>);
           result = validateLeafCertificate({
             certPem: leafCertPem,

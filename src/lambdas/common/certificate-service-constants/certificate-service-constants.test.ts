@@ -19,8 +19,8 @@ import {
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
-  it('Is "SHA384WITHECDSA"', () => {
-    expect(SIGNING_ALGORITHM).toEqual('SHA384WITHECDSA');
+  it('Is "SHA256WITHECDSA"', () => {
+    expect(SIGNING_ALGORITHM).toEqual('SHA256WITHECDSA');
   });
 });
 
@@ -79,8 +79,8 @@ describe('MAX_BYTE_LENGTH', () => {
 });
 
 describe('EXPECTED_SIGNATURE_ALGORITHM_OID', () => {
-  it('Is "1.2.840.10045.4.3.3" (ECDSA with SHA-384 on P-384)', () => {
-    expect(EXPECTED_SIGNATURE_ALGORITHM_OID).toEqual('1.2.840.10045.4.3.3');
+  it('Is "1.2.840.10045.4.3.2" (ECDSA with SHA-256)', () => {
+    expect(EXPECTED_SIGNATURE_ALGORITHM_OID).toEqual('1.2.840.10045.4.3.2');
   });
 });
 
