@@ -189,6 +189,19 @@ The service automatically configures:
 - **Dev/Build environments**: Uses mock JWKS endpoint for Firebase App Check token verification
 - **Production environments**: Uses official Firebase App Check JWKS endpoint
 
+#### Issuing CA ARN (resolved from SSM)
+
+The issuing CA ARN (published by the `govchk-ca` stack) is read from SSM at deploy time via a
+`{{resolve:ssm:...}}` dynamic reference in `application.yaml`, used for the Lambda's CA ARN env var and
+the ACM PCA IAM policy. See the template for the exact parameter path and names.
+
+**ca-back does not pick up a replaced CA automatically.** If the CA is replaced, its ARN changes in
+SSM, but a plain redeploy is a no-op (SAM doesn't see the resolved value change, so no new Lambda
+version is published and the `live` alias keeps the old ARN).
+
+To adopt the new CA, force a new version by deploying a real change. Then check the `live` alias
+points at a version with the new ARN.
+
 #### AWS Secrets Manager
 
 The mock infrastructure stores keys in AWS Secrets Manager:
