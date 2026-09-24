@@ -31,8 +31,6 @@ export const handlerConstructor = async (
   setupLogger(context);
   logger.info(LogMessage.ISSUE_READER_CERT_STARTED);
 
-  console.log('Forcing lambda update');
-
   const configResult = getIssueReaderCertConfig(dependencies.env);
   if (configResult.isError) {
     return serverErrorResponse;
