@@ -97,8 +97,6 @@ async function generateMockRequest(
     publicKeyPem: keyPair.publicKeyPem,
     subject: {
       countryName: CSR_POLICY.subject.C,
-      stateOrProvinceName: CSR_POLICY.subject.ST,
-      localityName: CSR_POLICY.subject.L,
       organizationName: CSR_POLICY.subject.O,
       commonName: 'Example Verifier Org Reader Sub-CA',
     },

@@ -116,8 +116,6 @@ describe('Mock Issue Reader Cert Request Handler', () => {
         publicKeyPem: 'mock-public',
         subject: {
           countryName: 'GB',
-          localityName: 'London',
-          stateOrProvinceName: 'London',
           organizationName: 'Government Digital Service',
           commonName: 'Example Verifier Org Reader Sub-CA',
         },

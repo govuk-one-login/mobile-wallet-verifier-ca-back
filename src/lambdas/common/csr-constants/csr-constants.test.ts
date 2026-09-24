@@ -45,18 +45,6 @@ describe('CSR Policy', () => {
       });
     });
 
-    describe('ST', () => {
-      it('Is "London"', () => {
-        expect(CSR_POLICY.subject.ST).toEqual('London');
-      });
-    });
-
-    describe('L', () => {
-      it('Is "London"', () => {
-        expect(CSR_POLICY.subject.L).toEqual('London');
-      });
-    });
-
     describe('O', () => {
       it('Is "Government Digital Service"', () => {
         expect(CSR_POLICY.subject.O).toEqual('Government Digital Service');

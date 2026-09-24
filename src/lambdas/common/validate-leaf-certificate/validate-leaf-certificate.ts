@@ -301,19 +301,11 @@ function validateSignatureAlgorithm(
 function validateName(name: Name): Result<void, void> {
   const C = name.getField('C');
   const O = name.getField('O');
-  const ST = name.getField('ST');
-  const L = name.getField('L');
 
   if (C.length !== 1 || C[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.C) {
     return emptyFailure();
   }
   if (O.length !== 1 || O[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.O) {
-    return emptyFailure();
-  }
-  if (ST.length !== 1 || ST[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.ST) {
-    return emptyFailure();
-  }
-  if (L.length !== 1 || L[0] !== EXPECTED_ISSUER_AND_SUBJECT_NAME.L) {
     return emptyFailure();
   }
 
