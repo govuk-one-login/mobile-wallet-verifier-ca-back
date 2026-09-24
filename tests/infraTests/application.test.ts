@@ -38,22 +38,17 @@ describe('Application Infrastructure', () => {
         testRequiredParameters(template, [
           'Environment',
           'CodeSigningConfigArn',
-          'GovCheckCaStackName',
           'PermissionsBoundary',
           'VpcStackName',
         ]),
       ).not.toThrow();
     });
 
-    it('should have GovCheckCaStackName parameter with the expected default', () => {
-      const govCheckCaStackName = template.Parameters
-        .GovCheckCaStackName as Record<string, unknown>;
-
-      expect(govCheckCaStackName).toEqual({
-        Description: 'The stack name of GovCheck Ca\n',
-        Type: 'String',
-        Default: 'govchk-ca',
-      });
+    it('should resolve the CA ARN from SSM using the Environment-derived path', () => {
+      const templateJson = JSON.stringify(template);
+      expect(templateJson).toContain(
+        '{{resolve:ssm:/${Environment}/GovCA/CertificateAuthorityArn}}',
+      );
     });
   });
 

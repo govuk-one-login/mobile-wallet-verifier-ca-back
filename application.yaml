@@ -46,12 +46,6 @@ Parameters:
     Type: String
     Default: vpc
 
-  GovCheckCaStackName:
-    Description: |
-      The stack name of GovCheck Ca
-    Type: String
-    Default: govchk-ca
-
   CaBackendApiParam:
     Description: |
       The backend Api prefix url
@@ -586,8 +580,7 @@ Resources:
                 Action:
                   - acm-pca:IssueCertificate
                   - acm-pca:GetCertificate
-                Resource: !ImportValue
-                    Fn::Sub: '${GovCheckCaStackName}-GovIntermediateCAArn'
+                Resource: !Sub '{{resolve:ssm:/${Environment}/GovCA/CertificateAuthorityArn}}'
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
@@ -642,8 +635,7 @@ Resources:
             - EnvironmentVariables
             - !Ref Environment
             - Algorithm
-          CERTIFICATE_AUTHORITY_ARN: !ImportValue
-              Fn::Sub: '${GovCheckCaStackName}-GovIntermediateCAArn'
+          CERTIFICATE_AUTHORITY_ARN: !Sub '{{resolve:ssm:/${Environment}/GovCA/CertificateAuthorityArn}}'
 
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
