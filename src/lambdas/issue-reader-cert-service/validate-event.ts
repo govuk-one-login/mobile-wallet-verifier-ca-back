@@ -4,34 +4,7 @@ import { errorResult, Result, successResult } from '../common/result/result.ts';
 import { logger } from '../common/logger/logger.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
 
-interface ValidEventData {
-  firebaseAppCheckJwt: string;
-  csrPem: string;
-}
-export function validateEvent(
-  eventHeaders: APIGatewayProxyEventHeaders,
-  eventBody: string | null,
-): Result<ValidEventData, string> {
-  const validateAppCheckHeaderResult =
-    validateEventAppCheckHeader(eventHeaders);
-  if (validateAppCheckHeaderResult.isError) {
-    return validateAppCheckHeaderResult;
-  }
-  const firebaseAppCheckJwt = validateAppCheckHeaderResult.value;
-
-  const validateEventBodyResult = validateEventBody(eventBody);
-  if (validateEventBodyResult.isError) {
-    return validateEventBodyResult;
-  }
-  const csrPem = validateEventBodyResult.value;
-
-  return successResult({
-    firebaseAppCheckJwt,
-    csrPem,
-  });
-}
-
-function validateEventAppCheckHeader(
+export function validateEventAppCheckHeader(
   eventHeaders: APIGatewayProxyEventHeaders,
 ): Result<string, string> {
   const firebaseAppCheckHeader = getHeader(
@@ -49,7 +22,9 @@ function validateEventAppCheckHeader(
   return successResult(firebaseAppCheckHeader);
 }
 
-function validateEventBody(eventBody: string | null): Result<string, string> {
+export function validateEventBody(
+  eventBody: string | null,
+): Result<string, string> {
   if (!eventBody) {
     const errorMessage = 'Event body is null';
     logger.error(LogMessage.ISSUE_READER_CERT_INVALID_EVENT, {
