@@ -2,16 +2,18 @@
 
 ## Overview
 
-This Repository contains a service (lambda function) to operate a private certificate authority (CA). The service verifies reader authentication by issuing a short-lived certificate (valid for approximately 24 Hrs) to access credentials from a Holder App. Mock services are also provided for dev/build environments.
+This Repository contains a service (lambda function) to operate a private certificate authority (CA). The service verifies reader authentication by issuing a certificate (valid for 90 days) to access credentials from a Holder App. Mock services are also provided for dev/build environments.
 
 ### Lambda Functions
 
 #### Issue Reader Certificate Service (`/issue-reader-cert`)
 
-Issues short-lived X.509 reader certificates (24-hours validity) after verifying:
+Issues X.509 reader certificates (90-day validity) after verifying:
 
 - Firebase App Check token (via `X-Firebase-AppCheck` header)
 - Certificate Signing Request (CSR) validation
+
+The issued leaf certificate carries the DVS privacy policy URL in a non-critical Subject Information Access (SIA) extension, and the response returns the full certificate chain up to the Root CA.
 
 #### Mock Services (Dev/Build Only)
 

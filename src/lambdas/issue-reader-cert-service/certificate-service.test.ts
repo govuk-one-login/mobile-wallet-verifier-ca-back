@@ -14,7 +14,9 @@ import {
 import {
   EXTENDED_KEY_USAGE_DER_BASE64,
   KEY_USAGE,
+  PRIVACY_POLICY_SIA_DER_BASE64,
   SIGNING_ALGORITHM,
+  SUBJECT_INFO_ACCESS_OID,
   TEMPLATE_ARN,
 } from '../common/certificate-service-constants/certificate-service-constants.ts';
 import {
@@ -120,12 +122,17 @@ describe('Certificate Service', () => {
                     Value: EXTENDED_KEY_USAGE_DER_BASE64,
                     Critical: true,
                   },
+                  {
+                    ObjectIdentifier: SUBJECT_INFO_ACCESS_OID,
+                    Value: PRIVACY_POLICY_SIA_DER_BASE64,
+                    Critical: false,
+                  },
                 ],
               }),
             }),
             SigningAlgorithm: SIGNING_ALGORITHM,
             TemplateArn: TEMPLATE_ARN,
-            Validity: { Type: 'DAYS', Value: 1 },
+            Validity: { Type: 'DAYS', Value: 90 },
           }),
         );
       });

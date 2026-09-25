@@ -3,7 +3,7 @@ info:
   title: Gov Checker CA Backend – Reader Certificate API
   version: '1.0.0'
   description: |
-    Issues short-lived reader certificates (valid for ~24 hours) for Verifier Apps.
+    Issues reader certificates (valid for 90 days) for Verifier Apps.
     Authentication model:
     - The Verifier App generates a keypair locally.
     - The app obtains a Firebase App Check token.
@@ -15,7 +15,7 @@ info:
         * Validating iss, aud, sub, exp, and nbf claims
         * Applying replay protection using jti cache
     - If authentication succeeds, the backend validates the CSR (PKCS#10)
-      and issues a short-lived reader certificate.
+      and issues a reader certificate.
 
 servers:
   - url: https://api.example.com
@@ -23,9 +23,9 @@ servers:
 paths:
   /issue-reader-cert:
     post:
-      summary: Issue short-lived reader certificate
+      summary: Issue reader certificate
       description: |
-        Issues a short-lived X.509 reader certificate.
+        Issues an X.509 reader certificate valid for 90 days.
         Requirements:
         - A valid Firebase App Check JWT must be provided in the
           X-Firebase-AppCheck header.
@@ -114,9 +114,8 @@ components:
         certChain:
           type: string
           description: |
-            PEM-encoded certificate chain.
-            The first certificate is the leaf reader certificate,
-            followed by any intermediate CA certificates.
+            PEM-encoded certificate chain, leaf first, followed by the issuing
+            CA certificates up to and including the Root CA certificate.
     ErrorResponse:
       type: object
       required:

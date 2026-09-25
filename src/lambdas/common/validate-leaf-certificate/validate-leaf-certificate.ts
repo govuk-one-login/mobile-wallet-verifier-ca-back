@@ -27,8 +27,8 @@ import {
   EXPECTED_CERTIFICATE_VERSION,
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
-  TWENTY_FOUR_HOURS_IN_MS,
-  TWENTY_FIVE_HOURS_IN_MS,
+  VALIDITY_SPAN_MIN_MS,
+  VALIDITY_SPAN_MAX_MS,
   MIN_BYTE_LENGTH,
   MAX_BYTE_LENGTH,
   CURVE_P384_OID_DER,
@@ -425,19 +425,20 @@ function validateCertificateValidity(
   const validityDurationMs = notAfter.getTime() - notBefore.getTime();
 
   if (
-    validityDurationMs < TWENTY_FOUR_HOURS_IN_MS ||
-    validityDurationMs > TWENTY_FIVE_HOURS_IN_MS
+    validityDurationMs < VALIDITY_SPAN_MIN_MS ||
+    validityDurationMs > VALIDITY_SPAN_MAX_MS
   ) {
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
         errorMessage:
-          'Certificate validity period must be between 24 and 25 hours',
+          'Certificate validity period must be 90 days (plus the PCA notBefore backdate)',
         data: {
           notBefore: notBefore.toISOString(),
           notAfter: notAfter.toISOString(),
           actualDurationMs: validityDurationMs,
-          expectedDurationMs: TWENTY_FOUR_HOURS_IN_MS,
+          expectedMinDurationMs: VALIDITY_SPAN_MIN_MS,
+          expectedMaxDurationMs: VALIDITY_SPAN_MAX_MS,
         },
       },
     );
