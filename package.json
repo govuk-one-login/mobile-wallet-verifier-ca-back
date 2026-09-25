@@ -36,7 +36,7 @@
     "@types/aws-lambda": "8.10.162",
     "@types/jsonwebtoken": "9.0.10",
     "@types/node": "22.20.1",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "5.0.0",
     "eslint": "10.9.1",
     "glob": "13.0.6",
     "husky": "9.1.7",
