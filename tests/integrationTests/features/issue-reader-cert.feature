@@ -6,7 +6,7 @@ Feature: Issue reader certificate service
     Then the issue reader cert endpoint returns a 400 response
     And the response body indicates a missing CSR
 
-  Scenario: Valid request returns a 200 response
-    Given I generate a valid issue reader cert request
+  Scenario: Request without an App Check JWT and a valid CSR returns a 200 response
+    Given I generate an issue reader cert request without an App Check JWT and a valid CSR
     When I submit the request to the issue reader cert endpoint
     Then the issue reader cert endpoint returns a 200 OK response

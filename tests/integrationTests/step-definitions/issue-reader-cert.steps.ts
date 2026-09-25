@@ -16,9 +16,16 @@ Before(() => {
   response = undefined;
 });
 
-Given('I generate a valid issue reader cert request', async () => {
-  mockRequest = await requestMockIssueReaderCertRequest();
-});
+Given(
+  'I generate an issue reader cert request without an App Check JWT and a valid CSR',
+  async () => {
+    const validMockRequest = await requestMockIssueReaderCertRequest();
+    // Send only the valid CSR body with no X-Firebase-AppCheck header. App
+    // Check JWT validation is disabled via feature flag in all environments for
+    // this phase, so the request succeeds without the header (200).
+    mockRequest = { body: validMockRequest.body };
+  },
+);
 
 Given('I generate an issue reader cert request without a CSR', () => {
   // Send a body with no csrPem to exercise CSR validation. App Check JWT
