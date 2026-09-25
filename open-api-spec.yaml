@@ -12,16 +12,6 @@ info:
     phase. While disabled, the header is optional and its JWT is not verified,
     and requests are accepted or rejected on CSR validity alone.
 
-servers:
-  - url: 'https://{apiId}.execute-api.{region}.amazonaws.com/{stage}'
-    variables:
-      apiId:
-        default: 'api-id'
-      region:
-        default: 'eu-west-2'
-      stage:
-        default: 'dev'
-
 paths:
   /issue-reader-cert:
     post:
