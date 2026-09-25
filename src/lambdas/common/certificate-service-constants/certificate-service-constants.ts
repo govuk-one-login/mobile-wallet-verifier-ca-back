@@ -62,14 +62,19 @@ export const EXPECTED_ISSUER_AND_SUBJECT_NAME = {
 } as const;
 export const EXPECTED_ISSUER_CN = 'GOVUK Mobile Wallet GovVerifier CA';
 
-// Leaf (L4) validity. We request 90 DAYS; ACM PCA backdates notBefore by 60
-// minutes while setting notAfter 90 days after issuance, so the issued span is
-// 90 days + 1 hour. Validation centres on that span with a small tolerance.
-// See AWS IssueCertificate API (ValidityNotBefore).
-export const NINETY_DAYS_IN_MS = 90 * 24 * 60 * 60 * 1000;
-export const PCA_NOT_BEFORE_BACKDATE_MS = 60 * 60 * 1000; // PCA default: issuance - 60 min
+// Leaf (L4) validity. We request 90 DAYS via IssueCertificate and do not set
+// ValidityNotBefore, so PCA applies its default: notBefore is backdated 60
+// minutes and notAfter is 90 days after issuance, giving an issued span of
+// 90 days + 1 hour. We do not change PCA's behaviour; the constants below just
+// describe it so validation can check the issued span.
+// To change the validity length, change LEAF_VALIDITY_MS and the issuance
+// Validity value in certificate-service.ts.
+// See AWS IssueCertificate API (Validity and ValidityNotBefore).
+export const LEAF_VALIDITY_MS = 90 * 24 * 60 * 60 * 1000;
+// PCA's own default, not something we set: notBefore = issuance - 60 min.
+export const PCA_NOT_BEFORE_BACKDATE_MS = 60 * 60 * 1000;
 export const EXPECTED_VALIDITY_SPAN_MS =
-  NINETY_DAYS_IN_MS + PCA_NOT_BEFORE_BACKDATE_MS;
+  LEAF_VALIDITY_MS + PCA_NOT_BEFORE_BACKDATE_MS;
 export const VALIDITY_TOLERANCE_MS = 5 * 60 * 1000; // 5 minutes
 export const VALIDITY_SPAN_MIN_MS =
   EXPECTED_VALIDITY_SPAN_MS - VALIDITY_TOLERANCE_MS;

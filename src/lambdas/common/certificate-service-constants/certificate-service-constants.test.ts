@@ -11,7 +11,7 @@ import {
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
   EXPECTED_ISSUER_CN,
-  NINETY_DAYS_IN_MS,
+  LEAF_VALIDITY_MS,
   PCA_NOT_BEFORE_BACKDATE_MS,
   EXPECTED_VALIDITY_SPAN_MS,
   VALIDITY_TOLERANCE_MS,
@@ -110,10 +110,10 @@ describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
   });
 });
 
-describe('NINETY_DAYS_IN_MS', () => {
+describe('LEAF_VALIDITY_MS', () => {
   it('Is 7776000000 milliseconds', () => {
-    expect(NINETY_DAYS_IN_MS).toEqual(90 * 24 * 60 * 60 * 1000);
-    expect(NINETY_DAYS_IN_MS).toEqual(7776000000);
+    expect(LEAF_VALIDITY_MS).toEqual(90 * 24 * 60 * 60 * 1000);
+    expect(LEAF_VALIDITY_MS).toEqual(7776000000);
   });
 });
 
@@ -126,7 +126,7 @@ describe('PCA_NOT_BEFORE_BACKDATE_MS', () => {
 describe('EXPECTED_VALIDITY_SPAN_MS', () => {
   it('Is 90 days plus the PCA notBefore backdate (90 days + 1 hour)', () => {
     expect(EXPECTED_VALIDITY_SPAN_MS).toEqual(
-      NINETY_DAYS_IN_MS + PCA_NOT_BEFORE_BACKDATE_MS,
+      LEAF_VALIDITY_MS + PCA_NOT_BEFORE_BACKDATE_MS,
     );
     expect(EXPECTED_VALIDITY_SPAN_MS).toEqual(7779600000);
   });

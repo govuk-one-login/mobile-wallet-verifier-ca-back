@@ -27,7 +27,7 @@ import {
   id_ce_authorityKeyIdentifier,
 } from '@peculiar/asn1-x509';
 import {
-  NINETY_DAYS_IN_MS,
+  LEAF_VALIDITY_MS,
   PCA_NOT_BEFORE_BACKDATE_MS,
   EXPECTED_VALIDITY_SPAN_MS,
   VALIDITY_SPAN_MAX_MS,
@@ -577,7 +577,7 @@ describe('validateLeafCertificate', () => {
           const notBefore = new Date(
             issuance.getTime() - PCA_NOT_BEFORE_BACKDATE_MS,
           );
-          const notAfter = new Date(issuance.getTime() + NINETY_DAYS_IN_MS);
+          const notAfter = new Date(issuance.getTime() + LEAF_VALIDITY_MS);
           const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
             MOCK_CSR_SUBJECT_CN,
             { notBefore, notAfter },
