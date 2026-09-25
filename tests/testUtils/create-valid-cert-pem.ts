@@ -9,7 +9,7 @@ import {
 import {
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
   EXPECTED_ISSUER_CN,
-  TWENTY_FOUR_HOURS_IN_MS,
+  EXPECTED_VALIDITY_SPAN_MS,
 } from '../../src/lambdas/common/certificate-service-constants/certificate-service-constants.ts';
 
 type CertKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
@@ -44,7 +44,8 @@ export async function createValidCertPem(
 
   const notBefore = options.notBefore ?? new Date(Date.now() - 60 * 60 * 1000);
   const notAfter =
-    options.notAfter ?? new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS);
+    options.notAfter ??
+    new Date(notBefore.getTime() + EXPECTED_VALIDITY_SPAN_MS);
   const issuerName = options.issuerName ?? DEFAULT_ISSUER_NAME;
 
   if (options.subjectCn || options.subjectName) {
@@ -107,7 +108,8 @@ export async function createCaAndLeafCertPem(
   const signingAlgorithm: EcdsaParams = { name: 'ECDSA', hash: 'SHA-256' };
   const notBefore = options.notBefore ?? new Date(Date.now() - 60 * 60 * 1000);
   const notAfter =
-    options.notAfter ?? new Date(notBefore.getTime() + TWENTY_FOUR_HOURS_IN_MS);
+    options.notAfter ??
+    new Date(notBefore.getTime() + EXPECTED_VALIDITY_SPAN_MS);
 
   const caCert = await X509CertificateGenerator.createSelfSigned({
     name: DEFAULT_ISSUER_NAME,

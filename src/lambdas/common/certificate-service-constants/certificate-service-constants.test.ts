@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { AsnConvert } from '@peculiar/asn1-schema';
+import { SubjectInfoAccessSyntax } from '@peculiar/asn1-x509';
 import {
   SIGNING_ALGORITHM,
   TEMPLATE_ARN,
@@ -9,8 +11,16 @@ import {
   EXPECTED_SIGNATURE_ALGORITHM_OID,
   EXPECTED_ISSUER_AND_SUBJECT_NAME,
   EXPECTED_ISSUER_CN,
-  TWENTY_FOUR_HOURS_IN_MS,
-  TWENTY_FIVE_HOURS_IN_MS,
+  LEAF_VALIDITY_MS,
+  PCA_NOT_BEFORE_BACKDATE_MS,
+  EXPECTED_VALIDITY_SPAN_MS,
+  VALIDITY_TOLERANCE_MS,
+  VALIDITY_SPAN_MIN_MS,
+  VALIDITY_SPAN_MAX_MS,
+  PRIVACY_POLICY_URL,
+  SUBJECT_INFO_ACCESS_OID,
+  PRIVACY_POLICY_ACCESS_METHOD_OID,
+  PRIVACY_POLICY_SIA_DER_BASE64,
   MIN_BYTE_LENGTH,
   MAX_BYTE_LENGTH,
   CURVE_P384_OID_DER,
@@ -100,15 +110,91 @@ describe('EXPECTED_ISSUER_AND_SUBJECT_NAME', () => {
   });
 });
 
-describe('TWENTY_FOUR_HOURS_IN_MS', () => {
-  it('Is 86400000 milliseconds', () => {
-    expect(TWENTY_FOUR_HOURS_IN_MS).toEqual(86400000);
+describe('LEAF_VALIDITY_MS', () => {
+  it('Is 7776000000 milliseconds', () => {
+    expect(LEAF_VALIDITY_MS).toEqual(90 * 24 * 60 * 60 * 1000);
+    expect(LEAF_VALIDITY_MS).toEqual(7776000000);
   });
 });
 
-describe('TWENTY_FIVE_HOURS_IN_MS', () => {
-  it('Is 90000000 milliseconds', () => {
-    expect(TWENTY_FIVE_HOURS_IN_MS).toEqual(90000000);
+describe('PCA_NOT_BEFORE_BACKDATE_MS', () => {
+  it('Is 60 minutes in milliseconds (PCA default notBefore backdate)', () => {
+    expect(PCA_NOT_BEFORE_BACKDATE_MS).toEqual(60 * 60 * 1000);
+  });
+});
+
+describe('EXPECTED_VALIDITY_SPAN_MS', () => {
+  it('Is 90 days plus the PCA notBefore backdate (90 days + 1 hour)', () => {
+    expect(EXPECTED_VALIDITY_SPAN_MS).toEqual(
+      LEAF_VALIDITY_MS + PCA_NOT_BEFORE_BACKDATE_MS,
+    );
+    expect(EXPECTED_VALIDITY_SPAN_MS).toEqual(7779600000);
+  });
+});
+
+describe('VALIDITY_TOLERANCE_MS', () => {
+  it('Is 5 minutes in milliseconds', () => {
+    expect(VALIDITY_TOLERANCE_MS).toEqual(5 * 60 * 1000);
+  });
+});
+
+describe('VALIDITY_SPAN_MIN_MS', () => {
+  it('Is the expected span minus the tolerance', () => {
+    expect(VALIDITY_SPAN_MIN_MS).toEqual(
+      EXPECTED_VALIDITY_SPAN_MS - VALIDITY_TOLERANCE_MS,
+    );
+  });
+});
+
+describe('VALIDITY_SPAN_MAX_MS', () => {
+  it('Is the expected span plus the tolerance', () => {
+    expect(VALIDITY_SPAN_MAX_MS).toEqual(
+      EXPECTED_VALIDITY_SPAN_MS + VALIDITY_TOLERANCE_MS,
+    );
+  });
+});
+
+describe('PRIVACY_POLICY_URL', () => {
+  it('Is an https URL', () => {
+    expect(PRIVACY_POLICY_URL.startsWith('https://')).toBe(true);
+  });
+
+  it('Is well-formed (https, host, no userinfo, ASCII, <=2048 chars)', () => {
+    const url = new URL(PRIVACY_POLICY_URL);
+    expect(url.protocol).toBe('https:');
+    expect(url.hostname.length).toBeGreaterThan(0);
+    expect(url.username).toBe('');
+    expect(url.password).toBe('');
+    // eslint-disable-next-line no-control-regex
+    expect(/^[\x00-\x7F]*$/.test(PRIVACY_POLICY_URL)).toBe(true); // Assert ASCII only
+    expect(PRIVACY_POLICY_URL).not.toContain(' ');
+    expect(PRIVACY_POLICY_URL.length).toBeLessThanOrEqual(2048);
+  });
+});
+
+describe('SUBJECT_INFO_ACCESS_OID', () => {
+  it('Is "1.3.6.1.5.5.7.1.11" (id-pe-subjectInfoAccess)', () => {
+    expect(SUBJECT_INFO_ACCESS_OID).toEqual('1.3.6.1.5.5.7.1.11');
+  });
+});
+
+describe('PRIVACY_POLICY_ACCESS_METHOD_OID', () => {
+  it('Is the GDS-owned OID "1.3.6.1.4.1.66559.1.1"', () => {
+    expect(PRIVACY_POLICY_ACCESS_METHOD_OID).toEqual('1.3.6.1.4.1.66559.1.1');
+  });
+});
+
+describe('PRIVACY_POLICY_SIA_DER_BASE64', () => {
+  it('Decodes to a SIA entry carrying the access-method OID and the privacy policy URL', () => {
+    const sia = AsnConvert.parse(
+      Buffer.from(PRIVACY_POLICY_SIA_DER_BASE64, 'base64'),
+      SubjectInfoAccessSyntax,
+    );
+    expect(sia).toHaveLength(1);
+    expect(sia[0].accessMethod).toEqual(PRIVACY_POLICY_ACCESS_METHOD_OID);
+    expect(sia[0].accessLocation.uniformResourceIdentifier).toEqual(
+      PRIVACY_POLICY_URL,
+    );
   });
 });
 
