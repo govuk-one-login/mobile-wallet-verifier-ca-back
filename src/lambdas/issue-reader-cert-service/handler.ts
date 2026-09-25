@@ -11,7 +11,10 @@ import {
   IssueReaderCertDependencies,
 } from './handler-dependencies.ts';
 import { getIssueReaderCertConfig } from './config.ts';
-import { validateEvent } from './validate-event.ts';
+import {
+  validateEventAppCheckHeader,
+  validateEventBody,
+} from './validate-event.ts';
 import { ExpectedAppCheckJwtData } from './verify-app-check-jwt/verify-app-check-jwt.ts';
 import { ErrorCategory } from '../common/result/result.ts';
 import {
@@ -37,31 +40,45 @@ export const handlerConstructor = async (
   }
   const config = configResult.value;
 
-  const validateEventResult = validateEvent(event.headers, event.body);
-  if (validateEventResult.isError) {
-    return unauthorizedResponse(validateEventResult.value);
-  }
-  const { firebaseAppCheckJwt, csrPem } = validateEventResult.value;
-
-  const expectedAppCheckJwtData: ExpectedAppCheckJwtData = {
-    algorithm: config.ALGORITHM,
-    allowedAppIds: config.ALLOWED_APP_IDS,
-    audience: config.AUDIENCE,
-    issuer: config.ISSUER,
-  };
-  const verifyAppCheckJwtResult = await dependencies.verifyAppCheckJwt(
-    firebaseAppCheckJwt,
-    config.FIREBASE_JWKS_URI,
-    expectedAppCheckJwtData,
-  );
-  if (verifyAppCheckJwtResult.isError) {
-    if (
-      verifyAppCheckJwtResult.value.errorCategory === ErrorCategory.SERVER_ERROR
-    ) {
-      return serverErrorResponse;
+  // Firebase App Check JWT validation is gated behind a feature flag.
+  // See the "Feature Flags" section in the README for more info
+  if (config.ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION) {
+    const validateAppCheckHeaderResult = validateEventAppCheckHeader(
+      event.headers,
+    );
+    if (validateAppCheckHeaderResult.isError) {
+      return unauthorizedResponse(validateAppCheckHeaderResult.value);
     }
-    return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
+    const firebaseAppCheckJwt = validateAppCheckHeaderResult.value;
+
+    const expectedAppCheckJwtData: ExpectedAppCheckJwtData = {
+      algorithm: config.ALGORITHM,
+      allowedAppIds: config.ALLOWED_APP_IDS,
+      audience: config.AUDIENCE,
+      issuer: config.ISSUER,
+    };
+    const verifyAppCheckJwtResult = await dependencies.verifyAppCheckJwt(
+      firebaseAppCheckJwt,
+      config.FIREBASE_JWKS_URI,
+      expectedAppCheckJwtData,
+    );
+
+    if (verifyAppCheckJwtResult.isError) {
+      if (
+        verifyAppCheckJwtResult.value.errorCategory ===
+        ErrorCategory.SERVER_ERROR
+      ) {
+        return serverErrorResponse;
+      }
+      return unauthorizedResponse(verifyAppCheckJwtResult.value.errorMessage);
+    }
   }
+
+  const validateEventBodyResult = validateEventBody(event.body);
+  if (validateEventBodyResult.isError) {
+    return badRequestResponse(validateEventBodyResult.value);
+  }
+  const csrPem = validateEventBodyResult.value;
 
   const validateCsrResult = await validateCsr(csrPem);
   if (validateCsrResult.isError) {

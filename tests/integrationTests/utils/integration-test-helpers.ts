@@ -1,13 +1,8 @@
-import { decodeJwt, decodeProtectedHeader } from 'jose';
 import {
   getApiGatewayApiInstance,
   getMockServicesApiInstance,
 } from './api-instance.ts';
 import type { HttpResponseSnapshot } from './api-instance.ts';
-import {
-  createKeyPair,
-  createSignedJwt,
-} from '../../testUtils/create-signed-jwt.ts';
 
 const ISSUE_READER_CERT_PATH = '/issue-reader-cert';
 const MOCK_ISSUE_CERT_REQUEST_PATH = '/mock-issue-cert-request';
@@ -49,16 +44,29 @@ export async function requestMockIssueReaderCertRequest(): Promise<MockIssueRead
   return parsedResponse;
 }
 
+export interface IssueReaderCertRequest {
+  headers?: {
+    'X-Firebase-AppCheck'?: string;
+  };
+  body: unknown;
+}
+
 export async function requestIssueReaderCert(
-  mockRequest: MockIssueReaderCertRequest,
+  request: IssueReaderCertRequest,
 ): Promise<HttpResponseSnapshot> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  const appCheckJwt = request.headers?.['X-Firebase-AppCheck'];
+  if (appCheckJwt !== undefined) {
+    headers['X-Firebase-AppCheck'] = appCheckJwt;
+  }
+
   return getApiGatewayApiInstance().post(
     ISSUE_READER_CERT_PATH,
-    JSON.stringify(mockRequest.body),
-    {
-      'Content-Type': 'application/json',
-      'X-Firebase-AppCheck': mockRequest.headers['X-Firebase-AppCheck'],
-    },
+    JSON.stringify(request.body),
+    headers,
   );
 }
 
@@ -92,20 +100,4 @@ function isMockIssueReaderCertRequest(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-export async function createUntrustedFirebaseAppCheckJwt(
-  firebaseAppCheckJwt: string,
-): Promise<string> {
-  const firebaseHeader = decodeProtectedHeader(firebaseAppCheckJwt);
-  const firebasePayload = decodeJwt(firebaseAppCheckJwt);
-  const { privateKey } = await createKeyPair();
-
-  return createSignedJwt(privateKey, {
-    audience: (firebasePayload.aud as string[])[0],
-    expOffsetSeconds: 3600,
-    issuer: firebasePayload.iss,
-    kid: firebaseHeader.kid,
-    subject: firebasePayload.sub,
-  });
 }

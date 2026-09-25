@@ -8,6 +8,7 @@ import {
   testEnvironmentParameter,
   testRequiredParameters,
   testRequiredOutputs,
+  ENVIRONMENT_VALUES,
 } from './cfn-test-utils';
 
 describe('Application Infrastructure', () => {
@@ -102,6 +103,43 @@ describe('Application Infrastructure', () => {
       expect(vpcConfig.SecurityGroupIds).toBeDefined();
       expect(vpcConfig.SubnetIds).toBeDefined();
     });
+  });
+
+  describe('Firebase App Check feature flag', () => {
+    it('wires ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION from the EnvironmentVariables mapping', () => {
+      const properties = (
+        template.Resources.IssueReaderCertServiceFunction as Record<
+          string,
+          unknown
+        >
+      ).Properties as Record<string, unknown>;
+      const environment = properties.Environment as Record<string, unknown>;
+      const variables = environment.Variables as Record<string, unknown>;
+
+      expect(variables.ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION).toEqual({
+        'Fn::FindInMap': [
+          'EnvironmentVariables',
+          { Ref: 'Environment' },
+          'EnableFirebaseAppCheckJwtValidation',
+        ],
+      });
+    });
+
+    it.each(ENVIRONMENT_VALUES)(
+      "has Firebase App Check JWT validation disabled in the '%s' environment",
+      (environmentName) => {
+        const environmentVariables = (
+          template.Mappings?.EnvironmentVariables as Record<
+            string,
+            Record<string, unknown>
+          >
+        )[environmentName];
+
+        expect(environmentVariables.EnableFirebaseAppCheckJwtValidation).toBe(
+          'false',
+        );
+      },
+    );
   });
 
   describe('IAM Role', () => {

@@ -8,10 +8,9 @@ This Repository contains a service (lambda function) to operate a private certif
 
 #### Issue Reader Certificate Service (`/issue-reader-cert`)
 
-Issues X.509 reader certificates (90-day validity) after verifying:
+Issues X.509 reader certificates (90-day validity) after validating the Certificate Signing Request (CSR).
 
-- Firebase App Check token (via `X-Firebase-AppCheck` header)
-- Certificate Signing Request (CSR) validation
+Optionally, the service also verifies a Firebase App Check token (via the `X-Firebase-AppCheck` header). This verification is gated behind the `ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION` feature flag and is currently disabled in every environment, so the header is optional. See [Feature Flags](#feature-flags).
 
 The issued leaf certificate carries the DVS privacy policy URL in a non-critical Subject Information Access (SIA) extension, and the response returns the full certificate chain up to the Root CA.
 
@@ -31,6 +30,19 @@ The issued leaf certificate carries the DVS privacy policy URL in a non-critical
   }
 }
 ```
+
+## Feature Flags
+
+### `ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION`
+
+Controls whether the `/issue-reader-cert` endpoint enforces Firebase App Check JWT validation.
+
+- When `'true'`, the `X-Firebase-AppCheck` header is mandatory and its JWT is verified (signature, `iss`, `aud`, `sub`, `exp`, `nbf`, and replay protection) before a certificate is issued.
+- When `'false'`, the `X-Firebase-AppCheck` header is optional and the JWT is not verified. Requests are processed on CSR validity alone.
+
+The flag is currently set to `'false'` in every environment.
+
+This is part of the Reader Auth Trust Anchor Provisioning work, which repurposes this backend into a Test DVS backend for internal Wallet Sharing verification testing. Making the header optional lets that testing proceed ahead of the SigV4 authentication layer that will replace Firebase App Check. SigV4 is out of scope for this change.
 
 ## Pre-requisites
 
@@ -186,10 +198,13 @@ You can use this payload directly to test the `/issue-reader-cert` endpoint.
 
 #### Deployment
 
-The service automatically configures:
+The service automatically configures the Firebase App Check JWKS endpoint used
+when `ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION` is enabled (see [Feature Flags](#feature-flags)).
+While the flag is disabled, as it currently is in every environment, this JWKS
+endpoint is not used:
 
-- **Dev/Build environments**: Uses mock JWKS endpoint for Firebase App Check token verification
-- **Production environments**: Uses official Firebase App Check JWKS endpoint
+- **Dev/Build environments**: mock JWKS endpoint
+- **Production environments**: official Firebase App Check JWKS endpoint
 
 #### Issuing CA ARN (resolved from SSM)
 

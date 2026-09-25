@@ -10,6 +10,7 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
   'FIREBASE_JWKS_URI',
   'ISSUER',
   'CERTIFICATE_AUTHORITY_ARN',
+  'ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION',
 ] as const;
 
 export type IssueReaderCertConfig = {
@@ -19,6 +20,7 @@ export type IssueReaderCertConfig = {
   ISSUER: string;
   FIREBASE_JWKS_URI: string;
   CERTIFICATE_AUTHORITY_ARN: string;
+  ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION: boolean;
 };
 
 export function getIssueReaderCertConfig(
@@ -64,10 +66,23 @@ export function getIssueReaderCertConfig(
     return emptyFailure();
   }
 
+  const parsedEnableFirebaseAppCheckJwtValidation = parseBoolean(
+    envVarsResult.value.ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION,
+  );
+  if (parsedEnableFirebaseAppCheckJwtValidation === null) {
+    logger.error(LogMessage.ISSUE_READER_CERT_INVALID_CONFIG, {
+      errorMessage:
+        'ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION must be "true" or "false"',
+    });
+    return emptyFailure();
+  }
+
   return successResult({
     ...envVarsResult.value, // Spread all basic string envVars
     ALLOWED_APP_IDS: parsedAllowedAppIds,
     AUDIENCE: parsedAudience,
+    ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION:
+      parsedEnableFirebaseAppCheckJwtValidation,
   });
 }
 
@@ -95,4 +110,15 @@ function parseJsonStringArray(value: string): string[] | null {
     return null;
   }
   return parsedValue;
+}
+
+function parseBoolean(value: string): boolean | null {
+  const normalisedValue = value.trim().toLowerCase();
+  if (normalisedValue === 'true') {
+    return true;
+  }
+  if (normalisedValue === 'false') {
+    return false;
+  }
+  return null;
 }

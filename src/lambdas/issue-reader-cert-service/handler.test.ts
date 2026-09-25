@@ -65,6 +65,7 @@ describe('Handler', () => {
     ISSUER: 'https://mockIssuer.com/',
     CERTIFICATE_AUTHORITY_ARN:
       'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111',
+    ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION: 'false',
   };
   let consoleInfoSpy: MockInstance;
   let consoleErrorSpy: MockInstance;
@@ -290,59 +291,178 @@ describe('Handler', () => {
         });
       });
     });
+
+    describe('Given ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION cannot be parsed into a boolean', () => {
+      beforeEach(async () => {
+        dependencies.env = JSON.parse(JSON.stringify(env));
+        dependencies.env['ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION'] =
+          'notabool';
+        result = await handlerConstructor(dependencies, event, context);
+      });
+
+      it('logs INVALID_CONFIG', async () => {
+        expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_CONFIG',
+          errorMessage:
+            'ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION must be "true" or "false"',
+        });
+      });
+
+      it('returns 500 Internal server error', async () => {
+        expect(result).toStrictEqual({
+          headers: { 'Content-Type': 'application/json' },
+          statusCode: 500,
+          body: JSON.stringify({
+            code: 'server_error',
+            message: 'Server Error',
+          }),
+        });
+      });
+    });
   });
 
-  describe('Event validation', () => {
-    describe('Given headers are invalid', () => {
-      describe.each([
-        {
-          scenario: 'Given there are no headers in the event',
-          headers: undefined,
-        },
-        {
-          scenario:
-            'Given X-Firebase-AppCheck header is not present in the event',
-          headers: { mockHeader: 'mockValue' },
-        },
-        {
-          scenario: 'Given X-Firebase-AppCheck header is an empty string',
-          headers: { 'X-Firebase-AppCheck': '' },
-        },
-        {
-          scenario:
-            'Given X-Firebase-AppCheck header is an empty string with whitespace',
-          headers: { 'X-Firebase-AppCheck': '  ' },
-        },
-      ])('$scenario', ({ headers }) => {
+  describe('App Check JWT verification', () => {
+    describe("Given ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION is 'false'", () => {
+      beforeEach(() => {
+        dependencies.env = {
+          ...env,
+          ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION: 'false',
+        };
+      });
+
+      describe('Given a request without the X-Firebase-AppCheck header', () => {
         beforeEach(async () => {
-          const invalidEvent = buildEvent({ headers });
-          result = await handlerConstructor(
-            dependencies,
-            invalidEvent,
-            context,
-          );
+          event = buildEvent({
+            body: JSON.stringify({ csrPem: validCsrPem }),
+          });
+          result = await handlerConstructor(dependencies, event, context);
         });
 
-        it('Log an INVALID_EVENT error', () => {
-          expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+        it('Does not call verifyAppCheckJwt', () => {
+          expect(dependencies.verifyAppCheckJwt).not.toHaveBeenCalled();
+        });
+
+        it('Does not log a missing header INVALID_EVENT error', () => {
+          expect(consoleErrorSpy).not.toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
             errorMessage: 'X-Firebase-AppCheck header missing from event',
           });
         });
 
-        it('Return 401 Unauthorized response', () => {
+        it('Returns 200 OK response', () => {
+          expect(result.statusCode).toBe(200);
+        });
+      });
+    });
+
+    describe("Given ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION is 'true'", () => {
+      beforeEach(() => {
+        dependencies.env = {
+          ...env,
+          ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION: 'true',
+        };
+      });
+
+      describe('Given the X-Firebase-AppCheck header is invalid', () => {
+        describe.each([
+          {
+            scenario: 'Given there are no headers in the event',
+            headers: undefined,
+          },
+          {
+            scenario:
+              'Given X-Firebase-AppCheck header is not present in the event',
+            headers: { mockHeader: 'mockValue' },
+          },
+          {
+            scenario: 'Given X-Firebase-AppCheck header is an empty string',
+            headers: { 'X-Firebase-AppCheck': '' },
+          },
+          {
+            scenario:
+              'Given X-Firebase-AppCheck header is an empty string with whitespace',
+            headers: { 'X-Firebase-AppCheck': '  ' },
+          },
+        ])('$scenario', ({ headers }) => {
+          beforeEach(async () => {
+            const invalidEvent = buildEvent({
+              headers,
+              body: JSON.stringify({ csrPem: validCsrPem }),
+            });
+            result = await handlerConstructor(
+              dependencies,
+              invalidEvent,
+              context,
+            );
+          });
+
+          it('Log an INVALID_EVENT error', () => {
+            expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
+              messageCode: 'MOBILE_CA_ISSUE_READER_CERT_INVALID_EVENT',
+              errorMessage: 'X-Firebase-AppCheck header missing from event',
+            });
+          });
+
+          it('Return 401 Unauthorized response', () => {
+            expect(result).toStrictEqual({
+              headers: { 'Content-Type': 'application/json' },
+              statusCode: 401,
+              body: JSON.stringify({
+                code: 'unauthorized',
+                message: 'X-Firebase-AppCheck header missing from event',
+              }),
+            });
+          });
+        });
+      });
+
+      describe('App Check JWT verification failed with client error', () => {
+        beforeEach(async () => {
+          const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
+            issuer: 'invalidIssuer',
+          });
+          event = buildEvent({
+            headers: {
+              'X-Firebase-AppCheck': jwtWithInvalidIssuer,
+            },
+            body: JSON.stringify({ csrPem: 'MockCsrPemValue' }),
+          });
+          result = await handlerConstructor(dependencies, event, context);
+        });
+
+        it('Returns 401 unauthorized response', () => {
           expect(result).toStrictEqual({
             headers: { 'Content-Type': 'application/json' },
             statusCode: 401,
             body: JSON.stringify({
               code: 'unauthorized',
-              message: 'X-Firebase-AppCheck header missing from event',
+              message: 'App Check JWT iss claim is invalid',
+            }),
+          });
+        });
+      });
+
+      describe('App check JWT verification failed with server error', () => {
+        beforeEach(async () => {
+          mockJwksCache.getJwks = vi.fn().mockResolvedValue(emptyFailure());
+          result = await handlerConstructor(dependencies, event, context);
+        });
+
+        it('Should return 500', () => {
+          expect(result).toStrictEqual({
+            headers: { 'Content-Type': 'application/json' },
+            statusCode: 500,
+            body: JSON.stringify({
+              code: 'server_error',
+              message: 'Server Error',
             }),
           });
         });
       });
     });
+  });
 
+  describe('Body validation', () => {
     describe('Given event body is invalid', () => {
       describe.each([
         {
@@ -402,61 +522,15 @@ describe('Handler', () => {
           });
         });
 
-        it('Return 401 Unauthorized response', () => {
+        it('Return 400 Bad Request response', () => {
           expect(result).toStrictEqual({
             headers: { 'Content-Type': 'application/json' },
-            statusCode: 401,
+            statusCode: 400,
             body: JSON.stringify({
-              code: 'unauthorized',
+              code: 'bad_request',
               message: expectedErrorMessage,
             }),
           });
-        });
-      });
-    });
-  });
-
-  describe('App Check JWT verification', () => {
-    describe('App Check JWT verification failed with client error', () => {
-      beforeEach(async () => {
-        const jwtWithInvalidIssuer = await createSignedJwt(privateKey, {
-          issuer: 'invalidIssuer',
-        });
-        event = buildEvent({
-          headers: {
-            'X-Firebase-AppCheck': jwtWithInvalidIssuer,
-          },
-          body: JSON.stringify({ csrPem: 'MockCsrPemValue' }),
-        });
-        result = await handlerConstructor(dependencies, event, context);
-      });
-
-      it('Returns 401 unauthorized response', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 401,
-          body: JSON.stringify({
-            code: 'unauthorized',
-            message: 'App Check JWT iss claim is invalid',
-          }),
-        });
-      });
-    });
-
-    describe('App check JWT verification failed with server error', () => {
-      beforeEach(async () => {
-        mockJwksCache.getJwks = vi.fn().mockResolvedValue(emptyFailure());
-        result = await handlerConstructor(dependencies, event, context);
-      });
-
-      it('Should return 500', () => {
-        expect(result).toStrictEqual({
-          headers: { 'Content-Type': 'application/json' },
-          statusCode: 500,
-          body: JSON.stringify({
-            code: 'server_error',
-            message: 'Server Error',
-          }),
         });
       });
     });
@@ -803,8 +877,18 @@ describe('Handler', () => {
   });
 
   describe('Happy path tests', () => {
-    describe('Given a valid event', () => {
+    describe('Given a valid event with Firebase App Check validation enabled', () => {
       beforeEach(async () => {
+        dependencies.env = {
+          ...env,
+          ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION: 'true',
+        };
+        event = buildEvent({
+          headers: {
+            'X-Firebase-AppCheck': validFireBaseJwt,
+          },
+          body: JSON.stringify({ csrPem: validCsrPem }),
+        });
         result = await handlerConstructor(dependencies, event, context);
       });
 
@@ -821,6 +905,16 @@ describe('Handler', () => {
             issuer: dependencies.env.ISSUER,
           },
         );
+      });
+
+      it('Returns 200 OK response', () => {
+        expect(result.statusCode).toBe(200);
+      });
+    });
+
+    describe('Given a valid event', () => {
+      beforeEach(async () => {
+        result = await handlerConstructor(dependencies, event, context);
       });
 
       it('Calls certificate functions with correct parameters', () => {

@@ -1,41 +1,45 @@
 openapi: 3.0.3
 info:
-  title: Gov Checker CA Backend – Reader Certificate API
-  version: '1.0.0'
+  title: Test DVS CA Backend - Reader Certificate API
+  version: '2.0.0'
   description: |
-    Issues reader certificates (valid for 90 days) for Verifier Apps.
-    Authentication model:
-    - The Verifier App generates a keypair locally.
-    - The app obtains a Firebase App Check token.
-    - The App Check JWT is sent in the HTTP header:
-        X-Firebase-AppCheck: <JWT>
-    - The CA Backend validates the Firebase App Check token by:
-        * Fetching JWKS from Firebase (cached, TTL ~6h)
-        * Verifying JWT signature
-        * Validating iss, aud, sub, exp, and nbf claims
-        * Applying replay protection using jti cache
-    - If authentication succeeds, the backend validates the CSR (PKCS#10)
-      and issues a reader certificate.
+    Issues reader certificates (valid for 90 days) for the Test Verifier.
+
+    The X-Firebase-AppCheck header is a deprecated legacy header. Firebase App
+    Check JWT validation is gated behind the
+    ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION feature flag, which is currently
+    disabled in all environments for the Reader Auth Trust Anchor Provisioning
+    phase. While disabled, the header is optional and its JWT is not verified,
+    and requests are accepted or rejected on CSR validity alone.
 
 servers:
-  - url: https://api.example.com
+  - url: 'https://{apiId}.execute-api.{region}.amazonaws.com/{stage}'
+    variables:
+      apiId:
+        default: 'api-id'
+      region:
+        default: 'eu-west-2'
+      stage:
+        default: 'dev'
 
 paths:
   /issue-reader-cert:
     post:
-      summary: Issue reader certificate
+      summary: Issue a reader certificate
       description: |
-        Issues an X.509 reader certificate valid for 90 days.
-        Requirements:
-        - A valid Firebase App Check JWT must be provided in the
-          X-Firebase-AppCheck header.
-        - The CSR must be a valid PKCS#10 request.
+        Issues an X.509 reader certificate valid for 90 days. Validity is fixed by
+        server policy and is not requested by the caller.
+
+        The X-Firebase-AppCheck header is optional and deprecated. It is only
+        validated when the ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION feature flag
+        is enabled, which is not the case in any environment during this phase.
       operationId: issueReaderCert
       parameters:
         - name: X-Firebase-AppCheck
           in: header
-          required: true
-          description: Firebase App Check JWT issued for this application instance.
+          required: false
+          deprecated: true
+          description: Legacy header, retained for backwards compatibility. Not required.
           schema:
             type: string
       requestBody:
@@ -44,11 +48,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/IssueReaderCertRequest'
-            example:
-              csrPem: |
-                -----BEGIN CERTIFICATE REQUEST-----
-                MIIC...
-                -----END CERTIFICATE REQUEST-----
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
@@ -57,31 +56,31 @@ paths:
         passthroughBehavior: when_no_match
       responses:
         '200':
-          description: Reader certificate issued successfully
+          description: Certificate issued.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/IssueReaderCertResponse'
         '400':
-          description: Invalid request (bad CSR, malformed JSON, missing fields)
+          description: Invalid request (bad CSR, malformed JSON, missing fields).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Authentication failed (App Check token missing or invalid)
+          description: Authentication failed (App Check token invalid when validation is enabled).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '429':
-          description: Too many requests (rate limited or throttled)
+          description: Too many requests (rate limited or throttled).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Internal server error (e.g., JWKS fetch failure, signing failure)
+          description: Internal server error (e.g., JWKS fetch failure, signing failure).
           content:
             application/json:
               schema:
@@ -116,6 +115,9 @@ components:
           description: |
             PEM-encoded certificate chain, leaf first, followed by the issuing
             CA certificates up to and including the Root CA certificate.
+
+            The leaf carries the DVS privacy policy URL in a non-critical Subject
+            Information Access (SIA) extension, OID 1.3.6.1.4.1.66559.1.1.
     ErrorResponse:
       type: object
       required:
