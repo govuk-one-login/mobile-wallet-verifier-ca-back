@@ -588,38 +588,6 @@ describe('Handler', () => {
         },
       },
       {
-        scenario: 'Given CSR subject state or province is missing',
-        csrPemConfig: { subject: { ST: null } },
-        expectedErrorMessage: 'CSR subject ST is not London',
-        expectedLogData: {
-          subjectST: [],
-        },
-      },
-      {
-        scenario: 'Given CSR subject state or province is not London',
-        csrPemConfig: { subject: { ST: 'Manchester' } },
-        expectedErrorMessage: 'CSR subject ST is not London',
-        expectedLogData: {
-          subjectST: ['Manchester'],
-        },
-      },
-      {
-        scenario: 'Given CSR subject locality is missing',
-        csrPemConfig: { subject: { L: null } },
-        expectedErrorMessage: 'CSR subject L is not London',
-        expectedLogData: {
-          subjectL: [],
-        },
-      },
-      {
-        scenario: 'Given CSR subject locality is not London',
-        csrPemConfig: { subject: { L: 'Cardiff' } },
-        expectedErrorMessage: 'CSR subject L is not London',
-        expectedLogData: {
-          subjectL: ['Cardiff'],
-        },
-      },
-      {
         scenario: 'Given CSR subject organisation is missing',
         csrPemConfig: { subject: { O: null } },
         expectedErrorMessage: 'CSR subject O is not Government Digital Service',
@@ -680,6 +648,26 @@ describe('Handler', () => {
         expectedErrorMessage: 'CSR subject contains unsupported fields',
         expectedLogData: {
           unsupportedSubjectFields: ['E'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject ST (state or province) is present',
+        csrPemConfig: {
+          subject: { ST: 'London' },
+        },
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
+        expectedLogData: {
+          unsupportedSubjectFields: ['ST'],
+        },
+      },
+      {
+        scenario: 'Given CSR subject L (locality) is present',
+        csrPemConfig: {
+          subject: { L: 'London' },
+        },
+        expectedErrorMessage: 'CSR subject contains unsupported fields',
+        expectedLogData: {
+          unsupportedSubjectFields: ['L'],
         },
       },
     ];

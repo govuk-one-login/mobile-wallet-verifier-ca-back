@@ -35,8 +35,6 @@ describe('generateCSR', () => {
   it('should generate CSR with supported subject fields', async () => {
     const subject: CSRSubject = {
       countryName: 'GB',
-      stateOrProvinceName: 'England',
-      localityName: 'London',
       organizationName: 'Example Org',
       commonName: 'example.com',
     };
@@ -47,7 +45,7 @@ describe('generateCSR', () => {
     });
 
     expect(Pkcs10CertificateRequestGenerator.create).toHaveBeenCalledWith({
-      name: 'C=GB, ST=England, L=London, O=Example Org, CN=example.com',
+      name: 'C=GB, O=Example Org, CN=example.com',
       keys: mockCryptoKeys,
       signingAlgorithm: { name: 'ECDSA', hash: 'SHA-384' },
     });
@@ -64,8 +62,6 @@ describe('generateCSR', () => {
     const importSpy = vi.spyOn(keyPairManager, 'importECDSAKeyPair');
     const subject: CSRSubject = {
       countryName: 'GB',
-      stateOrProvinceName: 'London',
-      localityName: 'London',
       organizationName: 'Government Digital Service',
       commonName: 'example.com',
     };

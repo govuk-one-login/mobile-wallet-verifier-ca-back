@@ -14,7 +14,7 @@ import {
 
 type CertKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
 
-const DEFAULT_ISSUER_NAME = `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${EXPECTED_ISSUER_CN}`;
+const DEFAULT_ISSUER_NAME = `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${EXPECTED_ISSUER_CN}`;
 
 export interface CreateValidCertPemOptions {
   keyAlgorithm?: CertKeyAlgorithm;
@@ -50,7 +50,7 @@ export async function createValidCertPem(
   if (options.subjectCn || options.subjectName) {
     const subject =
       options.subjectName ??
-      `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${options.subjectCn}`;
+      `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${options.subjectCn}`;
     const cert = await X509CertificateGenerator.create({
       issuer: issuerName,
       subject,
@@ -122,7 +122,7 @@ export async function createCaAndLeafCertPem(
 
   const subject =
     options.subjectName ??
-    `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, ST=${EXPECTED_ISSUER_AND_SUBJECT_NAME.ST}, L=${EXPECTED_ISSUER_AND_SUBJECT_NAME.L}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${subjectCn}`;
+    `C=${EXPECTED_ISSUER_AND_SUBJECT_NAME.C}, O=${EXPECTED_ISSUER_AND_SUBJECT_NAME.O}, CN=${subjectCn}`;
   const leafCert = await X509CertificateGenerator.create({
     issuer: DEFAULT_ISSUER_NAME,
     subject,

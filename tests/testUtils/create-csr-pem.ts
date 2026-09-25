@@ -174,9 +174,9 @@ function buildSubjectName(subject: SubjectEntries = {}): string {
   const {
     C = CSR_POLICY.subject.C,
     CN = 'MockCN',
-    L = CSR_POLICY.subject.L,
+    L = null,
     O = CSR_POLICY.subject.O,
-    ST = CSR_POLICY.subject.ST,
+    ST = null,
     additionalAttributes = [],
   } = subject;
 

@@ -269,36 +269,6 @@ function validateCsrSubject(subjectName: Name): Result<string, string> {
     return errorResult(errorMessage);
   }
 
-  const subjectStateOrProvinceNames = subjectName.getField('ST');
-  if (
-    subjectStateOrProvinceNames.length !== 1 ||
-    subjectStateOrProvinceNames[0] !== CSR_POLICY.subject.ST
-  ) {
-    const errorMessage = 'CSR subject ST is not London';
-    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
-      errorMessage,
-      data: {
-        subjectST: subjectStateOrProvinceNames,
-      },
-    });
-    return errorResult(errorMessage);
-  }
-
-  const subjectLocalityNames = subjectName.getField('L');
-  if (
-    subjectLocalityNames.length !== 1 ||
-    subjectLocalityNames[0] !== CSR_POLICY.subject.L
-  ) {
-    const errorMessage = 'CSR subject L is not London';
-    logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
-      errorMessage,
-      data: {
-        subjectL: subjectLocalityNames,
-      },
-    });
-    return errorResult(errorMessage);
-  }
-
   const subjectOrganisationNames = subjectName.getField('O');
   if (
     subjectOrganisationNames.length !== 1 ||
@@ -342,7 +312,7 @@ function validateCsrSubject(subjectName: Name): Result<string, string> {
 }
 
 function getUnsupportedSubjectFields(subjectName: Name): string[] {
-  const allowedSubjectFields = new Set(['C', 'CN', 'L', 'O', 'ST']);
+  const allowedSubjectFields = new Set(['C', 'CN', 'O']);
   const subjectFields = subjectName
     .toJSON()
     .flatMap((relativeDistinguishedName) =>

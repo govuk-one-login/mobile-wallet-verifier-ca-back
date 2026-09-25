@@ -2,8 +2,6 @@ import { importECDSAKeyPair } from '../common/mock-utils/key-pair-manager';
 
 export interface CSRSubject {
   countryName: string;
-  stateOrProvinceName: string;
-  localityName: string;
   organizationName: string;
   commonName: string;
 }
@@ -21,8 +19,6 @@ export interface CSRResult {
 function buildSubjectString(subject: CSRSubject): string {
   const parts = [
     `C=${subject.countryName}`,
-    `ST=${subject.stateOrProvinceName}`,
-    `L=${subject.localityName}`,
     `O=${subject.organizationName}`,
     `CN=${subject.commonName}`,
   ];
