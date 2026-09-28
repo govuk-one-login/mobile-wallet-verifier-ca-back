@@ -123,6 +123,10 @@ Conditions:
     - !Ref Environment
     - dev
 
+  IsProdEnvironment: !Equals
+    - !Ref Environment
+    - prod
+
   CreateMonitoringResources: !Equals
     - !Ref EnableMonitoring
     - 'true'
@@ -146,6 +150,12 @@ Conditions:
     - !Equals
       - !Ref EnableWafAssociation
       - 'true'
+    - !Condition IsProdEnvironment
+
+  # Create the SigV4 access role in all non-prod envs (its trust imports the
+  # account's GitHub OIDC provider). Prod is excluded: no github-identity stack there.
+  CreateSigV4AccessRole: !Not
+    - !Condition IsProdEnvironment
 
   # Mock resources condition - only deploy in dev and build
   DeployMockResources: !Or
@@ -587,6 +597,41 @@ Resources:
                   - acm-pca:GetCertificate
                 Resource: !Sub '{{resolve:ssm:/${Environment}/GovCA/CertificateAuthorityArn}}'
 
+  # GitHub OIDC federated role for machine-to-machine SigV4 access to
+  # /issue-reader-cert. Grants temporary credentials scoped to invoking
+  # only the /issue-reader-cert endpoint.
+  SigV4AccessRole:
+    Type: AWS::IAM::Role
+    Condition: CreateSigV4AccessRole
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-${Environment}-sigv4-access-role'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !ImportValue GitHubIdentityProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - 'repo:govuk-one-login/mobile-credential-sharing-android:*'
+                  - 'repo:govuk-one-login/mobile-verifier-spike-infra:*'
+      Policies:
+        - PolicyName: InvokeIssueReaderCert
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: execute-api:Invoke
+                Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/${Environment}/POST/issue-reader-cert'
+
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -680,6 +725,19 @@ Resources:
       StageName: !Ref Environment
       OpenApiVersion: 3.0.0
       TracingEnabled: true
+      Auth:
+        ResourcePolicy:
+          CustomStatements:
+            # Allow invocation of the API. SigV4 signing is enforced by the
+            # security scheme in the OpenAPI spec; a resource policy with at
+            # least one Allow is required or the API is fully denied.
+            # /issue-reader-cert is additionally scoped to the GitHub OIDC
+            # SigV4 access role via that role's own IAM policy.
+            - Effect: Allow
+              Principal: '*'
+              Action: execute-api:Invoke
+              Resource: execute-api:/*
+              Sid: AllowSignedInvocation
       AccessLogSetting:
         DestinationArn: !GetAtt CaBackendApiAccessLogs.Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
@@ -928,4 +986,9 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-mock-issue-cert-request-endpoint'
 
-
+  SigV4AccessRoleArn:
+    Description: ARN of the GitHub OIDC SigV4 access role for /issue-reader-cert
+    Condition: CreateSigV4AccessRole
+    Value: !GetAtt SigV4AccessRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-sigv4-access-role-arn'

@@ -12,6 +12,14 @@ info:
     phase. While disabled, the header is optional and its JWT is not verified,
     and requests are accepted or rejected on CSR validity alone.
 
+    Requests must be authenticated with AWS Signature Version 4 (SigV4) against
+    the execute-api service. Callers assume an authorised IAM role (via GitHub
+    OIDC) and sign the request. Requests without a valid SigV4 signature are
+    rejected by API Gateway with a 403 response before reaching the backend.
+
+security:
+  - sigv4: []
+
 paths:
   /issue-reader-cert:
     post:
@@ -20,10 +28,16 @@ paths:
         Issues an X.509 reader certificate valid for 90 days. Validity is fixed by
         server policy and is not requested by the caller.
 
+        The request must be signed with AWS SigV4 (service: execute-api,
+        region: eu-west-2). Unsigned or invalidly signed requests are rejected
+        with 403.
+
         The X-Firebase-AppCheck header is optional and deprecated. It is only
         validated when the ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION feature flag
         is enabled, which is not the case in any environment during this phase.
       operationId: issueReaderCert
+      security:
+        - sigv4: []
       parameters:
         - name: X-Firebase-AppCheck
           in: header
@@ -57,8 +71,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Authentication failed (App Check token invalid when validation is enabled).
+        '403':
+          description: Authentication failed (missing or invalid SigV4 signature).
           content:
             application/json:
               schema:
@@ -77,6 +91,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
+  securitySchemes:
+    sigv4:
+      type: apiKey
+      name: Authorization
+      in: header
+      x-amazon-apigateway-authtype: awsSigv4
   schemas:
     IssueReaderCertRequest:
       type: object
@@ -120,3 +140,20 @@ components:
         message:
           type: string
           description: Human-readable error message.
+
+x-amazon-apigateway-gateway-responses:
+  # Returned when a request is unsigned or carries an invalid SigV4 signature.
+  # API Gateway rejects it before the request reaches the backend Lambda.
+  MISSING_AUTHENTICATION_TOKEN:
+    statusCode: 403
+    responseParameters:
+      gatewayresponse.header.Content-Type: "'application/json'"
+    responseTemplates:
+      application/json: '{"code":"forbidden","message":"Missing Authentication Token"}'
+  # Returned when the caller is authenticated but not authorised to invoke.
+  ACCESS_DENIED:
+    statusCode: 403
+    responseParameters:
+      gatewayresponse.header.Content-Type: "'application/json'"
+    responseTemplates:
+      application/json: '{"code":"forbidden","message":"Access Denied"}'

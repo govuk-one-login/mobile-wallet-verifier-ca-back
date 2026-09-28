@@ -169,6 +169,113 @@ describe('Application Infrastructure', () => {
     });
   });
 
+  describe('SigV4 GitHub OIDC access', () => {
+    it('gates the SigV4 access role behind the CreateSigV4AccessRole condition (all non-prod envs)', () => {
+      const role = template.Resources.SigV4AccessRole as Record<
+        string,
+        unknown
+      >;
+      expect(role).toBeDefined();
+      expect(role.Type).toBe('AWS::IAM::Role');
+      expect(role.Condition).toBe('CreateSigV4AccessRole');
+      expect(template.Conditions?.CreateSigV4AccessRole).toEqual({
+        'Fn::Not': [{ Condition: 'IsProdEnvironment' }],
+      });
+    });
+
+    it('trusts the imported GitHub OIDC provider with aud and hardcoded sub conditions', () => {
+      const role = template.Resources.SigV4AccessRole as Record<
+        string,
+        unknown
+      >;
+      const properties = role.Properties as Record<string, unknown>;
+      const statement = (
+        (properties.AssumeRolePolicyDocument as Record<string, unknown>)
+          .Statement as Record<string, unknown>[]
+      )[0];
+
+      const principal = statement.Principal as Record<string, unknown>;
+      expect(principal.Federated).toEqual({
+        'Fn::ImportValue': 'GitHubIdentityProviderArn',
+      });
+
+      expect(statement.Action).toBe('sts:AssumeRoleWithWebIdentity');
+      const condition = statement.Condition as Record<
+        string,
+        Record<string, unknown>
+      >;
+      expect(
+        condition.StringEquals['token.actions.githubusercontent.com:aud'],
+      ).toBe('sts.amazonaws.com');
+      expect(
+        condition.StringLike['token.actions.githubusercontent.com:sub'],
+      ).toEqual([
+        'repo:govuk-one-login/mobile-credential-sharing-android:*',
+        'repo:govuk-one-login/mobile-verifier-spike-infra:*',
+      ]);
+    });
+
+    it('scopes the role to invoking only the /issue-reader-cert path', () => {
+      const role = template.Resources.SigV4AccessRole as Record<
+        string,
+        unknown
+      >;
+      const properties = role.Properties as Record<string, unknown>;
+      const policy = (properties.Policies as Record<string, unknown>[])[0];
+      const statement = (
+        (policy.PolicyDocument as Record<string, unknown>).Statement as Record<
+          string,
+          unknown
+        >[]
+      )[0];
+
+      expect(statement.Action).toBe('execute-api:Invoke');
+      expect(JSON.stringify(statement.Resource)).toContain(
+        '/${Environment}/POST/issue-reader-cert',
+      );
+    });
+
+    it('applies a resource policy to the CA backend API', () => {
+      const api = template.Resources.CaBackendApi as Record<string, unknown>;
+      const auth = (api.Properties as Record<string, unknown>).Auth as Record<
+        string,
+        unknown
+      >;
+      expect(auth).toBeDefined();
+      const resourcePolicy = auth.ResourcePolicy as Record<string, unknown>;
+      const statements = resourcePolicy.CustomStatements as Record<
+        string,
+        unknown
+      >[];
+      expect(statements.length).toBeGreaterThanOrEqual(1);
+      expect(statements[0].Action).toBe('execute-api:Invoke');
+    });
+  });
+
+  describe('WAF cloaking association', () => {
+    it('associates the cloaking WebACL only in prod', () => {
+      expect(template.Conditions?.IsProdEnvironment).toEqual({
+        'Fn::Equals': [{ Ref: 'Environment' }, 'prod'],
+      });
+
+      const associateWebACL = template.Conditions?.AssociateWebACL as Record<
+        string,
+        unknown
+      >;
+      const andClauses = associateWebACL['Fn::And'] as Record<
+        string,
+        unknown
+      >[];
+      expect(andClauses).toContainEqual({ Condition: 'IsProdEnvironment' });
+    });
+
+    it('keeps the WebACL association resource gated on AssociateWebACL', () => {
+      const association = template.Resources
+        .ApiGatewayWebACLAssociation as Record<string, unknown>;
+      expect(association.Condition).toBe('AssociateWebACL');
+    });
+  });
+
   describe('API Gateway', () => {
     let api: Record<string, unknown>;
 

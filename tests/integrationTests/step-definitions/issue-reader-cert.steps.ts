@@ -2,6 +2,7 @@ import { Before, Given, Then, When } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
 import {
   requestIssueReaderCert,
+  requestIssueReaderCertUnsigned,
   requestMockIssueReaderCertRequest,
   IssueReaderCertRequest,
 } from '../utils/integration-test-helpers.ts';
@@ -47,6 +48,19 @@ When(
   },
 );
 
+When(
+  'I submit the request to the issue reader cert endpoint without signing it',
+  { timeout: LAMBDA_TIMEOUT },
+  async () => {
+    assert.ok(
+      mockRequest,
+      'A mock issue reader certificate request must be generated first',
+    );
+
+    response = await requestIssueReaderCertUnsigned(mockRequest);
+  },
+);
+
 Then('the issue reader cert endpoint returns a 200 OK response', () => {
   assert.ok(
     response,
@@ -79,6 +93,19 @@ Then('the issue reader cert endpoint returns a 400 response', () => {
   assert.equal(
     response.status,
     400,
+    `Unexpected response from ${response.url}: ${response.body}`,
+  );
+});
+
+Then('the issue reader cert endpoint returns a 403 response', () => {
+  assert.ok(
+    response,
+    'The issue reader cert endpoint must be called before asserting on the response',
+  );
+
+  assert.equal(
+    response.status,
+    403,
     `Unexpected response from ${response.url}: ${response.body}`,
   );
 });

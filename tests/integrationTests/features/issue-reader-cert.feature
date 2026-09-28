@@ -1,5 +1,10 @@
 Feature: Issue reader certificate service
 
+  Scenario: Request without a valid SigV4 signature is rejected
+    Given I generate an issue reader cert request without an App Check JWT and a valid CSR
+    When I submit the request to the issue reader cert endpoint without signing it
+    Then the issue reader cert endpoint returns a 403 response
+
   Scenario: Request with a missing CSR is rejected
     Given I generate an issue reader cert request without a CSR
     When I submit the request to the issue reader cert endpoint
