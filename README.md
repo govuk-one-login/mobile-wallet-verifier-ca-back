@@ -12,6 +12,8 @@ Issues X.509 reader certificates (90-day validity) after validating the Certific
 
 Requests must be authenticated with AWS Signature Version 4 (SigV4). The endpoint is invoked by machine-to-machine callers that assume an IAM role (via GitHub OIDC) and sign the request. API Gateway rejects unsigned or invalidly signed requests with a 403 before they reach the backend. See [`open-api-spec.yaml`](./open-api-spec.yaml) for the exact request/response contract.
 
+The backend stack does not create or associate a WAF WebACL manually. AWS Firewall Manager attaches the organisation-managed regional WebACL to API Gateway stages covered by its policy.
+
 Optionally, the service also verifies a Firebase App Check token (via the `X-Firebase-AppCheck` header). This verification is gated behind the `ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION` feature flag and is currently disabled in every environment, so the header is optional. See [Feature Flags](#feature-flags).
 
 The issued leaf certificate carries the DVS privacy policy URL in a non-critical Subject Information Access (SIA) extension, and the response returns the full certificate chain up to the Root CA.

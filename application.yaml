@@ -52,12 +52,6 @@ Parameters:
     Type: String
     Default: ca-backend-api
 
-  CloudFrontDistributionName:
-    Description: |
-      The name of the CloudFront distribution
-    Type: String
-    Default: cloudfront-distribution
-
   # API Gateway Custom Domain Parameters
   EnableCustomDomain:
     Description: Whether to create a custom domain for API Gateway
@@ -72,16 +66,6 @@ Parameters:
       The base path for the API mapping (empty string for root, or a path like 'v1')
     Type: String
     Default: ''
-
-  EnableWafAssociation:
-    Description: |
-      Whether to associate the Cloaking WAF WebACL with the API Gateway stage.
-      The Cloaking WAF blocks ALL requests that don't come from CloudFront.
-    Type: String
-    Default: 'true'
-    AllowedValues:
-      - 'true'
-      - 'false'
 
   EnableMonitoring:
     Description: |
@@ -145,15 +129,8 @@ Conditions:
       - !Ref CustomDomainBasePath
       - ''
 
-  AssociateWebACL: !And
-    - !Condition CreateCustomDomain
-    - !Equals
-      - !Ref EnableWafAssociation
-      - 'true'
-    - !Condition IsProdEnvironment
-
-  # Create the SigV4 access role in all non-prod envs (its trust imports the
-  # account's GitHub OIDC provider). Prod is excluded: no github-identity stack there.
+  # Create the SigV4 access role in all deployed environments (its trust imports
+  # the account's GitHub OIDC provider). The unused prod branch is excluded.
   CreateSigV4AccessRole: !Not
     - !Condition IsProdEnvironment
 
@@ -831,19 +808,6 @@ Resources:
         - !Ref CustomDomainBasePath
         - !Ref AWS::NoValue
 
-  # WAF WebACL Association - Protects API Gateway with origin cloaking rules
-  # Ensures traffic only comes through CloudFront
-  ApiGatewayWebACLAssociation:
-    Type: AWS::WAFv2::WebACLAssociation
-    Condition: AssociateWebACL
-    DependsOn: ApiGatewayBasePathMapping
-    Properties:
-      ResourceArn: !Sub
-        - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
-        - ApiStage: !Ref CaBackendApi.Stage
-      WebACLArn:
-        Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
-
   # CloudWatch Alarms for Canary Deployment
   IssueReaderCertServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -920,7 +884,7 @@ Resources:
 
 Outputs:
   ApiGatewayDomainName:
-    Description: API Gateway regional domain name for CloudFront origin
+    Description: Direct regional API Gateway base URL
     Value: !Sub 'https://${CaBackendApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
     Export:
       Name: !Sub '${AWS::StackName}-api-url'

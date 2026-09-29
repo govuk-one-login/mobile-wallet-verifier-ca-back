@@ -252,27 +252,15 @@ describe('Application Infrastructure', () => {
     });
   });
 
-  describe('WAF cloaking association', () => {
-    it('associates the cloaking WebACL only in prod', () => {
-      expect(template.Conditions?.IsProdEnvironment).toEqual({
-        'Fn::Equals': [{ Ref: 'Environment' }, 'prod'],
-      });
-
-      const associateWebACL = template.Conditions?.AssociateWebACL as Record<
-        string,
-        unknown
-      >;
-      const andClauses = associateWebACL['Fn::And'] as Record<
-        string,
-        unknown
-      >[];
-      expect(andClauses).toContainEqual({ Condition: 'IsProdEnvironment' });
-    });
-
-    it('keeps the WebACL association resource gated on AssociateWebACL', () => {
-      const association = template.Resources
-        .ApiGatewayWebACLAssociation as Record<string, unknown>;
-      expect(association.Condition).toBe('AssociateWebACL');
+  describe('Firewall Manager WAF', () => {
+    it('leaves WAF ownership and stage association to Firewall Manager', () => {
+      const wafResources = Object.values(template.Resources).filter(
+        (resource) =>
+          ['AWS::WAFv2::WebACL', 'AWS::WAFv2::WebACLAssociation'].includes(
+            (resource as Record<string, unknown>).Type as string,
+          ),
+      );
+      expect(wafResources).toEqual([]);
     });
   });
 
@@ -328,7 +316,7 @@ describe('Application Infrastructure', () => {
         unknown
       >;
       expect(apiOutput.Description).toBe(
-        'API Gateway regional domain name for CloudFront origin',
+        'Direct regional API Gateway base URL',
       );
       expect(apiOutput.Value).toBeDefined();
     });
