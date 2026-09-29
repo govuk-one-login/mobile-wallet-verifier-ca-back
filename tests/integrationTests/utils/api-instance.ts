@@ -25,13 +25,12 @@ export interface ApiInstance {
 const AWS_REGION = process.env.AWS_REGION ?? 'eu-west-2';
 const EXECUTE_API_SERVICE = 'execute-api';
 
-// The CA backend API must be reached at its REGIONAL execute-api host for SigV4:
-// signing covers the Host header, and the CloudFront custom domain rewrites Host
-// to the origin before the request reaches API Gateway, which invalidates the
-// signature. CA_BACKEND_API_URL must therefore be the regional API base URL
-// (the ApiGatewayDomainName / IssueReaderCertRegionalEndpoint stack output),
-// never the CloudFront custom domain. run-tests.sh sets it from the pipeline's
-// CFN_ApiGatewayDomainName output; set it manually for local runs.
+// The CA backend API must be reached directly through a REGIONAL API Gateway
+// endpoint. The execute-api host works for every stack; a Route 53 name pointing
+// to the regional API Gateway custom domain can also be used when its base path
+// mapping exists. Do not use a name routed through CloudFront: it rewrites the
+// signed Host header. run-tests.sh selects the execute-api URL for local runs
+// and the regional origin custom-domain URL for the build pipeline.
 const API_GATEWAY_URL = requireEnv('CA_BACKEND_API_URL');
 
 // Mock services live on a separate API that is NOT SigV4-protected.
@@ -42,7 +41,7 @@ function requireEnv(name: string): string {
   if (value === undefined || value.trim() === '') {
     throw new Error(
       `Environment variable ${name} must be set to the deployed stack's API base URL. ` +
-        `For SigV4 this must be the regional execute-api host, not the CloudFront custom domain.`,
+        `For SigV4 this must reach API Gateway directly, not through CloudFront.`,
     );
   }
   return value;
@@ -63,8 +62,7 @@ async function signedFetch(
     sha256: Sha256,
   });
 
-  // Host must be present for SigV4 and must match the host the request is sent
-  // to (the regional execute-api host).
+  // Host must be present for SigV4 and match the hostname in the request URL.
   const requestToSign = new HttpRequest({
     method,
     protocol: parsed.protocol,

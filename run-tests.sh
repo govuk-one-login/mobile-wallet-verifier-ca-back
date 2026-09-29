@@ -10,10 +10,14 @@ remove_quotes() {
   echo "$value" | tr -d '"'
 }
 
-CA_BACKEND_API_URL=$(remove_quotes "${CFN_ApiGatewayDomainName:-}")
+if [[ "${LOCAL_TEST:-false}" == "true" ]]; then
+  CA_BACKEND_API_URL=$(remove_quotes "${CFN_ApiGatewayDomainName:-}")
+  MOCK_SERVICES_API_URL=$(remove_quotes "${CFN_MockServicesApiUrl:-}")
+else
+  CA_BACKEND_API_URL="https://origin.api.verifier-ca.build.account.gov.uk"
+  MOCK_SERVICES_API_URL="https://mock.verifier-ca.build.account.gov.uk"
+fi
 export CA_BACKEND_API_URL
-
-MOCK_SERVICES_API_URL=$(remove_quotes "${CFN_MockServicesApiUrl:-}")
 export MOCK_SERVICES_API_URL
 
 AWS_REGION="${AWS_REGION:-eu-west-2}"

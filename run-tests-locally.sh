@@ -23,6 +23,7 @@ echo "${stack_outputs}"
 {
   # Static env vars the pipeline sets.
   echo "TEST_ENVIRONMENT=build"
+  echo "LOCAL_TEST=true"
   echo "TEST_REPORT_ABSOLUTE_DIR=/results"
   echo "AWS_REGION=${AWS_DEFAULT_REGION}"
   echo

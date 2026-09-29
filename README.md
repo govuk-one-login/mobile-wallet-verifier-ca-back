@@ -148,14 +148,14 @@ The Cucumber feature files and step definitions live under `tests/integrationTes
 
 The `/issue-reader-cert` endpoint requires AWS SigV4 authentication, so the tests sign their requests. Running them requires:
 
-- The target stack's URLs: the **regional** API base URL (the `ApiGatewayDomainName` output, e.g. `https://<api-id>.execute-api.eu-west-2.amazonaws.com/<stage>`) and the mock services API base URL (the `MockServicesApiUrl` output). The API URL must be the regional `execute-api` host, **not** the CloudFront custom domain: SigV4 signs the `Host` header, and CloudFront rewrites it, which invalidates the signature.
+- The target stack's URLs: local runs use the `ApiGatewayDomainName` and `MockServicesApiUrl` outputs, since personal stacks have no Route 53 names. The build pipeline uses `https://origin.api.verifier-ca.build.account.gov.uk` for the regional API Gateway origin and `https://mock.verifier-ca.build.account.gov.uk` for mock services. Do not use the public API name routed through CloudFront: it rewrites the `Host` header that SigV4 signs.
 - **AWS credentials** for the account the stack is deployed in (e.g. an active SSO session). The tests sign requests with these credentials.
 
 The JUnit report is written under `results/`.
 
 ##### Pipeline-like Docker run (recommended)
 
-`run-tests-locally.sh` mirrors how the secure pipeline runs the tests. It reads the stack's CloudFormation outputs, passes them to the test container as `CFN_<OutputKey>` env vars, and exports your current AWS credentials into the container so requests are signed. Requires Docker (running), `jq`, and an active AWS session.
+`run-tests-locally.sh` uses the same test container as the secure pipeline, with `LOCAL_TEST=true` to select the personal stack's `execute-api` URL. It reads the stack's CloudFormation outputs, passes them to the container as `CFN_<OutputKey>` env vars, and exports your current AWS credentials so requests are signed. Requires Docker (running), `jq`, and an active AWS session.
 
 ```bash
 # Defaults to the "ca-back" stack; pass a stack name to target your own stack.
