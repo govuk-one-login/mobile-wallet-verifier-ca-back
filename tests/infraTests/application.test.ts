@@ -210,8 +210,8 @@ describe('Application Infrastructure', () => {
       expect(
         condition.StringLike['token.actions.githubusercontent.com:sub'],
       ).toEqual([
-        'repo:govuk-one-login/mobile-credential-sharing-android:*',
-        'repo:govuk-one-login/mobile-verifier-spike-infra:*',
+        'repo:govuk-one-login/mobile-credential-sharing-android:ref:refs/heads/main',
+        'repo:govuk-one-login/mobile-verifier-spike-infra:ref:refs/heads/main',
       ]);
     });
 

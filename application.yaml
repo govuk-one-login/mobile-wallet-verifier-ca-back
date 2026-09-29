@@ -621,8 +621,8 @@ Resources:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
                 token.actions.githubusercontent.com:sub:
-                  - 'repo:govuk-one-login/mobile-credential-sharing-android:*'
-                  - 'repo:govuk-one-login/mobile-verifier-spike-infra:*'
+                  - 'repo:govuk-one-login/mobile-credential-sharing-android:ref:refs/heads/main'
+                  - 'repo:govuk-one-login/mobile-verifier-spike-infra:ref:refs/heads/main'
       Policies:
         - PolicyName: InvokeIssueReaderCert
           PolicyDocument:
