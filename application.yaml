@@ -705,11 +705,9 @@ Resources:
       Auth:
         ResourcePolicy:
           CustomStatements:
-            # Allow invocation of the API. SigV4 signing is enforced by the
-            # security scheme in the OpenAPI spec; a resource policy with at
-            # least one Allow is required or the API is fully denied.
-            # /issue-reader-cert is additionally scoped to the GitHub OIDC
-            # SigV4 access role via that role's own IAM policy.
+            # Security review accepted Principal '*' for this non-prod test API for now.
+            # Future work will restrict access to SigV4AccessRole and the build test role.
+            # SigV4 signing is enforced by the OpenAPI security scheme.
             - Effect: Allow
               Principal: '*'
               Action: execute-api:Invoke
