@@ -52,12 +52,6 @@ Parameters:
     Type: String
     Default: ca-backend-api
 
-  CloudFrontDistributionName:
-    Description: |
-      The name of the CloudFront distribution
-    Type: String
-    Default: cloudfront-distribution
-
   # API Gateway Custom Domain Parameters
   EnableCustomDomain:
     Description: Whether to create a custom domain for API Gateway
@@ -72,16 +66,6 @@ Parameters:
       The base path for the API mapping (empty string for root, or a path like 'v1')
     Type: String
     Default: ''
-
-  EnableWafAssociation:
-    Description: |
-      Whether to associate the Cloaking WAF WebACL with the API Gateway stage.
-      The Cloaking WAF blocks ALL requests that don't come from CloudFront.
-    Type: String
-    Default: 'true'
-    AllowedValues:
-      - 'true'
-      - 'false'
 
   EnableMonitoring:
     Description: |
@@ -123,6 +107,10 @@ Conditions:
     - !Ref Environment
     - dev
 
+  IsProdEnvironment: !Equals
+    - !Ref Environment
+    - prod
+
   CreateMonitoringResources: !Equals
     - !Ref EnableMonitoring
     - 'true'
@@ -141,11 +129,10 @@ Conditions:
       - !Ref CustomDomainBasePath
       - ''
 
-  AssociateWebACL: !And
-    - !Condition CreateCustomDomain
-    - !Equals
-      - !Ref EnableWafAssociation
-      - 'true'
+  # Create the SigV4 access role in all deployed environments (its trust imports
+  # the account's GitHub OIDC provider). The unused prod branch is excluded.
+  CreateSigV4AccessRole: !Not
+    - !Condition IsProdEnvironment
 
   # Mock resources condition - only deploy in dev and build
   DeployMockResources: !Or
@@ -587,6 +574,41 @@ Resources:
                   - acm-pca:GetCertificate
                 Resource: !Sub '{{resolve:ssm:/${Environment}/GovCA/CertificateAuthorityArn}}'
 
+  # GitHub OIDC federated role for machine-to-machine SigV4 access to
+  # /issue-reader-cert. Grants temporary credentials scoped to invoking
+  # only the /issue-reader-cert endpoint.
+  SigV4AccessRole:
+    Type: AWS::IAM::Role
+    Condition: CreateSigV4AccessRole
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-${Environment}-sigv4-access-role'
+      PermissionsBoundary: !If
+        - UsePermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !ImportValue GitHubIdentityProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - 'repo:govuk-one-login/mobile-credential-sharing-android:ref:refs/heads/main'
+                  - 'repo:govuk-one-login/mobile-verifier-spike-infra:ref:refs/heads/main'
+      Policies:
+        - PolicyName: InvokeIssueReaderCert
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: execute-api:Invoke
+                Resource: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${CaBackendApi}/${Environment}/POST/issue-reader-cert'
+
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
     Metadata:
@@ -680,6 +702,17 @@ Resources:
       StageName: !Ref Environment
       OpenApiVersion: 3.0.0
       TracingEnabled: true
+      Auth:
+        ResourcePolicy:
+          CustomStatements:
+            # Security review accepted Principal '*' for this non-prod test API for now.
+            # Future work will restrict access to SigV4AccessRole and the build test role.
+            # SigV4 signing is enforced by the OpenAPI security scheme.
+            - Effect: Allow
+              Principal: '*'
+              Action: execute-api:Invoke
+              Resource: execute-api:/*
+              Sid: AllowSignedInvocation
       AccessLogSetting:
         DestinationArn: !GetAtt CaBackendApiAccessLogs.Arn
         Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
@@ -773,19 +806,6 @@ Resources:
         - !Ref CustomDomainBasePath
         - !Ref AWS::NoValue
 
-  # WAF WebACL Association - Protects API Gateway with origin cloaking rules
-  # Ensures traffic only comes through CloudFront
-  ApiGatewayWebACLAssociation:
-    Type: AWS::WAFv2::WebACLAssociation
-    Condition: AssociateWebACL
-    DependsOn: ApiGatewayBasePathMapping
-    Properties:
-      ResourceArn: !Sub
-        - 'arn:aws:apigateway:${AWS::Region}::/restapis/${CaBackendApi}/stages/${ApiStage}'
-        - ApiStage: !Ref CaBackendApi.Stage
-      WebACLArn:
-        Fn::ImportValue: !Sub '${CloudFrontDistributionName}-CloakingOriginWebACLArn'
-
   # CloudWatch Alarms for Canary Deployment
   IssueReaderCertServiceErrorAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -862,7 +882,7 @@ Resources:
 
 Outputs:
   ApiGatewayDomainName:
-    Description: API Gateway regional domain name for CloudFront origin
+    Description: Direct regional API Gateway base URL
     Value: !Sub 'https://${CaBackendApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
     Export:
       Name: !Sub '${AWS::StackName}-api-url'
@@ -928,4 +948,9 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-mock-issue-cert-request-endpoint'
 
-
+  SigV4AccessRoleArn:
+    Description: ARN of the GitHub OIDC SigV4 access role for /issue-reader-cert
+    Condition: CreateSigV4AccessRole
+    Value: !GetAtt SigV4AccessRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-sigv4-access-role-arn'

@@ -1,5 +1,6 @@
 import {
   getApiGatewayApiInstance,
+  getUnsignedApiGatewayApiInstance,
   getMockServicesApiInstance,
 } from './api-instance.ts';
 import type { HttpResponseSnapshot } from './api-instance.ts';
@@ -64,6 +65,27 @@ export async function requestIssueReaderCert(
   }
 
   return getApiGatewayApiInstance().post(
+    ISSUE_READER_CERT_PATH,
+    JSON.stringify(request.body),
+    headers,
+  );
+}
+
+// Sends an unsigned request to the SigV4-protected endpoint, used to assert
+// that requests without a valid SigV4 signature are rejected with 403.
+export async function requestIssueReaderCertUnsigned(
+  request: IssueReaderCertRequest,
+): Promise<HttpResponseSnapshot> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  const appCheckJwt = request.headers?.['X-Firebase-AppCheck'];
+  if (appCheckJwt !== undefined) {
+    headers['X-Firebase-AppCheck'] = appCheckJwt;
+  }
+
+  return getUnsignedApiGatewayApiInstance().post(
     ISSUE_READER_CERT_PATH,
     JSON.stringify(request.body),
     headers,

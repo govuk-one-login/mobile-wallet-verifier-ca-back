@@ -10,6 +10,10 @@ This Repository contains a service (lambda function) to operate a private certif
 
 Issues X.509 reader certificates (90-day validity) after validating the Certificate Signing Request (CSR).
 
+Requests must be authenticated with AWS Signature Version 4 (SigV4). The endpoint is invoked by machine-to-machine callers that assume an IAM role (via GitHub OIDC) and sign the request. API Gateway rejects unsigned or invalidly signed requests with a 403 before they reach the backend. See [`open-api-spec.yaml`](./open-api-spec.yaml) for the exact request/response contract.
+
+The backend stack does not create or associate a WAF WebACL manually. AWS Firewall Manager attaches the organisation-managed regional WebACL to API Gateway stages covered by its policy.
+
 Optionally, the service also verifies a Firebase App Check token (via the `X-Firebase-AppCheck` header). This verification is gated behind the `ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION` feature flag and is currently disabled in every environment, so the header is optional. See [Feature Flags](#feature-flags).
 
 The issued leaf certificate carries the DVS privacy policy URL in a non-critical Subject Information Access (SIA) extension, and the response returns the full certificate chain up to the Root CA.
@@ -138,34 +142,40 @@ npm run test:cov
 
 #### Integration tests
 
-These integration tests are implemented with Cucumber and exercise the deployed API end to end against the main build environment using the mock services.
+These integration tests are implemented with Cucumber and exercise the deployed API end to end using the mock services.
 
 The Cucumber feature files and step definitions live under `tests/integrationTests`.
 
-Both commands below to run the integration tests target the build environment by default and write the JUnit report under `results/`.
+The `/issue-reader-cert` endpoint requires AWS SigV4 authentication, so the tests sign their requests. Running them requires:
+
+- The target stack's URLs: local runs use the `ApiGatewayDomainName` and `MockServicesApiUrl` outputs, since personal stacks have no Route 53 names. The build pipeline uses `https://origin.api.verifier-ca.build.account.gov.uk` for the regional API Gateway origin and `https://mock.verifier-ca.build.account.gov.uk` for mock services. Do not use the public API name routed through CloudFront: it rewrites the `Host` header that SigV4 signs.
+- **AWS credentials** for the account the stack is deployed in (e.g. an active SSO session). The tests sign requests with these credentials.
+
+The JUnit report is written under `results/`.
+
+##### Pipeline-like Docker run (recommended)
+
+`run-tests-locally.sh` uses the same test container as the secure pipeline, with `LOCAL_TEST=true` to select the personal stack's `execute-api` URL. It reads the stack's CloudFormation outputs, passes them to the container as `CFN_<OutputKey>` env vars, and exports your current AWS credentials so requests are signed. Requires Docker (running), `jq`, and an active AWS session.
+
+```bash
+# Defaults to the "ca-back" stack; pass a stack name to target your own stack.
+./run-tests-locally.sh                 # runs against the "ca-back" stack
+./run-tests-locally.sh <your-stack>    # e.g. a personal dev stack
+```
 
 ##### Run without Docker
 
-To run the integration tests from your local Node.js environment, run the Cucumber test suite directly with npm.
+Set the target URLs from your deployed stack's outputs, then run the Cucumber suite directly. The tests fail fast with a clear error if the URL variables are not set.
 
 ```bash
+export CA_BACKEND_API_URL="$(aws cloudformation describe-stacks --stack-name <your-stack> \
+  --query "Stacks[0].Outputs[?OutputKey=='ApiGatewayDomainName'].OutputValue" --output text)"
+export MOCK_SERVICES_API_URL="$(aws cloudformation describe-stacks --stack-name <your-stack> \
+  --query "Stacks[0].Outputs[?OutputKey=='MockServicesApiUrl'].OutputValue" --output text)"
 npm run test:integration
 ```
 
-##### Pipeline-like Docker run
-
-To run the integration tests in a pipeline-like environment, build the test container from the repository `Dockerfile` and run the Cucumber tests inside it.
-
-```bash
-sh run-tests-locally.sh
-```
-
-##### Testing with custom dev stack
-
-To run against a custom dev stack, update `tests/integrationTests/utils/api-instance.ts` before running the tests:
-
-- Set `API_GATEWAY_URL` to your stack's `ApiGatewayDomainName` output.
-- Set `MOCK_SERVICES_API_URL` to `https://mock.verifier-ca.dev.account.gov.uk`.
+Note: locally the requests are signed with **your** credentials. Because the API's resource policy allows any SigV4-signed caller in the account, this exercises SigV4 enforcement (unsigned requests are rejected with 403) but not the GitHub OIDC role's per-path scoping, which is validated from the consuming GitHub Actions workflow.
 
 #### Mock Testing
 
