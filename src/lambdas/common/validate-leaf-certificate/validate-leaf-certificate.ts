@@ -31,11 +31,11 @@ import {
   VALIDITY_SPAN_MAX_MS,
   MIN_BYTE_LENGTH,
   MAX_BYTE_LENGTH,
-  CURVE_P384_OID_DER,
-  EXPECTED_SPKI_LENGTH,
+  SUPPORTED_CURVE_SPKI_LENGTHS,
   ALGORITHM_OID,
   EXTENDED_KEY_USAGE,
 } from '../certificate-service-constants/certificate-service-constants.ts';
+import { SUPPORTED_CURVES_LABEL } from '../csr-constants/csr-constants.ts';
 import { extractIssuerCaCertFromChain } from './extract-issuer-ca-cert-from-chain.ts';
 
 export interface ValidateLeafCertificateParams {
@@ -480,7 +480,7 @@ function validateSubjectPublicKeyInfo(
     return emptyFailure();
   }
 
-  // Check that the curve is P-384
+  // Check that the curve is one of the supported curves (P-256 or P-384)
   if (!algorithmIdentifier.parameters) {
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
@@ -490,14 +490,16 @@ function validateSubjectPublicKeyInfo(
     );
     return emptyFailure();
   }
-  // convert the parameters ArrayBuffer to hex and compare against the known DER encoding.
-  // Exact match ensures P-384 is the only curve present.
+  // convert the parameters ArrayBuffer to hex and look it up against the known
+  // DER encodings of the supported curves. A hit also tells us the expected
+  // SubjectPublicKeyInfo length for that specific curve.
   const curveHex = Buffer.from(algorithmIdentifier.parameters).toString('hex');
-  if (curveHex !== CURVE_P384_OID_DER) {
+  const expectedSpkiLength = SUPPORTED_CURVE_SPKI_LENGTHS[curveHex];
+  if (expectedSpkiLength === undefined) {
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
-        errorMessage: 'Certificate public key curve must be P-384 only',
+        errorMessage: `Certificate public key curve must be ${SUPPORTED_CURVES_LABEL}`,
         data: { actualCurve: curveHex },
       },
     );
@@ -529,7 +531,8 @@ function validateSubjectPublicKeyInfo(
     return emptyFailure();
   }
 
-  // P-384 SubjectPublicKeyInfo must be exactly 120 bytes
+  // SubjectPublicKeyInfo must be exactly the expected length for the detected
+  // curve (P-256 is 91 bytes, P-384 is 120 bytes).
   let spkiRaw: ArrayBuffer;
   try {
     spkiRaw = AsnConvert.serialize(subjectPublicKeyInfo);
@@ -543,15 +546,16 @@ function validateSubjectPublicKeyInfo(
     );
     return emptyFailure();
   }
-  if (spkiRaw.byteLength !== EXPECTED_SPKI_LENGTH) {
+  if (spkiRaw.byteLength !== expectedSpkiLength) {
     logger.error(
       LogMessage.ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE,
       {
         errorMessage:
-          'Certificate SubjectPublicKeyInfo must be 120 bytes for P-384',
+          'Certificate SubjectPublicKeyInfo length does not match the key curve',
         data: {
+          curve: curveHex,
           actualLength: spkiRaw.byteLength,
-          expectedLength: EXPECTED_SPKI_LENGTH,
+          expectedLength: expectedSpkiLength,
         },
       },
     );

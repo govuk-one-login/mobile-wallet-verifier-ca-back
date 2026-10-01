@@ -24,8 +24,9 @@ import {
   MIN_BYTE_LENGTH,
   MAX_BYTE_LENGTH,
   CURVE_P384_OID_DER,
+  CURVE_P256_OID_DER,
   ALGORITHM_OID,
-  EXPECTED_SPKI_LENGTH,
+  SUPPORTED_CURVE_SPKI_LENGTHS,
 } from './certificate-service-constants';
 
 describe('SIGNING_ALGORITHM', () => {
@@ -204,14 +205,30 @@ describe('P384_OID_DER', () => {
   });
 });
 
+describe('P256_OID_DER', () => {
+  it('Is "06082a8648ce3d030107" (DER encoding of OID 1.2.840.10045.3.1.7)', () => {
+    expect(CURVE_P256_OID_DER).toEqual('06082a8648ce3d030107');
+  });
+});
+
 describe('ALGORITHM_OID', () => {
   it('Is "1.2.840.10045.2.1" (EC public key)', () => {
     expect(ALGORITHM_OID).toEqual('1.2.840.10045.2.1');
   });
 });
 
-describe('EXPECTED_SPKI_LENGTH', () => {
-  it('Is 120 bytes', () => {
-    expect(EXPECTED_SPKI_LENGTH).toEqual(120);
+describe('SUPPORTED_CURVE_SPKI_LENGTHS', () => {
+  it('Maps the P-384 OID DER to 120 bytes', () => {
+    expect(SUPPORTED_CURVE_SPKI_LENGTHS[CURVE_P384_OID_DER]).toEqual(120);
+  });
+
+  it('Maps the P-256 OID DER to 91 bytes', () => {
+    expect(SUPPORTED_CURVE_SPKI_LENGTHS[CURVE_P256_OID_DER]).toEqual(91);
+  });
+
+  it('Contains exactly the two supported curves', () => {
+    expect(Object.keys(SUPPORTED_CURVE_SPKI_LENGTHS).sort()).toEqual(
+      [CURVE_P256_OID_DER, CURVE_P384_OID_DER].sort(),
+    );
   });
 });

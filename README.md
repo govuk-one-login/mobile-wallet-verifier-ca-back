@@ -10,6 +10,8 @@ This Repository contains a service (lambda function) to operate a private certif
 
 Issues X.509 reader certificates (90-day validity) after validating the Certificate Signing Request (CSR).
 
+The CSR public key must be an EC key on the P-256 or P-384 curve. Both curves are accepted; all other key algorithms and curves are rejected.
+
 Requests must be authenticated with AWS Signature Version 4 (SigV4). The endpoint is invoked by machine-to-machine callers that assume an IAM role (via GitHub OIDC) and sign the request. API Gateway rejects unsigned or invalidly signed requests with a 403 before they reach the backend. See [`open-api-spec.yaml`](./open-api-spec.yaml) for the exact request/response contract.
 
 The backend stack does not create or associate a WAF WebACL manually. AWS Firewall Manager attaches the organisation-managed regional WebACL to API Gateway stages covered by its policy.

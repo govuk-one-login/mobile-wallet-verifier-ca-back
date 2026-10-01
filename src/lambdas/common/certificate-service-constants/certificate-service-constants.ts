@@ -82,5 +82,12 @@ export const VALIDITY_SPAN_MAX_MS =
   EXPECTED_VALIDITY_SPAN_MS + VALIDITY_TOLERANCE_MS;
 
 export const CURVE_P384_OID_DER = '06052b81040022'; // DER encoding of OID 1.3.132.0.34 (secp384r1/P-384)
+export const CURVE_P256_OID_DER = '06082a8648ce3d030107'; // DER encoding of OID 1.2.840.10045.3.1.7 (prime256v1/P-256)
 export const ALGORITHM_OID = '1.2.840.10045.2.1';
-export const EXPECTED_SPKI_LENGTH = 120;
+
+// Expected SubjectPublicKeyInfo byte length per supported curve,
+// keyed by the curve's DER-encoded OID.
+export const SUPPORTED_CURVE_SPKI_LENGTHS: Readonly<Record<string, number>> = {
+  [CURVE_P384_OID_DER]: 120,
+  [CURVE_P256_OID_DER]: 91,
+};

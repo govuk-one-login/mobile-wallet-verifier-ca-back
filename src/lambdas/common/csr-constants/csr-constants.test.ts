@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   BASIC_CONSTRAINTS_OID,
   CSR_POLICY,
+  DEFAULT_CSR_CURVE,
   EXTENDED_KEY_USAGE_OID,
   KEY_USAGE_OID,
   NAME_CONSTRAINTS_OID,
+  SUPPORTED_CURVES_LABEL,
 } from './csr-constants';
 
 describe('BASIC_CONSTRAINTS_OID', () => {
@@ -32,9 +34,9 @@ describe('NAME_CONSTRAINTS_OID', () => {
 });
 
 describe('CSR Policy', () => {
-  describe('curve', () => {
-    it('Is "P-384"', () => {
-      expect(CSR_POLICY.curve).toEqual('P-384');
+  describe('curves', () => {
+    it('Supports P-256 and P-384', () => {
+      expect(CSR_POLICY.curves).toEqual(['P-256', 'P-384']);
     });
   });
 
@@ -68,5 +70,17 @@ describe('CSR Policy', () => {
         ).toEqual('1.0.18013.5.1.6');
       });
     });
+  });
+});
+
+describe('SUPPORTED_CURVES_LABEL', () => {
+  it('Is "P-256 or P-384"', () => {
+    expect(SUPPORTED_CURVES_LABEL).toEqual('P-256 or P-384');
+  });
+});
+
+describe('DEFAULT_CSR_CURVE', () => {
+  it('Is "P-384" (mock generator keeps P-384)', () => {
+    expect(DEFAULT_CSR_CURVE).toEqual('P-384');
   });
 });

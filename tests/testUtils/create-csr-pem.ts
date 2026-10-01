@@ -14,7 +14,7 @@ import {
   NAME_CONSTRAINTS_OID,
 } from '../../src/lambdas/common/csr-constants/csr-constants';
 
-type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'rsa';
+type CsrKeyAlgorithm = 'ec-p256' | 'ec-p384' | 'ec-p521' | 'rsa';
 type SubjectEntries = {
   C?: string | null;
   CN?: string | null;
@@ -133,6 +133,11 @@ function getKeyGenerationAlgorithm(
         name: 'ECDSA',
         namedCurve: 'P-384',
       };
+    case 'ec-p521':
+      return {
+        name: 'ECDSA',
+        namedCurve: 'P-521',
+      };
     case 'rsa':
       return {
         name: 'RSASSA-PKCS1-v1_5',
@@ -156,6 +161,11 @@ function getSigningAlgorithm(
       return {
         name: 'ECDSA',
         hash: 'SHA-384',
+      };
+    case 'ec-p521':
+      return {
+        name: 'ECDSA',
+        hash: 'SHA-512',
       };
     case 'rsa':
       return {

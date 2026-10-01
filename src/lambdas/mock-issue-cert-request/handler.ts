@@ -17,7 +17,10 @@ import {
   GenerateMockIssueCertDependencies,
 } from './handler-dependencies.ts';
 import { getGenerateMockIssueCertRequestConfig } from './config.ts';
-import { CSR_POLICY } from '../common/csr-constants/csr-constants.ts';
+import {
+  CSR_POLICY,
+  DEFAULT_CSR_CURVE,
+} from '../common/csr-constants/csr-constants.ts';
 
 interface MockIssueReaderCertRequest {
   headers: {
@@ -88,7 +91,7 @@ async function generateMockRequest(
 
   const keyPair = await getOrGenerateECDSAKeyPair(
     configResult.value.DEVICE_KEYS_SECRET,
-    CSR_POLICY.curve,
+    DEFAULT_CSR_CURVE,
   );
 
   // Generate CSR

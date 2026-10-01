@@ -13,7 +13,7 @@ export const EXTENDED_KEY_USAGE_OID = '2.5.29.37';
 export const NAME_CONSTRAINTS_OID = '2.5.29.30';
 
 export const CSR_POLICY = {
-  curve: 'P-384',
+  curves: ['P-256', 'P-384'],
   subject: {
     C: 'GB',
     O: 'Government Digital Service',
@@ -25,3 +25,11 @@ export const CSR_POLICY = {
     mobileDocumentReaderAuthentication: '1.0.18013.5.1.6',
   },
 } as const;
+
+// Human-readable label of the supported curves, derived from CSR_POLICY.curves
+// so error messages stay in sync with the policy. e.g. "P-256 or P-384".
+export const SUPPORTED_CURVES_LABEL = CSR_POLICY.curves.join(' or ');
+
+// Default curve used by the mock CSR generator (dev/build only). The mock keeps
+// generating P-384 CSRs; validation accepts any curve in CSR_POLICY.curves.
+export const DEFAULT_CSR_CURVE = 'P-384';
