@@ -310,6 +310,8 @@ Resources:
   MockJWKSServiceFunction:
     Type: AWS::Serverless::Function
     Condition: DeployMockResources
+    DependsOn:
+      - MockJWKSServiceFunctionLogGroup
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -339,13 +341,15 @@ Resources:
     Type: AWS::Logs::LogGroup
     Condition: DeployMockResources
     Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-mock-jwks-service
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-${Environment}-mock-jwks
       RetentionInDays: 30
 
   # Mock Issue Cert Request Lambda
   MockIssueCertRequestFunction:
     Type: AWS::Serverless::Function
     Condition: DeployMockResources
+    DependsOn:
+      - MockIssueCertRequestFunctionLogGroup
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -380,7 +384,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Condition: DeployMockResources
     Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-mock-issue-cert-request
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-${Environment}-mock-issue-cert-request
       RetentionInDays: 30
 
   # Mock API Gateway
@@ -611,6 +615,8 @@ Resources:
 
   IssueReaderCertServiceFunction:
     Type: AWS::Serverless::Function
+    DependsOn:
+      - IssueReaderCertServiceFunctionLogGroup
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -671,7 +677,7 @@ Resources:
   IssueReaderCertServiceFunctionLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-issue-reader-cert-service
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-${Environment}-issue-reader-cert-service
       RetentionInDays: 30
 
   IssueReaderCertServiceFunctionSubscriptionFilter:
