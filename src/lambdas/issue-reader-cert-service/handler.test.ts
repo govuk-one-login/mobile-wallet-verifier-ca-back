@@ -167,11 +167,20 @@ describe('Handler', () => {
       await handlerConstructor(dependencies, event, context);
     });
 
-    it('Adds context, version and to log attributes and logs STARTED message', () => {
+    it('Adds context, version and eventIdentity to log attributes and logs STARTED message', () => {
       expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
         messageCode: 'MOBILE_CA_ISSUE_READER_CERT_STARTED',
         functionVersion: '1',
         function_arn: 'arn:12345', // example field to verify that context has been added
+        eventIdentity: {
+          accountId: 'mockAccountId',
+          accessKey: 'mockAccessKey',
+          principalOrgId: 'o-mockPrincipalOrgId',
+          user: 'MOCKROLEID:GitHubActions',
+          userAgent: 'mockUserAgent',
+          userArn:
+            'arn:aws:sts::123456789012:assumed-role/mock-sigv4-access-role/GitHubActions',
+        },
       });
     });
 
@@ -959,9 +968,14 @@ describe('Handler', () => {
           });
         });
 
-        it('Logs COMPLETED', () => {
+        it('Logs COMPLETED with details of the issued reader certificate', () => {
           expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
+            issuedReaderCertificateDetails: {
+              certificateArn:
+                'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
+              certificateSerial: 'abcdef12-3456-7890-abcd-ef1234567890',
+            },
           });
         });
 
