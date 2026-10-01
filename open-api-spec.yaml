@@ -111,7 +111,7 @@ components:
             - PKCS#10 structure
             - Signature over CertificationRequestInfo
             - Extraction of subject public key
-            - Allowed key size and algorithm policy
+            - Key algorithm policy: EC public key on the P-256 or P-384 curve
             - Signature algorithm consistency
             - CSR extension policy for basicConstraints, keyUsage, extendedKeyUsage, and NameConstraints
             - Exact subject fields: C=GB, O=Government Digital Service, and non-empty CN

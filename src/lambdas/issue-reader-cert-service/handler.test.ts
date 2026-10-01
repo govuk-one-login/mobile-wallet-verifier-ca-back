@@ -586,11 +586,12 @@ describe('Handler', () => {
         },
       },
       {
-        scenario: 'Given CSR does not use P-384 curve',
-        csrPemConfig: { keyAlgorithm: 'ec-p256' },
-        expectedErrorMessage: 'CSR public key does not use P-384 curve',
+        scenario: 'Given CSR uses an unsupported curve (P-521)',
+        csrPemConfig: { keyAlgorithm: 'ec-p521' },
+        expectedErrorMessage:
+          'CSR public key does not use a supported curve (P-256 or P-384)',
         expectedLogData: {
-          publicKeyAlgorithmCurve: 'P-256',
+          publicKeyAlgorithmCurve: 'P-521',
         },
       },
       {
@@ -912,50 +913,70 @@ describe('Handler', () => {
       });
     });
 
-    describe('Given a valid event', () => {
-      beforeEach(async () => {
-        result = await handlerConstructor(dependencies, event, context);
-      });
+    describe('Given a valid event with Firebase App Check validation not enabled', () => {
+      describe.each([
+        { scenario: 'P-384 CSR', keyAlgorithm: 'ec-p384' as const },
+        { scenario: 'P-256 CSR', keyAlgorithm: 'ec-p256' as const },
+      ])('Given a $scenario', ({ keyAlgorithm }) => {
+        let csrPem: string;
 
-      it('Calls certificate functions with correct parameters', () => {
-        expect(mockIssueCertificate).toHaveBeenCalledWith({
-          csrPem: validCsrPem,
-          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+        beforeEach(async () => {
+          csrPem = await createCsrPem({ keyAlgorithm });
+          event = buildEvent({
+            headers: {
+              'X-Firebase-AppCheck': validFireBaseJwt,
+            },
+            body: JSON.stringify({ csrPem }),
+          });
+          result = await handlerConstructor(dependencies, event, context);
         });
-        expect(mockGetCertificate).toHaveBeenCalledWith({
-          certificateArn:
-            'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
-          certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
-        });
-      });
 
-      it('Calls validateLeafCertificate with correct parameters', () => {
-        expect(mockValidateLeafCertificate).toHaveBeenCalledWith({
-          certPem:
-            '-----BEGIN CERTIFICATE-----\nMOCK_LEAF_L4\n-----END CERTIFICATE-----',
-          csrSubjectCn: 'MockCN',
-          certificateChain:
-            '-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_L3\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CA\n-----END CERTIFICATE-----',
+        it('Does not log a CSR validation failure', () => {
+          expect(consoleErrorSpy).not.toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_CSR_VALIDATION_FAILURE',
+          });
         });
-      });
 
-      it('Logs COMPLETED', () => {
-        expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
-          messageCode: 'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
+        it('Calls certificate functions with correct parameters', () => {
+          expect(mockIssueCertificate).toHaveBeenCalledWith({
+            csrPem,
+            certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+          });
+          expect(mockGetCertificate).toHaveBeenCalledWith({
+            certificateArn:
+              'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
+            certificateAuthorityArn: env.CERTIFICATE_AUTHORITY_ARN,
+          });
         });
-      });
 
-      it('Returns 200 OK response with the full chain: L4 leaf first, then L3 intermediate and Root CA', () => {
-        expect(result).toStrictEqual({
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Request-Id': context.awsRequestId,
-          },
-          body: JSON.stringify({
-            certChain:
-              '-----BEGIN CERTIFICATE-----\nMOCK_LEAF_L4\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_L3\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CA\n-----END CERTIFICATE-----',
-          }),
+        it('Calls validateLeafCertificate with correct parameters', () => {
+          expect(mockValidateLeafCertificate).toHaveBeenCalledWith({
+            certPem:
+              '-----BEGIN CERTIFICATE-----\nMOCK_LEAF_L4\n-----END CERTIFICATE-----',
+            csrSubjectCn: 'MockCN',
+            certificateChain:
+              '-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_L3\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CA\n-----END CERTIFICATE-----',
+          });
+        });
+
+        it('Logs COMPLETED', () => {
+          expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
+            messageCode: 'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
+          });
+        });
+
+        it('Returns 200 OK response with the full chain: L4 leaf first, then L3 intermediate and Root CA', () => {
+          expect(result).toStrictEqual({
+            statusCode: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Request-Id': context.awsRequestId,
+            },
+            body: JSON.stringify({
+              certChain:
+                '-----BEGIN CERTIFICATE-----\nMOCK_LEAF_L4\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_INTERMEDIATE_L3\n-----END CERTIFICATE-----\n-----BEGIN CERTIFICATE-----\nMOCK_ROOT_CA\n-----END CERTIFICATE-----',
+            }),
+          });
         });
       });
     });

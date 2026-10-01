@@ -85,6 +85,7 @@ export interface CreateCaAndLeafCertPemOptions {
   notAfter?: Date;
   subjectName?: string;
   caWithoutSki?: boolean;
+  leafKeyAlgorithm?: 'ec-p256' | 'ec-p384';
 }
 
 // Generates a CA cert with SubjectKeyIdentifierExtension and a leaf cert with a matching AuthorityKeyIdentifierExtension
@@ -98,9 +99,10 @@ export async function createCaAndLeafCertPem(
     true,
     ['sign', 'verify'],
   );
-  // Reader (leaf) certs remain P-384.
+  // Reader (leaf) certs default to P-384 but may also be P-256.
+  const leafKeyAlgorithm = options.leafKeyAlgorithm ?? 'ec-p384';
   const leafKeys = await crypto.subtle.generateKey(
-    { name: 'ECDSA', namedCurve: 'P-384' },
+    getKeyGenerationAlgorithm(leafKeyAlgorithm),
     true,
     ['sign', 'verify'],
   );

@@ -20,6 +20,7 @@ import {
   EXTENDED_KEY_USAGE_OID,
   KEY_USAGE_OID,
   NAME_CONSTRAINTS_OID,
+  SUPPORTED_CURVES_LABEL,
 } from '../common/csr-constants/csr-constants';
 
 export async function validateCsr(
@@ -119,8 +120,11 @@ function validateCsrPublicKeyAlgorithm(
 
   const publicKeyAlgorithmCurve =
     'namedCurve' in publicKeyAlgorithm ? publicKeyAlgorithm.namedCurve : null;
-  if (publicKeyAlgorithmCurve !== CSR_POLICY.curve) {
-    const errorMessage = `CSR public key does not use ${CSR_POLICY.curve} curve`;
+  if (
+    publicKeyAlgorithmCurve === null ||
+    !(CSR_POLICY.curves as readonly string[]).includes(publicKeyAlgorithmCurve)
+  ) {
+    const errorMessage = `CSR public key does not use a supported curve (${SUPPORTED_CURVES_LABEL})`;
     logger.error(LogMessage.ISSUE_READER_CERT_CSR_VALIDATION_FAILURE, {
       errorMessage,
       data: {

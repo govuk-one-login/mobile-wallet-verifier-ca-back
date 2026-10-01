@@ -953,15 +953,15 @@ describe('validateLeafCertificate', () => {
         });
       });
 
-      describe('Given certificate public key curve is not P-384', () => {
+      describe('Given certificate public key curve is unsupported', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
             await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
           const validSerial = new ArrayBuffer(16);
           new Uint8Array(validSerial)[0] = 0x01;
-          // DER encoding of OID 1.2.840.10045.3.1.7 (P-256)
-          const p256Params = new Uint8Array([
-            0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07,
+          // DER encoding of OID 1.3.132.0.35 (P-521), which is not supported.
+          const p521Params = new Uint8Array([
+            0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x23,
           ]).buffer;
           mockAsnAfterConstructor({
             tbsCertificate: {
@@ -971,9 +971,9 @@ describe('validateLeafCertificate', () => {
               subjectPublicKeyInfo: {
                 algorithm: {
                   algorithm: '1.2.840.10045.2.1',
-                  parameters: p256Params,
+                  parameters: p521Params,
                 },
-                subjectPublicKey: new ArrayBuffer(65),
+                subjectPublicKey: new ArrayBuffer(133),
               },
             },
             signatureAlgorithm: { algorithm: '1.2.840.10045.4.3.2' },
@@ -989,7 +989,7 @@ describe('validateLeafCertificate', () => {
           expect(consoleErrorSpy).toHaveBeenCalledWithLogFields({
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
-            errorMessage: 'Certificate public key curve must be P-384 only',
+            errorMessage: 'Certificate public key curve must be P-256 or P-384',
           });
         });
 
@@ -1123,7 +1123,7 @@ describe('validateLeafCertificate', () => {
         });
       });
 
-      describe('Given SubjectPublicKeyInfo length is not 120 bytes', () => {
+      describe('Given SubjectPublicKeyInfo length does not match the curve', () => {
         beforeEach(async () => {
           const { caCertPem, leafCertPem } =
             await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
@@ -1149,7 +1149,7 @@ describe('validateLeafCertificate', () => {
             messageCode:
               'MOBILE_CA_ISSUE_READER_CERT_LEAF_CERTIFICATE_VALIDATION_FAILURE',
             errorMessage:
-              'Certificate SubjectPublicKeyInfo must be 120 bytes for P-384',
+              'Certificate SubjectPublicKeyInfo length does not match the key curve',
           });
         });
 
@@ -2265,6 +2265,24 @@ describe('validateLeafCertificate', () => {
     beforeEach(async () => {
       const { caCertPem, leafCertPem } =
         await createCaAndLeafCertPem(MOCK_CSR_SUBJECT_CN);
+      result = validateLeafCertificate({
+        certPem: leafCertPem,
+        csrSubjectCn: MOCK_CSR_SUBJECT_CN,
+        certificateChain: caCertPem,
+      });
+    });
+
+    it('Returns empty success', () => {
+      expect(result).toEqual(emptySuccess());
+    });
+  });
+
+  describe('Given leaf certificate is valid with a P-256 key', () => {
+    beforeEach(async () => {
+      const { caCertPem, leafCertPem } = await createCaAndLeafCertPem(
+        MOCK_CSR_SUBJECT_CN,
+        { leafKeyAlgorithm: 'ec-p256' },
+      );
       result = validateLeafCertificate({
         certPem: leafCertPem,
         csrSubjectCn: MOCK_CSR_SUBJECT_CN,
