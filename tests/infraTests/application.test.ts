@@ -105,6 +105,64 @@ describe('Application Infrastructure', () => {
     });
   });
 
+  describe('Lambda Log Groups', () => {
+    const cases = [
+      {
+        functionId: 'MockJWKSServiceFunction',
+        logGroupId: 'MockJWKSServiceFunctionLogGroup',
+        name: '${AWS::StackName}-${Environment}-mock-jwks',
+      },
+      {
+        functionId: 'MockIssueCertRequestFunction',
+        logGroupId: 'MockIssueCertRequestFunctionLogGroup',
+        name: '${AWS::StackName}-${Environment}-mock-issue-cert-request',
+      },
+      {
+        functionId: 'IssueReaderCertServiceFunction',
+        logGroupId: 'IssueReaderCertServiceFunctionLogGroup',
+        name: '${AWS::StackName}-${Environment}-issue-reader-cert-service',
+      },
+    ];
+
+    it.each(cases)(
+      '$logGroupId exists as a log group with the expected name matching $functionId',
+      ({ functionId, logGroupId, name }) => {
+        const logGroup = template.Resources[logGroupId] as Record<
+          string,
+          unknown
+        >;
+        expect(logGroup).toBeDefined();
+        expect(logGroup.Type).toBe('AWS::Logs::LogGroup');
+
+        const logGroupProperties = logGroup.Properties as Record<
+          string,
+          unknown
+        >;
+        expect(logGroupProperties.LogGroupName).toEqual({
+          'Fn::Sub': `/aws/lambda/${name}`,
+        });
+
+        // The log group name must resolve to exactly /aws/lambda/<FunctionName>.
+        const functionProperties = (
+          template.Resources[functionId] as Record<string, unknown>
+        ).Properties as Record<string, unknown>;
+        expect(functionProperties.FunctionName).toEqual({ 'Fn::Sub': name });
+      },
+    );
+
+    it.each(cases)(
+      '$functionId declares DependsOn for $logGroupId so the group is created first',
+      ({ functionId, logGroupId }) => {
+        const func = template.Resources[functionId] as Record<string, unknown>;
+        const dependsOn = func.DependsOn;
+        const dependencies = Array.isArray(dependsOn)
+          ? (dependsOn as string[])
+          : [dependsOn as string];
+        expect(dependencies).toContain(logGroupId);
+      },
+    );
+  });
+
   describe('Firebase App Check feature flag', () => {
     it('wires ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION from the EnvironmentVariables mapping', () => {
       const properties = (
