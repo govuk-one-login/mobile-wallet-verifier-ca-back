@@ -967,11 +967,8 @@ describe('Handler', () => {
         it('Logs COMPLETED with details of the issued reader certificate and environment', () => {
           expect(consoleInfoSpy).toHaveBeenCalledWithLogFields({
             messageCode: 'MOBILE_CA_ISSUE_READER_CERT_COMPLETED',
-            issuedReaderCertificateDetails: {
-              certificateArn:
-                'arn:aws:acm-pca:eu-west-2:111111111111:mock-certificate-authority/b1111111-df11-1f11-a111-b11b11a11111/certificate/abcdef12-3456-7890-abcd-ef1234567890',
-              certificateSerial: 'abcdef12-3456-7890-abcd-ef1234567890',
-            },
+            issuedReaderCertificateSerial:
+              'abcdef12-3456-7890-abcd-ef1234567890',
             environment: 'mockEnvironment',
           });
         });

@@ -31,14 +31,3 @@ const getAssumedRole = (userArn: string | null): string | null => {
   const [, assumedRole] = userArn.split('assumed-role/');
   return assumedRole ?? userArn;
 };
-
-export const appendIssuedReaderCertificateDetailsToLogger = (
-  certificateArn: string,
-): void => {
-  logger.appendKeys({
-    issuedReaderCertificateDetails: {
-      certificateArn,
-      certificateSerial: certificateArn.split('/').pop(),
-    },
-  });
-};

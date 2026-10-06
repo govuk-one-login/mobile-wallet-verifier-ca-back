@@ -6,7 +6,6 @@ import type {
 } from 'aws-lambda';
 import {
   appendEventIdentityToLogger,
-  appendIssuedReaderCertificateDetailsToLogger,
   logger,
   setupLogger,
 } from '../common/logger/logger.ts';
@@ -103,7 +102,9 @@ export const handlerConstructor = async (
     return serverErrorResponse;
   }
   const certificateArn = issueCertResult.value;
-  appendIssuedReaderCertificateDetailsToLogger(certificateArn);
+  logger.appendKeys({
+    issuedReaderCertificateSerial: certificateArn.split('/').pop(),
+  });
 
   const getCertResult = await dependencies.getCertificate({
     certificateArn,
