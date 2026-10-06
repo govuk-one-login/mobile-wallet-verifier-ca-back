@@ -45,6 +45,7 @@ export const handlerConstructor = async (
     return serverErrorResponse;
   }
   const config = configResult.value;
+  logger.appendKeys({ environment: config.ENVIRONMENT });
 
   // Firebase App Check JWT validation is gated behind a feature flag.
   // See the "Feature Flags" section in the README for more info

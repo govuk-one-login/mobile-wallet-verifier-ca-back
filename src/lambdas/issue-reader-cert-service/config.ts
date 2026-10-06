@@ -11,6 +11,7 @@ const REQUIRED_ENVIRONMENT_VARIABLES = [
   'ISSUER',
   'CERTIFICATE_AUTHORITY_ARN',
   'ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION',
+  'ENVIRONMENT',
 ] as const;
 
 export type IssueReaderCertConfig = {
@@ -21,6 +22,7 @@ export type IssueReaderCertConfig = {
   FIREBASE_JWKS_URI: string;
   CERTIFICATE_AUTHORITY_ARN: string;
   ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION: boolean;
+  ENVIRONMENT: string;
 };
 
 export function getIssueReaderCertConfig(

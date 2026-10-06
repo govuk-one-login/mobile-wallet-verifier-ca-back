@@ -234,6 +234,7 @@ Globals:
     Environment:
       Variables:
         POWERTOOLS_SERVICE_NAME: mobile-wallet-verifier-certificate-authority-backend
+        ENVIRONMENT: !Ref Environment
 
 Resources:
   # ========================================
