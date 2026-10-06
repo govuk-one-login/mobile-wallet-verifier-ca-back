@@ -163,6 +163,22 @@ describe('Application Infrastructure', () => {
     );
   });
 
+  describe('Environment variable (Globals)', () => {
+    it('wires ENVIRONMENT from the Environment parameter for all functions via Globals', () => {
+      const globalsFunction = template.Globals?.Function as Record<
+        string,
+        unknown
+      >;
+      const environment = globalsFunction.Environment as Record<
+        string,
+        unknown
+      >;
+      const variables = environment.Variables as Record<string, unknown>;
+
+      expect(variables.ENVIRONMENT).toEqual({ Ref: 'Environment' });
+    });
+  });
+
   describe('Firebase App Check feature flag', () => {
     it('wires ENABLE_FIREBASE_APP_CHECK_JWT_VALIDATION from the EnvironmentVariables mapping', () => {
       const properties = (

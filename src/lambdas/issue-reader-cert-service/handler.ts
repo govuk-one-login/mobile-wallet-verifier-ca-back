@@ -4,7 +4,11 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
-import { logger, setupLogger } from '../common/logger/logger.ts';
+import {
+  appendEventIdentityToLogger,
+  logger,
+  setupLogger,
+} from '../common/logger/logger.ts';
 import { LogMessage } from '../common/logger/log-message.ts';
 import {
   dependencies,
@@ -32,6 +36,7 @@ export const handlerConstructor = async (
   context: Context,
 ): Promise<APIGatewayProxyResult> => {
   setupLogger(context);
+  appendEventIdentityToLogger(event.requestContext.identity);
   logger.info(LogMessage.ISSUE_READER_CERT_STARTED);
 
   const configResult = getIssueReaderCertConfig(dependencies.env);
@@ -39,6 +44,7 @@ export const handlerConstructor = async (
     return serverErrorResponse;
   }
   const config = configResult.value;
+  logger.appendKeys({ environment: config.ENVIRONMENT });
 
   // Firebase App Check JWT validation is gated behind a feature flag.
   // See the "Feature Flags" section in the README for more info
@@ -95,9 +101,13 @@ export const handlerConstructor = async (
   if (issueCertResult.isError) {
     return serverErrorResponse;
   }
+  const certificateArn = issueCertResult.value;
+  logger.appendKeys({
+    issuedReaderCertificateSerial: certificateArn.split('/').pop(),
+  });
 
   const getCertResult = await dependencies.getCertificate({
-    certificateArn: issueCertResult.value,
+    certificateArn,
     certificateAuthorityArn,
   });
   if (getCertResult.isError) {
