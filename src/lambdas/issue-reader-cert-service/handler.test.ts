@@ -175,8 +175,7 @@ describe('Handler', () => {
         function_arn: 'arn:12345', // example field to verify that context has been added
         eventIdentity: {
           userAgent: 'mockUserAgent',
-          userArn:
-            'arn:aws:sts::123456789012:assumed-role/mock-sigv4-access-role/GitHubActions',
+          assumedRole: 'mock-sigv4-access-role/GitHubActions',
         },
       });
     });

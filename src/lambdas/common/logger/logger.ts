@@ -18,9 +18,17 @@ export const appendEventIdentityToLogger = (
   logger.appendKeys({
     eventIdentity: {
       userAgent,
-      userArn,
+      assumedRole: getAssumedRole(userArn),
     },
   });
+};
+
+const getAssumedRole = (userArn: string | null): string | null => {
+  if (!userArn) {
+    return null;
+  }
+  const [, assumedRole] = userArn.split('assumed-role/');
+  return assumedRole ?? userArn;
 };
 
 export const appendIssuedReaderCertificateDetailsToLogger = (
