@@ -174,7 +174,6 @@ describe('Handler', () => {
         functionVersion: '1',
         function_arn: 'arn:12345', // example field to verify that context has been added
         eventIdentity: {
-          user: 'MOCKROLEID:GitHubActions',
           userAgent: 'mockUserAgent',
           userArn:
             'arn:aws:sts::123456789012:assumed-role/mock-sigv4-access-role/GitHubActions',
