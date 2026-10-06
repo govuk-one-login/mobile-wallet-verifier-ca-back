@@ -14,12 +14,10 @@ export const setupLogger = (context: Context) => {
 export const appendEventIdentityToLogger = (
   eventIdentity: APIGatewayEventIdentity,
 ): void => {
-  const { accountId, accessKey, principalOrgId, user, userAgent, userArn } =
-    eventIdentity;
+  const { accountId, principalOrgId, user, userAgent, userArn } = eventIdentity;
   logger.appendKeys({
     eventIdentity: {
       accountId,
-      accessKey,
       principalOrgId,
       user,
       userAgent,
