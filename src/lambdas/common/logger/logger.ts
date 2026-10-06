@@ -23,6 +23,7 @@ export const appendEventIdentityToLogger = (
   });
 };
 
+// Extracts the "role-name/session-name" portion from an assumed-role ARN; falls back to the full ARN if the marker is absent, or null if no ARN.
 const getAssumedRole = (userArn: string | null): string | null => {
   if (!userArn) {
     return null;
