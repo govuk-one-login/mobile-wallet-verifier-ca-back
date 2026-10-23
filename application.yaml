@@ -470,59 +470,6 @@ Resources:
   # ========================================
   # PRODUCTION SERVICES
   # ========================================
-
-  # Customer-managed KMS key for SNS encryption with CloudWatch permissions
-  WarningsChannelKMSKey:
-    Type: AWS::KMS::Key
-    Condition: CreateMonitoringResources
-    Properties:
-      Description: KMS key for SNS topic encryption with CloudWatch access
-      KeyPolicy:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
-          - Sid: Allow CloudWatch to use the key
-            Effect: Allow
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Action:
-              - kms:Decrypt
-              - kms:GenerateDataKey
-            Resource: '*'
-
-  WarningsChannel:
-    Type: AWS::SNS::Topic
-    Condition: CreateMonitoringResources
-    Properties:
-      TopicName: !Sub '${AWS::StackName}-warnings'
-      DisplayName: !Sub '${AWS::StackName} Warnings'
-      KmsMasterKeyId: !Ref WarningsChannelKMSKey
-
-  WarningsChannelPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Condition: CreateMonitoringResources
-    Properties:
-      Topics:
-        - !Ref WarningsChannel
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: AllowCloudWatchAlarmsToPublish
-            Effect: Allow
-            Principal:
-              Service: cloudwatch.amazonaws.com
-            Action:
-              - sns:Publish
-            Resource: !Ref WarningsChannel
-            Condition:
-              StringEquals:
-                'aws:SourceAccount': !Ref 'AWS::AccountId'
-
   CodeDeployServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -835,7 +782,7 @@ Resources:
         - Name: ExecutedVersion
           Value: !Ref IssueReaderCertServiceFunction.Version
       AlarmActions:
-        - !Ref WarningsChannel
+        - !Sub '{{resolve:ssm:/${Environment}/Alerting/WarningTopicArn}}'
       TreatMissingData: notBreaching
 
   # API Gateway 4xx/5xx Alarms
@@ -860,7 +807,7 @@ Resources:
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
-        - !Ref WarningsChannel
+        - !Sub '{{resolve:ssm:/${Environment}/Alerting/WarningTopicArn}}'
       TreatMissingData: notBreaching
 
   ApiGateway5xxErrorAlarm:
@@ -884,7 +831,7 @@ Resources:
         - Name: Stage
           Value: !Ref Environment
       AlarmActions:
-        - !Ref WarningsChannel
+        - !Sub '{{resolve:ssm:/${Environment}/Alerting/WarningTopicArn}}'
       TreatMissingData: notBreaching
 
 Outputs:
