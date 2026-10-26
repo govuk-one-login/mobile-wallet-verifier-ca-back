@@ -42,7 +42,7 @@
     "@types/aws-lambda": "8.10.164",
     "@types/jsonwebtoken": "9.0.10",
     "@types/node": "22.20.5",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "5.0.5",
     "eslint": "10.12.0",
     "glob": "13.0.6",
     "husky": "9.1.7",
@@ -53,6 +53,7 @@
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.1",
-    "vitest": "4.1.11"
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
   }
 }
