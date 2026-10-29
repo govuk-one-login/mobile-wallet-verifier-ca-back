@@ -18,14 +18,14 @@
   "license": "MIT",
   "dependencies": {
     "@aws-lambda-powertools/logger": "2.36.0",
-    "@aws-sdk/client-acm-pca": "3.1149.0",
-    "@aws-sdk/client-secrets-manager": "3.1149.0",
+    "@aws-sdk/client-acm-pca": "3.1156.0",
+    "@aws-sdk/client-secrets-manager": "3.1156.0",
     "@peculiar/asn1-csr": "2.10.0",
     "@peculiar/asn1-schema": "2.10.0",
     "@peculiar/asn1-x509": "2.10.0",
-    "@peculiar/x509": "2.1.0",
+    "@peculiar/x509": "2.2.0",
     "esbuild": "0.28.2",
-    "jose": "6.2.12",
+    "jose": "6.2.13",
     "reflect-metadata": "0.2.2"
   },
   "engines": {
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@aws-crypto/sha256-js": "5.2.0",
-    "@aws-sdk/credential-provider-node": "3.972.85",
+    "@aws-sdk/credential-provider-node": "3.972.88",
     "@cucumber/cucumber": "13.3.0",
     "@eslint/js": "9.39.2",
     "@smithy/hash-node": "4.5.2",
@@ -43,16 +43,16 @@
     "@types/jsonwebtoken": "9.0.10",
     "@types/node": "22.20.5",
     "@vitest/coverage-v8": "5.0.5",
-    "eslint": "10.12.0",
+    "eslint": "10.13.0",
     "glob": "13.0.6",
     "husky": "9.1.7",
     "jiti": "2.7.0",
-    "js-yaml": "5.4.3",
+    "js-yaml": "5.5.0",
     "prettier": "3.9.10",
     "ts-node": "10.9.2",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.1",
+    "typescript-eslint": "8.72.0",
     "vite": "8.3.5",
     "vitest": "5.0.5"
   }
