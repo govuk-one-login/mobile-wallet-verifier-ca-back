@@ -28,7 +28,7 @@ on:
         required: true
         type: string
     secrets:
-      SONAR_TOKEN:
+      SONAR_PROJECT_SCANNING_KEY:
         description: The token used for secure access to the SonarQube platform
         required: false
 
