@@ -2,6 +2,14 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: SAM application template for Verifier Certificate Authority backend
 
+Metadata:
+  cfn-lint:
+    config:
+      ignore_checks:
+        # Globals are evaluated against dev/build-only mock functions, making the
+        # IsIntegrationOrProd branch look unreachable; it is kept for future functions.
+        - W1028
+
 Parameters:
   Environment:
     Description: The environment type
@@ -223,10 +231,6 @@ Globals:
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
     AutoPublishAlias: live
-    CodeSigningConfigArn: !If
-      - UseCodeSigning
-      - !Ref CodeSigningConfigArn
-      - !Ref AWS::NoValue
     DeploymentPreference:
       Enabled: !If [IsIntegrationOrProd, true, false]
       Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
@@ -323,6 +327,10 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-jwks'
       CodeUri: ./
       Handler: src/lambdas/mock-jwks/handler.handler
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
       DeploymentPreference:
@@ -361,6 +369,10 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-issue-cert-request'
       CodeUri: ./
       Handler: src/lambdas/mock-issue-cert-request/handler.handler
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
       DeploymentPreference:
