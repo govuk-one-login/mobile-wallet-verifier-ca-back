@@ -592,6 +592,10 @@ Resources:
           - []
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
+      CodeSigningConfigArn: !If
+        - UseCodeSigning
+        - !Ref CodeSigningConfigArn
+        - !Ref AWS::NoValue
       Role: !GetAtt IssueReaderCertServiceRole.Arn
       Timeout: 15
       VpcConfig:
