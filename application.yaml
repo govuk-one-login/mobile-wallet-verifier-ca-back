@@ -223,6 +223,14 @@ Globals:
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
     AutoPublishAlias: live
+    CodeSigningConfigArn: !If
+      - UseCodeSigning
+      - !Ref CodeSigningConfigArn
+      - !Ref AWS::NoValue
+    DeploymentPreference:
+      Enabled: !If [IsIntegrationOrProd, true, false]
+      Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
+      Role: !GetAtt CodeDeployServiceRole.Arn
     Environment:
       Variables:
         POWERTOOLS_SERVICE_NAME: mobile-wallet-verifier-certificate-authority-backend
@@ -315,10 +323,6 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-jwks'
       CodeUri: ./
       Handler: src/lambdas/mock-jwks/handler.handler
-      CodeSigningConfigArn: !If
-        - UseCodeSigning
-        - !Ref CodeSigningConfigArn
-        - !Ref AWS::NoValue
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
       DeploymentPreference:
@@ -357,10 +361,6 @@ Resources:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-mock-issue-cert-request'
       CodeUri: ./
       Handler: src/lambdas/mock-issue-cert-request/handler.handler
-      CodeSigningConfigArn: !If
-        - UseCodeSigning
-        - !Ref CodeSigningConfigArn
-        - !Ref AWS::NoValue
       Role: !GetAtt MockServicesRole.Arn
       Timeout: 60
       DeploymentPreference:
@@ -574,19 +574,12 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
       DeploymentPreference:
-        Enabled: !If [IsIntegrationOrProd, true, false]
-        Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
-        Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - CreateAlarmsAndMonitoring
           - - !Ref IssueReaderCertServiceErrorAlarm
           - []
       CodeUri: ./
       Handler: src/lambdas/issue-reader-cert-service/handler.handler
-      CodeSigningConfigArn: !If
-        - UseCodeSigning
-        - !Ref CodeSigningConfigArn
-        - !Ref AWS::NoValue
       Role: !GetAtt IssueReaderCertServiceRole.Arn
       Timeout: 15
       VpcConfig:
