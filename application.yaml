@@ -2,14 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: SAM application template for Verifier Certificate Authority backend
 
-Metadata:
-  cfn-lint:
-    config:
-      ignore_checks:
-        # Globals are evaluated against dev/build-only mock functions, making the
-        # IsIntegrationOrProd branch look unreachable; it is kept for future functions.
-        - W1028
-
 Parameters:
   Environment:
     Description: The environment type
@@ -231,10 +223,6 @@ Globals:
       - !Ref PermissionsBoundary
       - !Ref AWS::NoValue
     AutoPublishAlias: live
-    DeploymentPreference:
-      Enabled: !If [IsIntegrationOrProd, true, false]
-      Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
-      Role: !GetAtt CodeDeployServiceRole.Arn
     Environment:
       Variables:
         POWERTOOLS_SERVICE_NAME: mobile-wallet-verifier-certificate-authority-backend
@@ -586,6 +574,9 @@ Resources:
     Properties:
       FunctionName: !Sub '${AWS::StackName}-${Environment}-issue-reader-cert-service'
       DeploymentPreference:
+        Enabled: !If [IsIntegrationOrProd, true, false]
+        Type: !If [IsIntegrationOrProd, !Ref Linear20PercentEvery1Minute, !Ref LambdaDeploymentPreference]
+        Role: !GetAtt CodeDeployServiceRole.Arn
         Alarms: !If
           - CreateAlarmsAndMonitoring
           - - !Ref IssueReaderCertServiceErrorAlarm
